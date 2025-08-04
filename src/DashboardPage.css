@@ -1,0 +1,188 @@
+/* DashboardPage.css */
+
+.dashboard-content-area {
+  flex-grow: 1;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.dashboard-grid {
+  display: grid;
+  width: 100%;
+  gap: 10px;
+  /* Updated grid-template-areas: tables-row now spans 2 columns */
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "line1 line2"
+    "pie1 pie2"
+    "tables-row tables-row"; /* The new row for tables spans both columns */
+}
+
+/* Assign grid areas */
+.line-graph-1 { grid-area: line1; }
+.line-graph-2 { grid-area: line2; }
+.pie-graph-1 { grid-area: pie1; }
+.pie-graph-2 { grid-area: pie2; }
+.dashboard-tables-row { grid-area: tables-row; } /* Assign the new row */
+
+/* Common styles for all cards (graphs and tables) */
+.graph-card, .table-card {
+  background: #1a1a1a;
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  color: #ffffff;
+  min-height: 0;
+}
+
+.graph-card h3, .table-card h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.graph-placeholder {
+  background: #333333;
+  border-radius: 8px;
+  min-height: 150px;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888888;
+  font-size: 14px;
+}
+
+/* Styles for the new tables container */
+.dashboard-tables-row {
+  display: flex;
+  justify-content: space-between; /* Pushes tables to left and right */
+  gap: 20px; /* Provides space in the middle, adjusts based on screen size */
+  margin-top: 10px; /* Small space above this row */
+  flex-wrap: wrap; /* Allow tables to wrap on smaller screens */
+  align-items: flex-start; /* Align tables to the top if they have different heights */
+}
+
+
+/* Styles for individual Table Cards */
+.table-card {
+  /* Let flexbox handle the width distribution but set a max to make it "square-ish" */
+  flex: 1; /* Allow cards to grow and shrink */
+  min-width: 300px; /* Minimum width before wrapping */
+  max-width: 450px; /* Max width to keep them 'square-ish' and create middle space */
+  /* Remove width: 100% if present, flex will manage */
+}
+
+.table-card table {
+  width: 100%; /* Table takes full width of its parent .table-card */
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  flex-grow: 1;
+  max-height: 180px; /* Example max height, adjust as needed */
+  overflow-y: auto; /* Enable vertical scrolling for table body */
+  display: block; /* Important for overflow-y on table */
+}
+
+.table-card thead, .table-card tbody {
+  display: block; /* Important for table scrolling */
+}
+
+.table-card th, .table-card td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #333333;
+  color: #cccccc;
+  font-size: 12px;
+  /* Use fixed widths or min/max widths for columns to make them fit content */
+  /* For 4 columns, roughly 25% each if content allows */
+  width: 25%; /* Attempt to distribute columns evenly */
+  box-sizing: border-box;
+}
+
+.table-card th {
+  color: #888888;
+  font-weight: 500;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  background: #1a1a1a;
+  z-index: 1;
+}
+
+.table-card tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-card .generate-button {
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 18px;
+  padding: 8px 15px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.table-card .generate-button:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr; /* Single column layout */
+    gap: 10px;
+    grid-template-areas:
+      "line1"
+      "line2"
+      "pie1"
+      "pie2"
+      "tables-row"; /* tables-row now takes the full single column */
+  }
+
+  .dashboard-tables-row {
+    flex-direction: column; /* Stack tables vertically on small screens */
+    gap: 10px; /* Gap between stacked tables */
+    align-items: center; /* Center stacked tables */
+  }
+
+  .table-card {
+    max-width: 100%; /* Allow tables to take full width of column */
+  }
+}
+
+@media (max-width: 600px) {
+  .graph-card, .table-card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+  .graph-card h3, .table-card h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .graph-placeholder {
+    min-height: 120px;
+    font-size: 12px;
+  }
+  .table-card th, .table-card td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .table-card .generate-button {
+    padding: 7px 12px;
+    font-size: 11px;
+    border-radius: 15px;
+  }
+}

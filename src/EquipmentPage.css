@@ -1,0 +1,111 @@
+/* EquipmentPage.css - Updated to match Supplies page */
+
+.equipment-page-container {
+  flex-grow: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+}
+
+.equipment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 28px;
+  color: #ffffff;
+  font-weight: 700;
+  margin: 0;
+}
+
+.table-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 250px;
+}
+
+.search-input {
+  background: #1a1a1a;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  padding: 12px 15px 12px 40px;
+  color: #ffffff;
+  font-size: 14px;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888888;
+}
+
+.equipment-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.equipment-table th, 
+.equipment-table td {
+  padding: 15px 20px;
+  text-align: left;
+  font-size: 15px;
+  color: #e0e0e0;
+  border-bottom: 1px solid #333333;
+}
+
+/* Column widths matching supplies page proportions */
+.equipment-table th:nth-child(1),
+.equipment-table td:nth-child(1) { width: 25%; } /* Item Code */
+.equipment-table th:nth-child(2),
+.equipment-table td:nth-child(2) { width: 15%; } /* Quantity */
+.equipment-table th:nth-child(3),
+.equipment-table td:nth-child(3) { width: 15%; } /* Unit */
+.equipment-table th:nth-child(4),
+.equipment-table td:nth-child(4) { width: 45%; } /* Description */
+
+.equipment-table th {
+  background: #2a2a2a;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.equipment-table tr:last-child td {
+  border-bottom: none;
+}
+
+.equipment-table tr:hover {
+  background-color: #242424;
+}
+
+.add-equipment-button {
+  background: #28a745;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+  align-self: flex-end;
+}
+
+.add-equipment-button:hover {
+  background: #218838;
+}
