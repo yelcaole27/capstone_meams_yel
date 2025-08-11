@@ -1,0 +1,14 @@
+
+
+[
+    { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary' },
+    { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply' },
+    { itemCode: 'MED-1-00002', stockNo: '12', quantity: 15, itemName: 'Bondpaper', category: 'Office Supply' },
+    { itemCode: 'MED-1-00003', stockNo: '13', quantity: 16, itemName: 'Tarpaulin', category: 'Office Supply' },
+    { itemCode: 'MED-2-23456', stockNo: '2', quantity: 17, itemName: 'Hand Soap', category: 'Sanitary' },
+    { itemCode: 'MED-1-00004', stockNo: '14', quantity: 2, itemName: 'Copy Paper Short', category: 'Office Supply' },
+    { itemCode: 'MED-1-00005', stockNo: '15', quantity: 14, itemName: 'Copy Paper Long', category: 'Office Supply' },
+    { itemCode: 'MED-1-00006', stockNo: '16', quantity: 15, itemName: 'Scotch Tape 2"', category: 'Office Supply' },
+    { itemCode: 'MED-1-00007', stockNo: '17', quantity: 16, itemName: 'Ballpen (black)', category: 'Office Supply' },
+    { itemCode: 'MED-1-00008', stockNo: '18', quantity: 17, itemName: 'Expanding Envelope (long)', category: 'Office Supply' },
+  ]

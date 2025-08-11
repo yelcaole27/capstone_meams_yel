@@ -1,0 +1,38 @@
+[
+    { 
+      id: 1, 
+      name: 'Engr. Jayson Valeroso', 
+      username: 'admin', 
+      email: 'sample@email.com', 
+      status: true, 
+      accountCreation: '05/10/2025',
+      role: 'admin'
+    },
+    { 
+      id: 2, 
+      name: 'Admin Name', 
+      username: 'staff1', 
+      email: 'sample@email.com', 
+      status: true, 
+      accountCreation: '05/10/2025',
+      role: 'staff1'
+    },
+    { 
+      id: 3, 
+      name: 'Admin Name', 
+      username: 'staff2', 
+      email: 'sample@email.com', 
+      status: true, 
+      accountCreation: '05/10/2025',
+      role: 'staff2'
+    },
+    { 
+      id: 4, 
+      name: 'Admin Name', 
+      username: 'staff3', 
+      email: 'sample@email.com', 
+      status: true, 
+      accountCreation: '05/10/2025',
+      role: 'staff3'
+    }
+  ]
