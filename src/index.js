@@ -13,9 +13,36 @@ import SettingsPage from './SettingsPage'; // Import the new SettingsPage
 import AdminLogin from './AdminLogin';
 import AdministratorPage from './AdministratorPage';
 
+// Helper function to check if token exists and is valid
+function isValidToken(token) {
+  if (!token) return false;
+  
+  // Add any additional token validation logic here
+  // For example, check if token is expired, properly formatted, etc.
+  try {
+    // Basic validation - ensure it's not just an empty string or null
+    return token.trim().length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
 function App() {
+  // Get tokens from localStorage
   const authToken = localStorage.getItem('authToken');
   const adminToken = localStorage.getItem('adminToken');
+  
+  // Validate tokens
+  const isAuthValid = isValidToken(authToken);
+  const isAdminValid = isValidToken(adminToken);
+  
+  // Clean up invalid tokens
+  if (authToken && !isAuthValid) {
+    localStorage.removeItem('authToken');
+  }
+  if (adminToken && !isAdminValid) {
+    localStorage.removeItem('adminToken');
+  }
 
   return (
     <React.StrictMode>
@@ -27,7 +54,7 @@ function App() {
           <Route path="/admin-login" element={<AdminLogin />} />
 
           {/* Protected Routes using MainLayout */}
-          <Route element={authToken ? <MainLayout /> : <Navigate to="/login" replace />}>
+          <Route element={isAuthValid ? <MainLayout /> : <Navigate to="/login" replace />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/supplies" element={<SuppliesPage />} />
             <Route path="/equipment" element={<EquipmentPage />} />
@@ -37,24 +64,24 @@ function App() {
           </Route>
 
           {/* Admin Protected Routes */}
-          <Route element={adminToken ? <MainLayout /> : <Navigate to="/admin-login" replace />}>
+          <Route element={isAdminValid ? <MainLayout /> : <Navigate to="/admin-login" replace />}>
             <Route path="/administrator" element={<AdministratorPage />} />
           </Route>
 
-          {/* Default Route: Redirect based on tokens */}
+          {/* Default Route: Redirect based on valid tokens */}
           <Route
             path="/"
             element={
-              adminToken ? <Navigate to="/administrator" replace /> :
-              authToken ? <Navigate to="/dashboard" replace /> : 
+              isAdminValid ? <Navigate to="/administrator" replace /> :
+              isAuthValid ? <Navigate to="/dashboard" replace /> : 
               <Navigate to="/login" replace />
             }
           />
           
           {/* Fallback for any unmatched routes */}
           <Route path="*" element={
-            adminToken ? <Navigate to="/administrator" replace /> :
-            authToken ? <Navigate to="/dashboard" replace /> : 
+            isAdminValid ? <Navigate to="/administrator" replace /> :
+            isAuthValid ? <Navigate to="/dashboard" replace /> : 
             <Navigate to="/login" replace />
           } />
         </Routes>
