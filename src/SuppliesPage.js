@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import QRCode from 'qrcode';
 import './SuppliesPage.css';
 
 function SuppliesPage() {
@@ -15,18 +16,25 @@ function SuppliesPage() {
     itemPicture: null
   });
   const [suppliesData, setSuppliesData] = useState([
-    { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary' },
-    { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply' },
-    { itemCode: 'MED-1-00002', stockNo: '12', quantity: 15, itemName: 'Bondpaper', category: 'Office Supply' },
-    { itemCode: 'MED-1-00003', stockNo: '13', quantity: 16, itemName: 'Tarpaulin', category: 'Office Supply' },
-    { itemCode: 'MED-2-23456', stockNo: '2', quantity: 17, itemName: 'Hand Soap', category: 'Sanitary' },
-    { itemCode: 'MED-1-00004', stockNo: '14', quantity: 2, itemName: 'Copy Paper Short', category: 'Office Supply' },
-    { itemCode: 'MED-1-00005', stockNo: '15', quantity: 14, itemName: 'Copy Paper Long', category: 'Office Supply' },
-    { itemCode: 'MED-1-00006', stockNo: '16', quantity: 15, itemName: 'Scotch Tape 2"', category: 'Office Supply' },
-    { itemCode: 'MED-1-00007', stockNo: '17', quantity: 16, itemName: 'Ballpen (black)', category: 'Office Supply' },
-    { itemCode: 'MED-1-00008', stockNo: '18', quantity: 17, itemName: 'Expanding Envelope (long)', category: 'Office Supply' },
+    { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml' },
+    { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge' },
+    { itemCode: 'MED-1-00002', stockNo: '12', quantity: 15, itemName: 'Bondpaper', category: 'Office Supply', description: 'A4 size, 80gsm' },
+    { itemCode: 'MED-1-00003', stockNo: '13', quantity: 16, itemName: 'Tarpaulin', category: 'Office Supply', description: 'Waterproof material' },
+    { itemCode: 'MED-2-23456', stockNo: '2', quantity: 17, itemName: 'Hand Soap', category: 'Sanitary', description: 'Antibacterial formula' },
+    { itemCode: 'MED-1-00004', stockNo: '14', quantity: 2, itemName: 'Copy Paper Short', category: 'Office Supply', description: 'Letter size' },
+    { itemCode: 'MED-1-00005', stockNo: '15', quantity: 14, itemName: 'Copy Paper Long', category: 'Office Supply', description: 'Legal size' },
+    { itemCode: 'MED-1-00006', stockNo: '16', quantity: 15, itemName: 'Scotch Tape 2"', category: 'Office Supply', description: 'Clear adhesive tape' },
+    { itemCode: 'MED-1-00007', stockNo: '17', quantity: 16, itemName: 'Ballpen (black)', category: 'Office Supply', description: 'Medium point' },
+    { itemCode: 'MED-1-00008', stockNo: '18', quantity: 17, itemName: 'Expanding Envelope (long)', category: 'Office Supply', description: 'Brown kraft paper' },
   ]);
   const [dragActive, setDragActive] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isItemOverviewOpen, setIsItemOverviewOpen] = useState(false);
+  
+  // QR Code states
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [qrCodeDataURL, setQrCodeDataURL] = useState('');
+  const [qrCodeItem, setQrCodeItem] = useState(null);
 
   const categories = ['Sanitary', 'Office Supply', 'Medical', 'Equipment', 'Maintenance'];
   const uniqueCategories = ['All Categories', ...new Set(suppliesData.map(item => item.category))];
@@ -38,9 +46,123 @@ function SuppliesPage() {
     return matchesSearch && matchesCategory;
   });
 
+  // QR Code generation function
+  const generateQRCode = async (item) => {
+    try {
+      // Create QR code data - you can customize this format
+      const qrData = JSON.stringify({
+        itemCode: item.itemCode,
+        itemName: item.itemName,
+        stockNo: item.stockNo,
+        category: item.category,
+        quantity: item.quantity,
+        description: item.description,
+        timestamp: new Date().toISOString()
+      });
+
+      // Generate QR code as data URL
+      const dataURL = await QRCode.toDataURL(qrData, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      setQrCodeDataURL(dataURL);
+      setQrCodeItem(item);
+      setIsQRModalOpen(true);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      alert('Failed to generate QR code');
+    }
+  };
+
+  // Download QR code as image
+  const downloadQRCode = () => {
+    if (!qrCodeDataURL || !qrCodeItem) return;
+
+    const link = document.createElement('a');
+    link.download = `QR_${qrCodeItem.itemCode}_${qrCodeItem.itemName.replace(/\s+/g, '_')}.png`;
+    link.href = qrCodeDataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Print QR code
+  const printQRCode = () => {
+    if (!qrCodeDataURL || !qrCodeItem) return;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Code - ${qrCodeItem.itemName}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              text-align: center; 
+              padding: 20px;
+              margin: 0;
+            }
+            .qr-container {
+              display: inline-block;
+              border: 2px solid #333;
+              padding: 20px;
+              margin: 20px;
+            }
+            .item-info {
+              margin-bottom: 20px;
+            }
+            .item-info h2 {
+              margin: 0 0 10px 0;
+              color: #333;
+            }
+            .item-details {
+              text-align: left;
+              margin: 10px 0;
+            }
+            .item-details p {
+              margin: 5px 0;
+              font-size: 14px;
+            }
+            img {
+              max-width: 100%;
+              height: auto;
+            }
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <div class="item-info">
+              <h2>${qrCodeItem.itemName}</h2>
+              <div class="item-details">
+                <p><strong>Item Code:</strong> ${qrCodeItem.itemCode}</p>
+                <p><strong>Stock No:</strong> ${qrCodeItem.stockNo}</p>
+                <p><strong>Category:</strong> ${qrCodeItem.category}</p>
+                <p><strong>Description:</strong> ${qrCodeItem.description || 'N/A'}</p>
+              </div>
+            </div>
+            <img src="${qrCodeDataURL}" alt="QR Code for ${qrCodeItem.itemName}" />
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
   const handleOverlayToggle = () => {
     setIsOverlayOpen(!isOverlayOpen);
-    // Reset form when closing
     if (isOverlayOpen) {
       setNewItem({ 
         itemCode: '', 
@@ -98,7 +220,6 @@ function SuppliesPage() {
   };
 
   const handleAddItem = () => {
-    // Validate required fields
     if (!newItem.itemName || !newItem.quantity || !newItem.category) {
       alert('Please fill in all required fields');
       return;
@@ -110,12 +231,29 @@ function SuppliesPage() {
       quantity: parseInt(newItem.quantity),
       itemName: newItem.itemName,
       category: newItem.category,
-      itemPicture: newItem.itemPicture
+      itemPicture: newItem.itemPicture,
+      description: newItem.description || ''
     };
 
     setSuppliesData([...suppliesData, newSupplyItem]);
     console.log('New item added:', newSupplyItem);
     handleOverlayToggle();
+  };
+
+  const handleItemClick = (item) => {
+    setSelectedItem(item);
+    setIsItemOverviewOpen(true);
+  };
+
+  const handleCloseItemOverview = () => {
+    setIsItemOverviewOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleCloseQRModal = () => {
+    setIsQRModalOpen(false);
+    setQrCodeDataURL('');
+    setQrCodeItem(null);
   };
 
   return (
@@ -175,6 +313,7 @@ function SuppliesPage() {
             <th>QUANTITY</th>
             <th>ITEM NAME</th>
             <th>CATEGORY</th>
+            <th>ACTION</th>
           </tr>
         </thead>
         <tbody>
@@ -183,8 +322,27 @@ function SuppliesPage() {
               <td>{supply.itemCode}</td>
               <td>{supply.stockNo}</td>
               <td>{supply.quantity}</td>
-              <td>{supply.itemName}</td>
+              <td>
+                <span 
+                  className="item-name-clickable"
+                  onClick={() => handleItemClick(supply)}
+                >
+                  {supply.itemName}
+                </span>
+              </td>
               <td>{supply.category}</td>
+              <td>
+                <button 
+                  className="view-icon-btn"
+                  onClick={() => handleItemClick(supply)}
+                  title="View item details"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -274,6 +432,17 @@ function SuppliesPage() {
               </div>
 
               <div className="form-group">
+                <label>DESCRIPTION:</label>
+                <input 
+                  type="text" 
+                  name="description" 
+                  value={newItem.description || ''} 
+                  onChange={handleInputChange}
+                  placeholder="Item description"
+                />
+              </div>
+
+              <div className="form-group">
                 <label>ITEM PICTURE:</label>
                 <div className="file-input-container">
                   <input 
@@ -325,6 +494,188 @@ function SuppliesPage() {
           </div>
         </div>
       )}
+
+      {/* Item Overview Overlay */}
+      {isItemOverviewOpen && selectedItem && (
+        <div className="overlay" onClick={handleCloseItemOverview}>
+          <div className="item-overview-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Item Overview</h3>
+            
+            <div className="item-overview-layout">
+              <div className="item-image-placeholder">
+                <div className="placeholder-box">No Image</div>
+              </div>
+              
+              <div className="item-details">
+                <div className="detail-row">
+                  <span className="detail-label">Item Name:</span>
+                  <span className="detail-value">{selectedItem.itemName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Item Code:</span>
+                  <span className="detail-value">{selectedItem.itemCode}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Stock No.:</span>
+                  <span className="detail-value">{selectedItem.stockNo}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Category:</span>
+                  <span className="detail-value">{selectedItem.category}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Quantity:</span>
+                  <span className="detail-value">{selectedItem.quantity} UPDATE ℧</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Description:</span>
+                  <span className="detail-value">{selectedItem.description || '500ml'}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="item-overview-actions">
+              <button className="action-btn view-stock-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                View Stock Card ▦
+              </button>
+              
+              <button className="action-btn view-docs-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                View Documents ⌕
+              </button>
+              
+              <button 
+                className="action-btn qr-code-btn"
+                onClick={() => generateQRCode(selectedItem)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                  <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
+                  <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
+                  <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
+                  <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
+                  <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
+                </svg>
+                Generate QR-code ⚏
+              </button>
+            </div>
+            
+            <button className="close-overview-btn" onClick={handleCloseItemOverview}>
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+{/* Compact QR Code Modal - Matching Item Overview Theme */}
+{isQRModalOpen && qrCodeItem && (
+  <div className="overlay" onClick={handleCloseQRModal}>
+    <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="qr-status">Generated</div>
+      <h3>QR Code - {qrCodeItem.itemName}</h3>
+      
+      <div className="qr-display-section">
+        {/* Compact QR Code Display */}
+        <div className="qr-code-container">
+          <div className="qr-code-wrapper">
+            <div className="qr-code-display">
+              <img src={qrCodeDataURL} alt={`QR Code for ${qrCodeItem.itemName}`} />
+            </div>
+          </div>
+          <div className="qr-brand-text">Supply Inventory</div>
+          <div className="qr-timestamp">
+            Generated: {new Date().toLocaleDateString()}
+          </div>
+        </div>
+        
+        {/* Item Information - Matching detail-row style */}
+        <div className="qr-item-info">
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Item Code:</span>
+            <span className="qr-detail-value highlight">{qrCodeItem.itemCode}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Stock No.:</span>
+            <span className="qr-detail-value">{qrCodeItem.stockNo}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Category:</span>
+            <span className="qr-detail-value">{qrCodeItem.category}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Quantity:</span>
+            <span className="qr-detail-value">{qrCodeItem.quantity} units</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Description:</span>
+            <span className="qr-detail-value">{qrCodeItem.description || 'No description'}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Actions - Matching item overview actions style */}
+      <div className="qr-actions">
+        <button className="qr-action-btn download-btn" onClick={downloadQRCode}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Download
+        </button>
+        
+        <button className="qr-action-btn print-btn" onClick={printQRCode}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Print
+        </button>
+        
+        <button className="qr-action-btn" onClick={() => {
+          // Copy QR data to clipboard
+          const qrData = JSON.stringify({
+            itemCode: qrCodeItem.itemCode,
+            itemName: qrCodeItem.itemName,
+            stockNo: qrCodeItem.stockNo,
+            category: qrCodeItem.category,
+            quantity: qrCodeItem.quantity,
+            description: qrCodeItem.description
+          });
+          navigator.clipboard.writeText(qrData);
+          alert('QR data copied to clipboard!');
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M5 15H4C3.46957 15 2.96086 14.7893 2.58579 14.4142C2.21071 14.0391 2 13.5304 2 13V4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2H13C13.5304 2 14.0391 2.21071 14.4142 2.58579C14.7893 2.96086 15 3.46957 15 4V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Copy Data
+        </button>
+      </div>
+      
+      <button className="close-qr-btn" onClick={handleCloseQRModal}>
+        ×
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 }
