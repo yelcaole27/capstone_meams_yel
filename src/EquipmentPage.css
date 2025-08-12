@@ -1,4 +1,4 @@
-/* EquipmentPage.css - Updated to match Supplies page */
+/* EquipmentPage.css - Updated to match Supplies page with overview functionality */
 
 .equipment-page-container {
   flex-grow: 1;
@@ -68,15 +68,17 @@
   border-bottom: 1px solid #333333;
 }
 
-/* Column widths matching supplies page proportions */
+/* Updated column widths to accommodate Action column */
 .equipment-table th:nth-child(1),
-.equipment-table td:nth-child(1) { width: 25%; } /* Item Code */
+.equipment-table td:nth-child(1) { width: 20%; } /* Item Code */
 .equipment-table th:nth-child(2),
-.equipment-table td:nth-child(2) { width: 15%; } /* Quantity */
+.equipment-table td:nth-child(2) { width: 12%; } /* Quantity */
 .equipment-table th:nth-child(3),
-.equipment-table td:nth-child(3) { width: 15%; } /* Unit */
+.equipment-table td:nth-child(3) { width: 12%; } /* Unit */
 .equipment-table th:nth-child(4),
-.equipment-table td:nth-child(4) { width: 45%; } /* Description */
+.equipment-table td:nth-child(4) { width: 40%; } /* Description */
+.equipment-table th:nth-child(5),
+.equipment-table td:nth-child(5) { width: 16%; } /* Action */
 
 .equipment-table th {
   background: #2a2a2a;
@@ -91,6 +93,37 @@
 
 .equipment-table tr:hover {
   background-color: #242424;
+}
+
+/* Clickable description styling */
+.description-clickable {
+  cursor: pointer;
+  color: #e0e0e0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.description-clickable:hover {
+  color: #ffffff;
+}
+
+/* View icon button styling */
+.view-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888888;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-icon-btn:hover {
+  color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
 }
 
 .add-equipment-button {
@@ -108,4 +141,607 @@
 
 .add-equipment-button:hover {
   background: #218838;
+}
+
+/* Add Equipment Modal - Following SuppliesPage theme */
+.add-equipment-content {
+  background: #e8e8e8;
+  padding: 30px;
+  border-radius: 10px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #333;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.add-equipment-content h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  color: #333;
+  text-align: left;
+  letter-spacing: 1px;
+}
+
+.form-section {
+  margin-bottom: 25px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.form-group input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* Item Code Container */
+.item-code-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.item-code-input {
+  flex: 1;
+}
+
+.generate-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.generate-btn:hover {
+  background: #0056b3;
+}
+
+/* Category Dropdown */
+.form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+/* File Input */
+.file-input-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-input-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.file-input-btn:hover {
+  background: #5a6268;
+}
+
+.file-name {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Upload Section */
+.upload-section {
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+
+.upload-section h4 {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+  letter-spacing: 0.5px;
+}
+
+.file-drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f9f9f9;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-active {
+  border-color: #007bff;
+  background: #f0f8ff;
+}
+
+.upload-icon {
+  margin-bottom: 15px;
+  color: #999;
+}
+
+.file-drop-zone p {
+  margin: 10px 0 5px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.choose-file-link {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.file-drop-zone small {
+  display: block;
+  color: #999;
+  font-size: 11px;
+  margin: 2px 0;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.add-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.add-btn:hover {
+  background: #218838;
+}
+
+/* Enhanced Overlay Styling - Copied from SuppliesPage.css */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  backdrop-filter: blur(5px);
+}
+
+/* Equipment Overview Modal */
+.item-overview-content {
+  background: #e8e8e8;
+  padding: 30px;
+  border-radius: 10px;
+  width: 700px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #333;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.item-overview-content h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  color: #333;
+  text-align: left;
+  letter-spacing: 1px;
+}
+
+.item-overview-layout {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.item-image-placeholder {
+  flex: 0 0 200px;
+}
+
+.placeholder-box {
+  width: 200px;
+  height: 200px;
+  background: #ddd;
+  border: 2px dashed #999;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.detail-label {
+  font-weight: bold;
+  color: #333;
+  min-width: 100px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  flex: 1;
+  color: #666;
+  font-size: 14px;
+}
+
+.item-overview-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.action-btn:hover {
+  background: #0056b3;
+}
+
+.view-stock-btn {
+  background: #17a2b8;
+}
+
+.view-stock-btn:hover {
+  background: #138496;
+}
+
+.view-docs-btn {
+  background: #6c757d;
+}
+
+.view-docs-btn:hover {
+  background: #5a6268;
+}
+
+.qr-code-btn {
+  background: #fd7e14;
+}
+
+.qr-code-btn:hover {
+  background: #e8680b;
+}
+
+.close-overview-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.close-overview-btn:hover {
+  background: #ddd;
+  color: #333;
+}
+
+/* QR Code Modal Styles - Copied from SuppliesPage.css */
+.qr-modal-content {
+  background: #e8e8e8;
+  padding: 30px;
+  border-radius: 10px;
+  width: 550px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #333;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.qr-modal-content h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  color: #333;
+  text-align: left;
+  letter-spacing: 1px;
+}
+
+.qr-display-section {
+  display: flex;
+  gap: 25px;
+  margin-bottom: 25px;
+  align-items: flex-start;
+}
+
+.qr-code-container {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-code-wrapper {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.qr-code-display img {
+  width: 150px;
+  height: 150px;
+  display: block;
+}
+
+.qr-brand-text {
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qr-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qr-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.qr-detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.qr-detail-label {
+  font-weight: bold;
+  color: #333;
+  min-width: 90px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.qr-detail-value {
+  flex: 1;
+  color: #666;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.qr-detail-value.highlight {
+  color: #333;
+  font-weight: 600;
+}
+
+.qr-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.qr-action-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+  min-width: auto;
+}
+
+.qr-action-btn:hover {
+  background: #0056b3;
+}
+
+.download-btn {
+  background: #28a745;
+}
+
+.download-btn:hover {
+  background: #218838;
+}
+
+.print-btn {
+  background: #6c757d;
+}
+
+.print-btn:hover {
+  background: #5a6268;
+}
+
+.close-qr-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.close-qr-btn:hover {
+  background: #ddd;
+  color: #333;
+}
+
+.qr-status {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  background: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qr-timestamp {
+  color: #999;
+  font-size: 10px;
+  text-align: center;
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .qr-modal-content {
+    width: 95vw;
+    padding: 20px;
+  }
+  
+  .qr-display-section {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+  
+  .qr-code-container {
+    flex: none;
+  }
+  
+  .qr-actions {
+    justify-content: center;
+  }
+  
+  .qr-action-btn {
+    flex: 1;
+    max-width: 120px;
+    justify-content: center;
+  }
+  
+  .add-equipment-content {
+    width: 95vw;
+    padding: 20px;
+  }
+  
+  .item-overview-layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .item-image-placeholder {
+    flex: none;
+    align-self: center;
+  }
 }
