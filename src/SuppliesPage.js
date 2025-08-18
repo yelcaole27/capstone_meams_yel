@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import SuppliesAPI from './suppliesApi'; // Import the API service
 import './SuppliesPage.css';
 
 function SuppliesPage() {
@@ -13,20 +14,12 @@ function SuppliesPage() {
     itemName: '', 
     quantity: '', 
     category: '',
+    description: '',
     itemPicture: null
   });
-  const [suppliesData, setSuppliesData] = useState([
-    { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml' },
-    { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge' },
-    { itemCode: 'MED-1-00002', stockNo: '12', quantity: 15, itemName: 'Bondpaper', category: 'Office Supply', description: 'A4 size, 80gsm' },
-    { itemCode: 'MED-1-00003', stockNo: '13', quantity: 16, itemName: 'Tarpaulin', category: 'Office Supply', description: 'Waterproof material' },
-    { itemCode: 'MED-2-23456', stockNo: '2', quantity: 17, itemName: 'Hand Soap', category: 'Sanitary', description: 'Antibacterial formula' },
-    { itemCode: 'MED-1-00004', stockNo: '14', quantity: 2, itemName: 'Copy Paper Short', category: 'Office Supply', description: 'Letter size' },
-    { itemCode: 'MED-1-00005', stockNo: '15', quantity: 14, itemName: 'Copy Paper Long', category: 'Office Supply', description: 'Legal size' },
-    { itemCode: 'MED-1-00006', stockNo: '16', quantity: 15, itemName: 'Scotch Tape 2"', category: 'Office Supply', description: 'Clear adhesive tape' },
-    { itemCode: 'MED-1-00007', stockNo: '17', quantity: 16, itemName: 'Ballpen (black)', category: 'Office Supply', description: 'Medium point' },
-    { itemCode: 'MED-1-00008', stockNo: '18', quantity: 17, itemName: 'Expanding Envelope (long)', category: 'Office Supply', description: 'Brown kraft paper' },
-  ]);
+  const [suppliesData, setSuppliesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isItemOverviewOpen, setIsItemOverviewOpen] = useState(false);
@@ -36,9 +29,47 @@ function SuppliesPage() {
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
   const [qrCodeItem, setQrCodeItem] = useState(null);
 
-  const categories = ['Sanitary', 'Office Supply', 'Medical', 'Equipment', 'Maintenance'];
+  const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
+
+  // Load supplies from database when component mounts
+  useEffect(() => {
+    loadSupplies();
+  }, []);
+
+  // Load supplies from database
+  const loadSupplies = async () => {
+    try {
+      setLoading(true);
+      const supplies = await SuppliesAPI.getAllSupplies();
+      // Transform database data to match your current structure
+      const transformedSupplies = supplies.map(supply => ({
+        _id: supply._id,
+        itemCode: supply.name, // Map name to itemCode for compatibility
+        stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
+        quantity: supply.quantity,
+        itemName: supply.name,
+        category: supply.category,
+        description: supply.description || ''
+      }));
+      setSuppliesData(transformedSupplies);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load supplies:', err);
+      setError('Failed to load supplies. Please try again.');
+      // Keep existing sample data as fallback
+      setSuppliesData([
+        { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml' },
+        { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge' }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get unique categories including database data
   const uniqueCategories = ['All Categories', ...new Set(suppliesData.map(item => item.category))];
 
+  // Filter supplies (now works with database data)
   const filteredSupplies = suppliesData.filter(item => {
     const matchesSearch = item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -49,7 +80,6 @@ function SuppliesPage() {
   // QR Code generation function
   const generateQRCode = async (item) => {
     try {
-      // Create QR code data - you can customize this format
       const qrData = JSON.stringify({
         itemCode: item.itemCode,
         itemName: item.itemName,
@@ -60,7 +90,6 @@ function SuppliesPage() {
         timestamp: new Date().toISOString()
       });
 
-      // Generate QR code as data URL
       const dataURL = await QRCode.toDataURL(qrData, {
         width: 300,
         margin: 2,
@@ -79,10 +108,8 @@ function SuppliesPage() {
     }
   };
 
-  // Download QR code as image
   const downloadQRCode = () => {
     if (!qrCodeDataURL || !qrCodeItem) return;
-
     const link = document.createElement('a');
     link.download = `QR_${qrCodeItem.itemCode}_${qrCodeItem.itemName.replace(/\s+/g, '_')}.png`;
     link.href = qrCodeDataURL;
@@ -91,10 +118,8 @@ function SuppliesPage() {
     document.body.removeChild(link);
   };
 
-  // Print QR code
   const printQRCode = () => {
     if (!qrCodeDataURL || !qrCodeItem) return;
-
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
@@ -170,6 +195,7 @@ function SuppliesPage() {
         itemName: '', 
         quantity: '', 
         category: '',
+        description: '',
         itemPicture: null
       });
     }
@@ -178,10 +204,6 @@ function SuppliesPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewItem({ ...newItem, [name]: value });
-  };
-
-  const handleCategorySelect = (category) => {
-    setNewItem({ ...newItem, category: category });
   };
 
   const handleFileChange = (e) => {
@@ -219,25 +241,59 @@ function SuppliesPage() {
     setNewItem({ ...newItem, itemCode: generatedCode });
   };
 
-  const handleAddItem = () => {
+  // Updated handleAddItem to save to database
+  const handleAddItem = async () => {
     if (!newItem.itemName || !newItem.quantity || !newItem.category) {
       alert('Please fill in all required fields');
       return;
     }
 
-    const newSupplyItem = {
-      itemCode: newItem.itemCode || `GEN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-      stockNo: newItem.stockNo || Math.floor(Math.random() * 100).toString(),
-      quantity: parseInt(newItem.quantity),
-      itemName: newItem.itemName,
-      category: newItem.category,
-      itemPicture: newItem.itemPicture,
-      description: newItem.description || ''
-    };
+    try {
+      // Prepare data for API (matching your backend structure)
+      const supplyData = {
+        name: newItem.itemName,
+        category: newItem.category,
+        description: newItem.description,
+        quantity: parseInt(newItem.quantity),
+        unit_price: 0, // You might want to add a unit price field to your form
+        supplier: newItem.stockNo || '', // Using stockNo as supplier for now
+        location: '', // Add location field if needed
+        status: 'available'
+      };
 
-    setSuppliesData([...suppliesData, newSupplyItem]);
-    console.log('New item added:', newSupplyItem);
-    handleOverlayToggle();
+      // Show loading state
+      setLoading(true);
+      
+      // Add to database
+      const savedSupply = await SuppliesAPI.addSupply(supplyData);
+      
+      // Transform the response to match your current data structure
+      const newSupplyItem = {
+        _id: savedSupply._id,
+        itemCode: newItem.itemCode || `GEN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+        stockNo: newItem.stockNo || Math.floor(Math.random() * 100).toString(),
+        quantity: parseInt(newItem.quantity),
+        itemName: newItem.itemName,
+        category: newItem.category,
+        description: newItem.description,
+        itemPicture: newItem.itemPicture
+      };
+
+      // Update local state
+      setSuppliesData([...suppliesData, newSupplyItem]);
+      
+      // Show success message
+      alert('Supply added successfully!');
+      
+      // Close overlay and reset form
+      handleOverlayToggle();
+      
+    } catch (error) {
+      console.error('Error adding supply:', error);
+      alert(`Failed to add supply: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleItemClick = (item) => {
@@ -256,8 +312,46 @@ function SuppliesPage() {
     setQrCodeItem(null);
   };
 
+  // Show loading state
+  if (loading && suppliesData.length === 0) {
+    return (
+      <div className="supplies-page-container">
+        <div className="loading-state">
+          <h2>Loading supplies...</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="supplies-page-container">
+      {error && (
+        <div className="error-banner" style={{
+          backgroundColor: '#fee2e2',
+          color: '#dc2626',
+          padding: '10px',
+          marginBottom: '20px',
+          borderRadius: '4px',
+          textAlign: 'center'
+        }}>
+          {error}
+          <button 
+            onClick={loadSupplies}
+            style={{
+              marginLeft: '10px',
+              padding: '5px 10px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      
       <div className="supplies-header">
         <h2 className="page-title">Supply Inventory</h2>
         <div className="table-controls">
@@ -318,7 +412,7 @@ function SuppliesPage() {
         </thead>
         <tbody>
           {filteredSupplies.map((supply, index) => (
-            <tr key={index}>
+            <tr key={supply._id || index}>
               <td>{supply.itemCode}</td>
               <td>{supply.stockNo}</td>
               <td>{supply.quantity}</td>
@@ -348,9 +442,11 @@ function SuppliesPage() {
         </tbody>
       </table>
 
-      <button className="add-item-button" onClick={handleOverlayToggle}>Add Item Supply</button>
+      <button className="add-item-button" onClick={handleOverlayToggle}>
+        {loading ? 'Loading...' : 'Add Item Supply'}
+      </button>
 
-      {/* Enhanced Overlay Form */}
+      {/* Enhanced Overlay Form - Same as before but handleAddItem now saves to database */}
       {isOverlayOpen && (
         <div className="overlay" onClick={handleOverlayToggle}>
           <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
@@ -489,12 +585,19 @@ function SuppliesPage() {
             </div>
 
             <div className="form-actions">
-              <button className="add-btn" onClick={handleAddItem}>ADD ITEM/SUPPLY</button>
+              <button 
+                className="add-btn" 
+                onClick={handleAddItem}
+                disabled={loading}
+              >
+                {loading ? 'ADDING...' : 'ADD ITEM/SUPPLY'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Rest of your existing modals (Item Overview and QR Modal) remain the same */}
       {/* Item Overview Overlay */}
       {isItemOverviewOpen && selectedItem && (
         <div className="overlay" onClick={handleCloseItemOverview}>
