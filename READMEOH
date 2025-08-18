@@ -1,0 +1,29 @@
+1. Open VS Code
+2. Extensions view or Ctrl+Shift+X
+3. Search for "Python" and install the extension by Microsoft.
+4. Open the project folder.
+5. Run terminal, Ctrl+Shift+`
+6. Create virtual environment: python -m venv venv
+7. Run this in terminal: .\venv\Scripts\activate
+8. Select the Python Interpreter in VS Code:
+- Press Ctrl+Shift+P to open the Command Palette.
+- Type Python: Select Interpreter and select it.
+- In the list of interpreters, choose the one that points to the venv folder (it will look like ./venv/Scripts/python.exe on Windows.
+9. Run this in terminal (installing necessary libraries);
+- npm install react react-dom
+- npm install axios
+- npm install react-router-dom
+- pip install fastapi
+- pip install uvicorn
+- pip install pydantic
+- pip install python-jose
+- pip install passlib[bcrypt]
+
+Put the backend files on venv.
+
+Running the project:
+1. Backend (main.py under venv)
+- uvicorn main:app --reload
+
+2. Frontend (index.js)
+- npm start
