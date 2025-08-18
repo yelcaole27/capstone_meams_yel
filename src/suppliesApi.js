@@ -13,10 +13,33 @@ const apiClient = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
-// Request interceptor for logging
+// Function to get auth token (adjust based on where you store it)
+const getAuthToken = () => {
+  // Check different storage options - adjust based on your login implementation
+  return localStorage.getItem('token') || 
+         localStorage.getItem('authToken') || 
+         localStorage.getItem('access_token') ||
+         sessionStorage.getItem('token') ||
+         sessionStorage.getItem('authToken') ||
+         sessionStorage.getItem('access_token');
+};
+
+// Request interceptor for logging and authentication
 apiClient.interceptors.request.use(
   (config) => {
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // Add authentication token to requests
+    const token = getAuthToken();
+    if (token) {
+      // FastAPI typically uses Bearer token format
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Added auth token to request:', token.substring(0, 20) + '...');
+    } else {
+      console.warn('⚠️ No auth token found for API request');
+      console.log('Available localStorage keys:', Object.keys(localStorage));
+    }
+    
     return config;
   },
   (error) => {
@@ -35,7 +58,13 @@ apiClient.interceptors.response.use(
     console.error('❌ API Response Error:', error.response?.data || error.message);
     
     // Handle common error scenarios
-    if (error.response?.status === 404) {
+    if (error.response?.status === 401) {
+      console.error('🔒 Unauthorized - Token may be expired or invalid');
+      // Optionally redirect to login or clear invalid token
+      // localStorage.removeItem('token');
+      // window.location.href = '/login';
+      throw new Error('Authentication failed. Please log in again.');
+    } else if (error.response?.status === 404) {
       throw new Error('Resource not found');
     } else if (error.response?.status === 500) {
       throw new Error('Server error. Please try again later.');
@@ -165,6 +194,16 @@ const SuppliesAPI = {
       console.error('Health check failed:', error);
       throw error;
     }
+  },
+
+  // Method to check if user is authenticated
+  isAuthenticated() {
+    return !!getAuthToken();
+  },
+
+  // Method to manually set token (useful for debugging)
+  setAuthToken(token) {
+    localStorage.setItem('token', token);
   }
 };
 
