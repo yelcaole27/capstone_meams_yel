@@ -1,3 +1,5 @@
+# main.py
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -6,46 +8,39 @@ from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
 
-# Secret key for encoding/decoding JWT
 SECRET_KEY = "your_secret_key"  # Change this in production
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiration time
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Create OAuth2PasswordBearer instance
+# OAuth2PasswordBearer instance
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 app = FastAPI()
 
-# CORS middleware setup to allow frontend on localhost:3000
+# CORS middleware setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],  # Allow React app to make requests
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"], 
+    allow_headers=["*"],
 )
 
-# Initialize CryptContext for password hashing (bcrypt)
+# CryptContext for password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Create a simple User model for the request body
+# User model
 class User(BaseModel):
     username: str
     password: str
 
-# Hardcoded valid credentials (no database)
-valid_username = "admin"
-valid_password = "password123"  # Plain text password for now
+# Hardcoded valid users with roles
+valid_users = {
+    "admin": {"password": "password123", "role": "admin"},
+    "staff": {"password": "staff123", "role": "staff"},
+}
 
-# Function to hash passwords (for demo purposes, but password is in plain text here)
-def hash_password(password: str):
-    return pwd_context.hash(password)
-
-# Function to verify a password (compares plain text password with hash)
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
-
-# Function to create a JWT token
+# Function to create JWT token
 def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
@@ -53,33 +48,37 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Endpoint to simulate login (returns a token)
+# Login endpoint
 @app.post("/login")
 async def login(user: User):
-    # Check if the username and password match the hardcoded credentials
-    if user.username != valid_username or user.password != valid_password:
+    # Check if the username and password match
+    if user.username not in valid_users or user.password != valid_users[user.username]["password"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Create and return a token if credentials match
-    access_token = create_access_token(data={"sub": user.username})
+    # Get user role from hardcoded credentials
+    role = valid_users[user.username]["role"]
+    
+    # Create and return token with role
+    access_token = create_access_token(data={"sub": user.username, "role": role})
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Function to verify the JWT token
+# Token verification function
 def verify_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        role: str = payload.get("role")  # Get the role from the token
         if username is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return username
+        return {"username": username, "role": role}
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -87,9 +86,24 @@ def verify_token(token: str):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-# Protected route that requires token validation
+# Protected route for staff and admin
 @app.get("/dashboard")
 async def dashboard(token: str = Depends(oauth2_scheme)):
-    # Validate the token
-    username = verify_token(token)
+    # Verify the token
+    payload = verify_token(token)
+    username = payload["username"]
     return {"message": f"Welcome to the dashboard, {username}!"}
+
+# Admin protected route
+@app.get("/logs")
+async def logs(token: str = Depends(oauth2_scheme)):
+    payload = verify_token(token)
+    role = payload.get("role")
+    if role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this page",
+        )
+    return {"message": "Welcome to the logs page"}
+
+# Staff restricted routes can be added in the same way
