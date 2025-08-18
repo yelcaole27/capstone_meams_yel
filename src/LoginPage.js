@@ -10,46 +10,56 @@ function LoginPage() {
   const [message, setMessage] = useState(''); // This will now handle login messages as well
   const [passwordVisible, setPasswordVisible] = useState(false); // State to toggle password visibility
 
-  // Login handler
-  const handleLogin = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    setMessage(''); // Clear any previous messages
-    setIsLoading(true); // Start loading state
+  // Updated handleLogin function for LoginPage.js
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setMessage('');
+  setIsLoading(true);
 
-    try {
-      // Send login data (username and password) to the backend
-      const response = await fetch('http://localhost:8000/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
-      });
+  try {
+    const response = await fetch('http://localhost:8000/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password,
+      }),
+    });
 
-      const data = await response.json(); // Parse the JSON response from the backend
+    const data = await response.json();
 
-      if (response.ok) {
-        setMessage("Login successful!"); // Set success message
-
-        // On successful login, store the JWT token in localStorage
-        localStorage.setItem('authToken', data.access_token);
-
-        // Redirect to the dashboard after a slight delay
+    if (response.ok) {
+      setMessage("Login successful!");
+      
+      // Decode the token to get the role
+      const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+      const role = payload.role;
+      
+      // Store token based on role
+      if (role === 'admin') {
+        localStorage.setItem('adminToken', data.access_token);
+        localStorage.setItem('authToken', data.access_token); // Also store as authToken for general auth
         setTimeout(() => {
-          window.location.href = '/dashboard'; // Redirect to the dashboard route
+          window.location.href = '/administrator';
         }, 1500);
-      } else {
-        setMessage(data.detail || 'Invalid username or password'); // Error message from backend
+      } else if (role === 'staff') {
+        localStorage.setItem('authToken', data.access_token);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
       }
-    } catch (error) {
-      setMessage('Error: ' + error.message); // Show any error messages
+    } else {
+      setMessage(data.detail || 'Invalid username or password');
     }
+  } catch (error) {
+    setMessage('Connection error. Please check if the server is running.');
+    console.error('Login error:', error);
+  }
 
-    setIsLoading(false); // Hide the loading indicator
-  };
+  setIsLoading(false);
+};
 
   // Forgot password handler
   const handleForgotPassword = async (e) => {

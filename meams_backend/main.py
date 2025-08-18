@@ -1,13 +1,16 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from pymongo import MongoClient
 from pydantic import BaseModel, Field
 from bson import ObjectId
 from typing import Optional, List
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import json
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +25,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Authentication setup
+SECRET_KEY = "your_secret_key"  # Change this in production
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# OAuth2PasswordBearer instance
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+# CryptContext for password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # MongoDB connection
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://admin:MEAMSDS42@cluster0.xl6k426.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
@@ -39,6 +53,45 @@ except Exception as e:
 # Collections
 supplies_collection = db.supplies
 
+# Authentication Models
+class User(BaseModel):
+    username: str
+    password: str
+
+# Hardcoded valid users with roles
+valid_users = {
+    "admin": {"password": "password123", "role": "admin"},
+    "staff": {"password": "staff123", "role": "staff"},
+}
+
+# Function to create JWT token
+def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+# Token verification function
+def verify_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return {"username": username, "role": role}
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 # Helper function to convert ObjectId to string
 def supply_helper(supply) -> dict:
     return {
@@ -54,7 +107,7 @@ def supply_helper(supply) -> dict:
         "updated_at": supply.get("updated_at", datetime.utcnow())
     }
 
-# Pydantic models for request/response
+# Pydantic models for supplies
 class SupplyCreate(BaseModel):
     name: str
     description: Optional[str] = ""
@@ -86,11 +139,54 @@ class SupplyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-# API Routes
+# Authentication Routes
 
 @app.get("/")
 async def root():
     return {"message": "MEAMS Asset Management API is running!", "status": "active"}
+
+@app.post("/login")
+async def login(user: User):
+    """Login endpoint for authentication"""
+    print(f"Login attempt: {user.username}")  # Debug log
+    
+    # Check if the username and password match
+    if user.username not in valid_users or user.password != valid_users[user.username]["password"]:
+        print(f"Invalid credentials for user: {user.username}")  # Debug log
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get user role from hardcoded credentials
+    role = valid_users[user.username]["role"]
+    print(f"Login successful for {user.username} with role {role}")  # Debug log
+    
+    # Create and return token with role
+    access_token = create_access_token(data={"sub": user.username, "role": role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# Protected route for staff and admin
+@app.get("/dashboard")
+async def dashboard(token: str = Depends(oauth2_scheme)):
+    """Dashboard endpoint - requires authentication"""
+    payload = verify_token(token)
+    username = payload["username"]
+    return {"message": f"Welcome to the dashboard, {username}!"}
+
+# Admin protected route
+@app.get("/logs")
+async def logs(token: str = Depends(oauth2_scheme)):
+    """Logs endpoint - admin only"""
+    payload = verify_token(token)
+    role = payload.get("role")
+    if role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this page",
+        )
+    return {"message": "Welcome to the logs page"}
 
 @app.get("/health")
 async def health_check():
@@ -104,8 +200,10 @@ async def health_check():
 # Supplies API Routes
 
 @app.post("/api/supplies", response_model=dict)
-async def add_supply(supply: SupplyCreate):
-    """Add a new supply item"""
+async def add_supply(supply: SupplyCreate, token: str = Depends(oauth2_scheme)):
+    """Add a new supply item - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         supply_dict = supply.dict()
         supply_dict["created_at"] = datetime.utcnow()
@@ -123,8 +221,10 @@ async def add_supply(supply: SupplyCreate):
         raise HTTPException(status_code=500, detail=f"Failed to add supply: {str(e)}")
 
 @app.get("/api/supplies", response_model=dict)
-async def get_all_supplies():
-    """Get all supply items"""
+async def get_all_supplies(token: str = Depends(oauth2_scheme)):
+    """Get all supply items - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         supplies = []
         for supply in supplies_collection.find():
@@ -139,8 +239,10 @@ async def get_all_supplies():
         raise HTTPException(status_code=500, detail=f"Failed to retrieve supplies: {str(e)}")
 
 @app.get("/api/supplies/{supply_id}", response_model=dict)
-async def get_supply(supply_id: str):
-    """Get a specific supply item by ID"""
+async def get_supply(supply_id: str, token: str = Depends(oauth2_scheme)):
+    """Get a specific supply item by ID - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         if not ObjectId.is_valid(supply_id):
             raise HTTPException(status_code=400, detail="Invalid supply ID format")
@@ -160,8 +262,10 @@ async def get_supply(supply_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve supply: {str(e)}")
 
 @app.put("/api/supplies/{supply_id}", response_model=dict)
-async def update_supply(supply_id: str, supply_update: SupplyUpdate):
-    """Update a supply item"""
+async def update_supply(supply_id: str, supply_update: SupplyUpdate, token: str = Depends(oauth2_scheme)):
+    """Update a supply item - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         if not ObjectId.is_valid(supply_id):
             raise HTTPException(status_code=400, detail="Invalid supply ID format")
@@ -195,8 +299,10 @@ async def update_supply(supply_id: str, supply_update: SupplyUpdate):
         raise HTTPException(status_code=500, detail=f"Failed to update supply: {str(e)}")
 
 @app.delete("/api/supplies/{supply_id}", response_model=dict)
-async def delete_supply(supply_id: str):
-    """Delete a supply item"""
+async def delete_supply(supply_id: str, token: str = Depends(oauth2_scheme)):
+    """Delete a supply item - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         if not ObjectId.is_valid(supply_id):
             raise HTTPException(status_code=400, detail="Invalid supply ID format")
@@ -216,8 +322,10 @@ async def delete_supply(supply_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete supply: {str(e)}")
 
 @app.get("/api/supplies/category/{category}", response_model=dict)
-async def get_supplies_by_category(category: str):
-    """Get supplies by category"""
+async def get_supplies_by_category(category: str, token: str = Depends(oauth2_scheme)):
+    """Get supplies by category - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         supplies = []
         for supply in supplies_collection.find({"category": category}):
@@ -232,8 +340,10 @@ async def get_supplies_by_category(category: str):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve supplies by category: {str(e)}")
 
 @app.get("/api/categories", response_model=dict)
-async def get_categories():
-    """Get all unique categories"""
+async def get_categories(token: str = Depends(oauth2_scheme)):
+    """Get all unique categories - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         categories = supplies_collection.distinct("category")
         return {
@@ -246,8 +356,10 @@ async def get_categories():
 
 # Search functionality
 @app.get("/api/supplies/search/{query}", response_model=dict)
-async def search_supplies(query: str):
-    """Search supplies by name or description"""
+async def search_supplies(query: str, token: str = Depends(oauth2_scheme)):
+    """Search supplies by name or description - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
     try:
         # Case-insensitive search in name and description
         search_filter = {
