@@ -1,4 +1,7 @@
 1. Open VS Code
+(IMPORTANT: DELETE THE EXISTING "VENV" FOLDER) (BEFORE DOING ALL BELOW)
+
+
 2. Extensions view or Ctrl+Shift+X
 3. Search for "Python" and install the extension by Microsoft.
 4. Open the project folder.
