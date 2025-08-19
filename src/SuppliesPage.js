@@ -38,33 +38,44 @@ function SuppliesPage() {
 
   // Load supplies from database
   const loadSupplies = async () => {
-    try {
-      setLoading(true);
-      const supplies = await SuppliesAPI.getAllSupplies();
-      // Transform database data to match your current structure
-      const transformedSupplies = supplies.map(supply => ({
+  try {
+    setLoading(true);
+    const supplies = await SuppliesAPI.getAllSupplies();
+    // Transform database data to match your current structure
+    const transformedSupplies = supplies.map(supply => {
+      // Generate a proper item code if one doesn't exist
+      let itemCode = supply.itemCode;
+      if (!itemCode) {
+        // Generate item code based on category and random number
+        const categoryPrefix = supply.category ? supply.category.substring(0, 3).toUpperCase() : 'SUP';
+        const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+        itemCode = `${categoryPrefix}-${randomNum}`;
+      }
+      
+      return {
         _id: supply._id,
-        itemCode: supply.name, // Map name to itemCode for compatibility
+        itemCode: itemCode, // Use generated or existing itemCode
         stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
         quantity: supply.quantity,
-        itemName: supply.name,
+        itemName: supply.name, // Keep the actual name here
         category: supply.category,
         description: supply.description || ''
-      }));
-      setSuppliesData(transformedSupplies);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to load supplies:', err);
-      setError('Failed to load supplies. Please try again.');
-      // Keep existing sample data as fallback
-      setSuppliesData([
-        { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml' },
-        { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge' }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
+    });
+    setSuppliesData(transformedSupplies);
+    setError(null);
+  } catch (err) {
+    console.error('Failed to load supplies:', err);
+    setError('Failed to load supplies. Please try again.');
+    // Keep existing sample data as fallback
+    setSuppliesData([
+      { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml' },
+      { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge' }
+    ]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Get unique categories including database data
   const uniqueCategories = ['All Categories', ...new Set(suppliesData.map(item => item.category))];
