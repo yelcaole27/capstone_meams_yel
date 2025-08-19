@@ -110,10 +110,13 @@ const EquipmentAPI = {
     }
   },
 
-  // Add new equipment
+  // Add new equipment - ENHANCED WITH DEBUG LOGGING
   async addEquipment(equipmentData) {
     try {
-      // Enhanced validation
+      // Enhanced validation - check for both name and description
+      if (!equipmentData.name?.trim()) {
+        throw new Error('Equipment name is required');
+      }
       if (!equipmentData.description?.trim()) {
         throw new Error('Equipment description is required');
       }
@@ -124,10 +127,15 @@ const EquipmentAPI = {
         throw new Error('Equipment quantity must be greater than 0');
       }
 
-      // Process and clean data
+      // 🔍 DEBUG: Log the incoming data
+      console.log('🔍 DEBUG - Raw incoming equipmentData:', equipmentData);
+      console.log('🔍 DEBUG - Name field:', equipmentData.name);
+      console.log('🔍 DEBUG - Description field:', equipmentData.description);
+
+      // FIXED: Process and clean data with correct field mapping
       const processedData = {
-        name: equipmentData.description.trim(),
-        description: equipmentData.description.trim(),
+        name: equipmentData.name.trim(),              // ✅ Equipment name (e.g., "Printer")
+        description: equipmentData.description.trim(), // ✅ Equipment description (e.g., "Epson L5290")
         category: equipmentData.category.trim(),
         quantity: parseInt(equipmentData.quantity) || 0,
         unit: equipmentData.unit || 'UNIT',
@@ -140,6 +148,11 @@ const EquipmentAPI = {
         supplier: equipmentData.supplier?.trim() || '',
       };
 
+      // 🔍 DEBUG: Log the processed data that will be sent
+      console.log('🔍 DEBUG - Processed data being sent to backend:', processedData);
+      console.log('🔍 DEBUG - Processed name field:', processedData.name);
+      console.log('🔍 DEBUG - Processed description field:', processedData.description);
+
       // Remove empty string fields (optional - depends on your backend)
       Object.keys(processedData).forEach(key => {
         if (processedData[key] === '') {
@@ -147,15 +160,20 @@ const EquipmentAPI = {
         }
       });
 
-      console.log('📤 Sending equipment data:', processedData);
+      console.log('📤 Final data being sent to backend:', processedData);
       
       const response = await apiClient.post('/api/equipment', processedData);
       const savedEquipment = response.data.data || response.data;
       
+      // 🔍 DEBUG: Log what the backend returned
+      console.log('🔍 DEBUG - Backend response:', savedEquipment);
+      console.log('🔍 DEBUG - Saved name field:', savedEquipment.name);
+      console.log('🔍 DEBUG - Saved description field:', savedEquipment.description);
+      
       console.log('✅ Equipment added successfully:', savedEquipment);
       return savedEquipment;
     } catch (error) {
-      console.error('Failed to add equipment:', error);
+      console.error('❌ Failed to add equipment:', error);
       throw error;
     }
   },
@@ -368,7 +386,7 @@ const EquipmentAPI = {
   // Method to manually set token (useful for debugging)
   setAuthToken(token) {
     localStorage.setItem('authToken', token);
-    console.log('🔐 Auth token set manually');
+    console.log('🔑 Auth token set manually');
   },
 
   // Get current API configuration

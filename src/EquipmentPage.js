@@ -14,17 +14,17 @@ function EquipmentPage() {
   // Add Equipment Overlay states
   const [isAddEquipmentOverlayOpen, setIsAddEquipmentOverlayOpen] = useState(false);
   const [newEquipment, setNewEquipment] = useState({
-  itemCode: '',
-  name: '',        // NEW: Separate name field
-  quantity: '',
-  unit: '',
-  description: '', // Keep description separate
-  category: '',
-  location: '',
-  status: 'Operational',
-  serialNo: '',
-  itemPicture: null
-});
+    itemCode: '',
+    name: '',        // Equipment name (what displays in table)
+    quantity: '',
+    unit: '',
+    description: '', // Separate description field
+    category: '',
+    location: '',
+    status: 'Operational',
+    serialNo: '',
+    itemPicture: null
+  });
   const [dragActive, setDragActive] = useState(false);
   const [addingEquipment, setAddingEquipment] = useState(false);
   
@@ -38,8 +38,9 @@ function EquipmentPage() {
   const equipmentStatuses = ['Operational', 'Maintenance', 'Out of Service', 'Under Repair'];
   const equipmentUnits = ['UNIT', 'SET', 'PIECE', 'LOT'];
 
+
   // Load equipment from database when component mounts
-  useEffect(() => {
+   useEffect(() => {
     loadEquipment();
   }, []);
 
@@ -52,12 +53,14 @@ function EquipmentPage() {
       const equipment = await EquipmentAPI.getAllEquipment();
       
       // Transform database data to match your current structure
-      const transformedEquipment = equipment.map(item => ({
+       const transformedEquipment = equipment.map(item => ({
         _id: item._id || item.id,
         itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
         quantity: item.quantity || 1,
         unit: item.unit || 'UNIT',
-        description: item.description || item.name || 'Unknown Equipment',
+        // FIXED: Properly map name and description fields
+        name: item.name || 'Unknown Equipment',                    // Equipment name (what shows in table)
+        description: item.description || 'No description available', // Detailed description
         category: item.category || 'General',
         location: item.location || 'Unknown',
         status: item.status || 'Operational',
@@ -82,30 +85,31 @@ function EquipmentPage() {
 
   const filteredEquipment = equipmentData.filter(item =>
     item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
     item.serialNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Add Equipment Overlay handlers
   const handleAddEquipmentToggle = () => {
-  setIsAddEquipmentOverlayOpen(!isAddEquipmentOverlayOpen);
-  if (isAddEquipmentOverlayOpen) {
-    setNewEquipment({
-      itemCode: '',
-      name: '',          // Reset name
-      quantity: '',
-      unit: '',
-      description: '',   // Reset description
-      category: '',
-      location: '',
-      status: 'Operational',
-      serialNo: '',
-      itemPicture: null
-    });
-    setError(null);
-  }
-};
+    setIsAddEquipmentOverlayOpen(!isAddEquipmentOverlayOpen);
+    if (isAddEquipmentOverlayOpen) {
+      setNewEquipment({
+        itemCode: '',
+        name: '',          // Reset name
+        quantity: '',
+        unit: '',
+        description: '',   // Reset description
+        category: '',
+        location: '',
+        status: 'Operational',
+        serialNo: '',
+        itemPicture: null
+      });
+      setError(null);
+    }
+  };
 
   const handleEquipmentInputChange = (e) => {
     const { name, value } = e.target;
@@ -174,39 +178,39 @@ function EquipmentPage() {
   };
 
   // Enhanced form validation
-const validateEquipmentForm = () => {
-  const errors = [];
-  
-  if (!newEquipment.name.trim()) {
-    errors.push('Equipment name is required');
-  }
-  
-  if (!newEquipment.description.trim()) {
-    errors.push('Description is required');
-  }
-  
-  if (!newEquipment.quantity || parseInt(newEquipment.quantity) <= 0) {
-    errors.push('Quantity must be a positive number');
-  }
-  
-  if (!newEquipment.unit) {
-    errors.push('Unit is required');
-  }
-  
-  if (!newEquipment.category) {
-    errors.push('Category is required');
-  }
-  
-  if (!newEquipment.serialNo.trim()) {
-    errors.push('Serial Number is required');
-  }
-  
-  if (!newEquipment.status) {
-    errors.push('Status is required');
-  }
-  
-  return errors;
-};
+  const validateEquipmentForm = () => {
+    const errors = [];
+    
+    if (!newEquipment.name.trim()) {
+      errors.push('Equipment name is required');
+    }
+    
+    if (!newEquipment.description.trim()) {
+      errors.push('Description is required');
+    }
+    
+    if (!newEquipment.quantity || parseInt(newEquipment.quantity) <= 0) {
+      errors.push('Quantity must be a positive number');
+    }
+    
+    if (!newEquipment.unit) {
+      errors.push('Unit is required');
+    }
+    
+    if (!newEquipment.category) {
+      errors.push('Category is required');
+    }
+    
+    if (!newEquipment.serialNo.trim()) {
+      errors.push('Serial Number is required');
+    }
+    
+    if (!newEquipment.status) {
+      errors.push('Status is required');
+    }
+    
+    return errors;
+  };
 
   // Enhanced handleAddEquipment with better error handling and validation
   const handleAddEquipment = async () => {
@@ -228,60 +232,65 @@ const validateEquipmentForm = () => {
     }
 
     try {
-    setAddingEquipment(true);
-    setError(null);
-    
-    // Prepare data for API with separate name and description
-    const equipmentData = {
-      name: newEquipment.name.trim(),              // Equipment name
-      description: newEquipment.description.trim(), // Equipment description
-      category: newEquipment.category,
-      quantity: parseInt(newEquipment.quantity),
-      unit: newEquipment.unit,
-      location: newEquipment.location.trim() || '',
-      status: newEquipment.status,
-      serialNo: newEquipment.serialNo.trim(),
-      itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-      unit_price: 0,
-      supplier: ''
-    };
+      setAddingEquipment(true);
+      setError(null);
+      
+      // FIXED: Prepare data with correct mapping
+      const equipmentData = {
+        name: newEquipment.name.trim(),              // This is the equipment name (what shows in table)
+        description: newEquipment.description.trim(), // This is the detailed description
+        category: newEquipment.category,
+        quantity: parseInt(newEquipment.quantity),
+        unit: newEquipment.unit,
+        location: newEquipment.location.trim() || '',
+        status: newEquipment.status,
+        serialNo: newEquipment.serialNo.trim(),
+        itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+        unit_price: 0,
+        supplier: ''
+      };
 
-    console.log('📤 Adding new equipment:', equipmentData);
-    
-    const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
-    
-    // Transform the response to match your current data structure
-    const newEquipmentItem = {
-      _id: savedEquipment._id || savedEquipment.id,
-      itemCode: equipmentData.itemCode,
-      name: newEquipment.name.trim(),           // Store name separately
-      quantity: parseInt(newEquipment.quantity),
-      unit: newEquipment.unit,
-      description: newEquipment.description.trim(), // Store description separately
-      category: newEquipment.category,
-      location: newEquipment.location.trim(),
-      status: newEquipment.status,
-      serialNo: newEquipment.serialNo.trim(),
-      itemPicture: newEquipment.itemPicture,
-      supplier: '',
-      unit_price: 0
-    };
+      console.log('📤 Adding new equipment:', equipmentData);
+      
+      const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
+      
+      // FIXED: Transform the response to match your current data structure
+      const newEquipmentItem = {
+        _id: savedEquipment._id || savedEquipment.id,
+        itemCode: equipmentData.itemCode,
+        name: newEquipment.name.trim(),           // Store name properly
+        quantity: parseInt(newEquipment.quantity),
+        unit: newEquipment.unit,
+        description: newEquipment.description.trim(), // Store description properly
+        category: newEquipment.category,
+        location: newEquipment.location.trim(),
+        status: newEquipment.status,
+        serialNo: newEquipment.serialNo.trim(),
+        itemPicture: newEquipment.itemPicture,
+        supplier: '',
+        unit_price: 0
+      };
 
-    setEquipmentData(prevData => [...prevData, newEquipmentItem]);
-    
-    alert(`Equipment "${newEquipment.name}" added successfully!`);
-    
-    handleAddEquipmentToggle();
-    
-    console.log('✅ Equipment added successfully');
-    
-  } catch (error) {
-    // ... existing error handling ...
-  }
-};
+      setEquipmentData(prevData => [...prevData, newEquipmentItem]);
+      
+      alert(`Equipment "${newEquipment.name}" added successfully!`);
+      
+      handleAddEquipmentToggle();
+      
+      console.log('✅ Equipment added successfully');
+      
+    } catch (error) {
+      console.error('❌ Error adding equipment:', error);
+      setError(`Failed to add equipment: ${error.message}`);
+      alert(`Failed to add equipment: ${error.message}`);
+    } finally {
+      setAddingEquipment(false);
+    }
+  };
+
   // Delete equipment function
-  const handleDeleteEquipment = async (equipmentId, equipmentDescription) => {
-    if (!window.confirm(`Are you sure you want to delete "${equipmentDescription}"? This action cannot be undone.`)) {
+  const handleDeleteEquipment = async (equipmentId, equipmentName) => {
+    if (!window.confirm(`Are you sure you want to delete "${equipmentName}"? This action cannot be undone.`)) {
       return;
     }
 
@@ -297,7 +306,7 @@ const validateEquipmentForm = () => {
         handleCloseEquipmentOverview();
       }
       
-      alert(`Equipment "${equipmentDescription}" deleted successfully!`);
+      alert(`Equipment "${equipmentName}" deleted successfully!`);
       console.log('✅ Equipment deleted successfully');
       
     } catch (error) {
@@ -315,6 +324,7 @@ const validateEquipmentForm = () => {
       const qrData = JSON.stringify({
         type: 'equipment',
         itemCode: equipment.itemCode,
+        name: equipment.name,
         description: equipment.description,
         quantity: equipment.quantity,
         unit: equipment.unit,
@@ -353,7 +363,7 @@ const validateEquipmentForm = () => {
     if (!qrCodeDataURL || !qrCodeEquipment) return;
 
     const link = document.createElement('a');
-    const fileName = `QR_${qrCodeEquipment.itemCode}_${qrCodeEquipment.description.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    const fileName = `QR_${qrCodeEquipment.itemCode}_${qrCodeEquipment.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
     link.download = fileName;
     link.href = qrCodeDataURL;
     document.body.appendChild(link);
@@ -371,7 +381,7 @@ const validateEquipmentForm = () => {
     printWindow.document.write(`
       <html>
         <head>
-          <title>QR Code - ${qrCodeEquipment.description}</title>
+          <title>QR Code - ${qrCodeEquipment.name}</title>
           <style>
             body { 
               font-family: Arial, sans-serif; 
@@ -426,7 +436,7 @@ const validateEquipmentForm = () => {
         <body>
           <div class="qr-container">
             <div class="item-info">
-              <h2>${qrCodeEquipment.description}</h2>
+              <h2>${qrCodeEquipment.name}</h2>
               <div class="item-details">
                 <p><strong>Item Code:</strong> ${qrCodeEquipment.itemCode}</p>
                 <p><strong>Serial No:</strong> ${qrCodeEquipment.serialNo}</p>
@@ -434,9 +444,10 @@ const validateEquipmentForm = () => {
                 <p><strong>Location:</strong> ${qrCodeEquipment.location}</p>
                 <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
                 <p><strong>Quantity:</strong> ${qrCodeEquipment.quantity} ${qrCodeEquipment.unit}</p>
+                <p><strong>Description:</strong> ${qrCodeEquipment.description}</p>
               </div>
             </div>
-            <img src="${qrCodeDataURL}" alt="QR Code for ${qrCodeEquipment.description}" />
+            <img src="${qrCodeDataURL}" alt="QR Code for ${qrCodeEquipment.name}" />
             <div class="footer">
               <p>Equipment Management System - Generated: ${new Date().toLocaleDateString()}</p>
             </div>
@@ -522,7 +533,7 @@ const validateEquipmentForm = () => {
           <div className="search-input-wrapper">
             <input
               type="text"
-              placeholder="Search by code, description, serial, or category..."
+              placeholder="Search by code, name, description, serial, or category..."
               className="search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -579,7 +590,7 @@ const validateEquipmentForm = () => {
               <th>Item Code</th>
               <th>Quantity</th>
               <th>Unit</th>
-              <th>Description</th>
+              <th>Equipment Name</th> {/* FIXED: Changed from "Description" to "Equipment Name" */}
               <th>Action</th>
             </tr>
           </thead>
@@ -595,7 +606,7 @@ const validateEquipmentForm = () => {
                     onClick={() => handleEquipmentClick(equipment)}
                     title="Click to view details"
                   >
-                    {equipment.name || equipment.description}
+                    {equipment.name} {/* FIXED: Show name instead of description */}
                   </span>
                 </td>
                 <td>
@@ -656,12 +667,12 @@ const validateEquipmentForm = () => {
 
               <div className="form-group">
                 <label>EQUIPMENT NAME: *</label>
-                  <input 
+                <input 
                   type="text" 
                   name="name" 
                   value={newEquipment.name} 
                   onChange={handleEquipmentInputChange}
-                  placeholder="Enter equipment name"
+                  placeholder="Enter equipment name (e.g., 'PC', 'Microscope')"
                   required
                 />
               </div>
@@ -700,7 +711,7 @@ const validateEquipmentForm = () => {
                   name="description" 
                   value={newEquipment.description} 
                   onChange={handleEquipmentInputChange}
-                  placeholder="Enter detailed description"
+                  placeholder="Enter detailed description (e.g., 'Broken display, needs repair')"
                   rows="3"
                   required
                 />
@@ -817,140 +828,132 @@ const validateEquipmentForm = () => {
         </div>
       )}
 
-
-{/* Equipment Overview Overlay */}
-{isEquipmentOverviewOpen && selectedEquipment && (
-  <div className="overlay" onClick={handleCloseEquipmentOverview}>
-    <div className="item-overview-content" onClick={(e) => e.stopPropagation()}>
-      <h3>Equipment Overview</h3>
-      
-      <div className="item-overview-layout">
-        <div className="item-image-placeholder">
-          <div className="placeholder-box">No Image</div>
-        </div>
-        
-        <div className="item-details">
-          <div className="detail-row">
-            <span className="detail-label">Equipment:</span>
-            {/* FIXED: Use name field first, then fallback to description */}
-            <span className="detail-value">
-              {selectedEquipment.name || selectedEquipment.description}
-            </span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Item Code:</span>
-            {/* FIXED: Make sure to show actual itemCode */}
-            <span className="detail-value">{selectedEquipment.itemCode}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Serial No.:</span>
-            <span className="detail-value">{selectedEquipment.serialNo}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Category:</span>
-            <span className="detail-value">{selectedEquipment.category}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Quantity:</span>
-            <span className="detail-value">{selectedEquipment.quantity} {selectedEquipment.unit}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Location:</span>
-            <span className="detail-value">{selectedEquipment.location || 'Not specified'}</span>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">Status:</span>
-            <span className="detail-value" style={{
-              color: selectedEquipment.status === 'Operational' ? '#28a745' : 
-                     selectedEquipment.status === 'Maintenance' ? '#ffc107' :
-                     selectedEquipment.status === 'Under Repair' ? '#fd7e14' : '#dc3545'
-            }}>
-              {selectedEquipment.status}
-            </span>
-          </div>
-          {/* OPTIONAL: Add description as separate field if different from name */}
-          {selectedEquipment.description && selectedEquipment.name !== selectedEquipment.description && (
-            <div className="detail-row">
-              <span className="detail-label">Description:</span>
-              <span className="detail-value">{selectedEquipment.description}</span>
+      {/* Equipment Overview Overlay */}
+      {isEquipmentOverviewOpen && selectedEquipment && (
+        <div className="overlay" onClick={handleCloseEquipmentOverview}>
+          <div className="item-overview-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Equipment Overview</h3>
+            
+            <div className="item-overview-layout">
+              <div className="item-image-placeholder">
+                <div className="placeholder-box">No Image</div>
+              </div>
+              
+              <div className="item-details">
+                <div className="detail-row">
+                  <span className="detail-label">Equipment Name:</span>
+                  <span className="detail-value">{selectedEquipment.name}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Item Code:</span>
+                  <span className="detail-value">{selectedEquipment.itemCode}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Serial No.:</span>
+                  <span className="detail-value">{selectedEquipment.serialNo}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Category:</span>
+                  <span className="detail-value">{selectedEquipment.category}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Quantity:</span>
+                  <span className="detail-value">{selectedEquipment.quantity} {selectedEquipment.unit}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Location:</span>
+                  <span className="detail-value">{selectedEquipment.location || 'Not specified'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className="detail-value" style={{
+                    color: selectedEquipment.status === 'Operational' ? '#28a745' : 
+                           selectedEquipment.status === 'Maintenance' ? '#ffc107' :
+                           selectedEquipment.status === 'Under Repair' ? '#fd7e14' : '#dc3545'
+                  }}>
+                    {selectedEquipment.status}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Description:</span>
+                  <span className="detail-value">{selectedEquipment.description}</span>
+                </div>
+              </div>
             </div>
-          )}
+            
+            <div className="item-overview-actions">
+              <button className="action-btn view-stock-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                View Maintenance Log ▪
+              </button>
+              
+              <button className="action-btn view-docs-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                View Documents ◌
+              </button>
+              
+              <button 
+                className="action-btn qr-code-btn"
+                onClick={() => generateQRCode(selectedEquipment)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                  <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
+                  <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
+                  <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
+                  <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
+                  <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
+                </svg>
+                Generate QR-code ⚙
+              </button>
+              
+              <button 
+                className="action-btn delete-btn"
+                onClick={() => handleDeleteEquipment(selectedEquipment._id, selectedEquipment.name)}
+                style={{ 
+                  background: '#dc3545',
+                  marginLeft: 'auto'
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Delete Equipment
+              </button>
+            </div>
+            
+            <button className="close-overview-btn" onClick={handleCloseEquipmentOverview}>
+              ×
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <div className="item-overview-actions">
-        <button className="action-btn view-stock-btn">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          View Maintenance Log ▪
-        </button>
-        
-        <button className="action-btn view-docs-btn">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          View Documents ◌
-        </button>
-        
-        <button 
-          className="action-btn qr-code-btn"
-          onClick={() => generateQRCode(selectedEquipment)}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-            <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
-            <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
-            <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
-            <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
-            <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
-          </svg>
-          Generate QR-code ⚙
-        </button>
-        
-        <button 
-          className="action-btn delete-btn"
-          onClick={() => handleDeleteEquipment(selectedEquipment._id, selectedEquipment.name || selectedEquipment.description)}
-          style={{ 
-            background: '#dc3545',
-            marginLeft: 'auto'
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Delete Equipment
-        </button>
-      </div>
-      
-      <button className="close-overview-btn" onClick={handleCloseEquipmentOverview}>
-        ×
-      </button>
-    </div>
-  </div>
-)}
+      )}
 
       {/* QR Code Modal for Equipment */}
       {isQRModalOpen && qrCodeEquipment && (
         <div className="overlay" onClick={handleCloseQRModal}>
           <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="qr-status">Generated</div>
-            <h3>QR Code - {qrCodeEquipment.description}</h3>
+            <h3>QR Code - {qrCodeEquipment.name}</h3>
             
             <div className="qr-display-section">
               {/* Compact QR Code Display */}
               <div className="qr-code-container">
                 <div className="qr-code-wrapper">
                   <div className="qr-code-display">
-                    <img src={qrCodeDataURL} alt={`QR Code for ${qrCodeEquipment.description}`} />
+                    <img src={qrCodeDataURL} alt={`QR Code for ${qrCodeEquipment.name}`} />
                   </div>
                 </div>
                 <div className="qr-brand-text">Equipment Inventory</div>
@@ -1018,6 +1021,7 @@ const validateEquipmentForm = () => {
                 const qrData = {
                   type: 'equipment',
                   itemCode: qrCodeEquipment.itemCode,
+                  name: qrCodeEquipment.name,
                   description: qrCodeEquipment.description,
                   serialNo: qrCodeEquipment.serialNo,
                   category: qrCodeEquipment.category,
