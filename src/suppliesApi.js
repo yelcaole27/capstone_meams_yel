@@ -24,6 +24,18 @@ const getAuthToken = () => {
          sessionStorage.getItem('access_token');
 };
 
+// Create headers with authentication (from first file)
+const createAuthHeaders = () => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('No authentication token found. Please log in.');
+  }
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+};
+
 // Request interceptor for logging and authentication
 apiClient.interceptors.request.use(
   (config) => {
@@ -137,13 +149,29 @@ const SuppliesAPI = {
     }
   },
 
-  // Delete supply
-  async deleteSupply(id) {
+  // DELETE FUNCTION - From first file (fetch-based implementation)
+  deleteSupply: async (supplyId) => {
     try {
-      const response = await apiClient.delete(`/api/supplies/${id}`);
-      return response.data;
+      const response = await fetch(`${API_BASE_URL}/api/supplies/${supplyId}`, {
+        method: 'DELETE',
+        headers: createAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        if (response.status === 404) {
+          throw new Error('Supply not found.');
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error(`Failed to delete supply ${id}:`, error);
+      console.error('Error deleting supply:', error);
       throw error;
     }
   },

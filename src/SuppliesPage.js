@@ -77,6 +77,35 @@ function SuppliesPage() {
   }
 };
 
+  // NEW: Delete supply function
+  const handleDeleteSupply = async (supplyId, supplyName) => {
+    if (!window.confirm(`Are you sure you want to delete "${supplyName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await SuppliesAPI.deleteSupply(supplyId);
+      
+      // Remove from local state
+      setSuppliesData(prevData => prevData.filter(item => item._id !== supplyId));
+      
+      // Close overview modal if the deleted item was selected
+      if (selectedItem && selectedItem._id === supplyId) {
+        handleCloseItemOverview();
+      }
+      
+      alert(`Supply "${supplyName}" deleted successfully!`);
+      console.log('✅ Supply deleted successfully');
+      
+    } catch (error) {
+      console.error('❌ Error deleting supply:', error);
+      alert(`Failed to delete supply: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Get unique categories including database data
   const uniqueCategories = ['All Categories', ...new Set(suppliesData.map(item => item.category))];
 
@@ -608,8 +637,7 @@ function SuppliesPage() {
         </div>
       )}
 
-      {/* Rest of your existing modals (Item Overview and QR Modal) remain the same */}
-      {/* Item Overview Overlay */}
+      {/* Item Overview Overlay - UPDATED WITH DELETE BUTTON */}
       {isItemOverviewOpen && selectedItem && (
         <div className="overlay" onClick={handleCloseItemOverview}>
           <div className="item-overview-content" onClick={(e) => e.stopPropagation()}>
@@ -683,6 +711,22 @@ function SuppliesPage() {
                   <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
                 </svg>
                 Generate QR-code ⚏
+              </button>
+              
+              {/* NEW: Delete Supply Button */}
+              <button 
+                className="action-btn delete-btn"
+                onClick={() => handleDeleteSupply(selectedItem._id, selectedItem.itemName)}
+                style={{ 
+                  background: '#dc3545',
+                  marginLeft: 'auto'
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Delete Supply
               </button>
             </div>
             
