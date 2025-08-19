@@ -104,6 +104,7 @@ def supply_helper(supply) -> dict:
         "supplier": supply.get("supplier", ""),
         "location": supply.get("location", ""),
         "status": supply.get("status", "available"),
+        "itemCode": supply.get("itemCode", ""),
         "created_at": supply.get("created_at", datetime.utcnow()),
         "updated_at": supply.get("updated_at", datetime.utcnow())
     }
@@ -136,6 +137,7 @@ class SupplyCreate(BaseModel):
     supplier: Optional[str] = ""
     location: Optional[str] = ""
     status: Optional[str] = "available"
+    itemCode: Optional[str] = ""
 
 class SupplyUpdate(BaseModel):
     name: Optional[str] = None
@@ -145,6 +147,7 @@ class SupplyUpdate(BaseModel):
     supplier: Optional[str] = None
     location: Optional[str] = None
     status: Optional[str] = None
+    itemCode: Optional[str] = None
 
 class SupplyResponse(BaseModel):
     _id: str
@@ -152,10 +155,10 @@ class SupplyResponse(BaseModel):
     description: str
     category: str
     quantity: int
-    unit_price: float
     supplier: str
     location: str
     status: str
+    itemCode: str
     created_at: datetime
     updated_at: datetime
 
@@ -258,8 +261,16 @@ async def add_supply(supply: SupplyCreate, token: str = Depends(oauth2_scheme)):
         supply_dict["created_at"] = datetime.utcnow()
         supply_dict["updated_at"] = datetime.utcnow()
         
+        # Generate item code if not provided
+        if not supply_dict.get("itemCode"):
+            category_prefix = supply_dict.get("category", "SUP")[:3].upper()
+            random_num = str(abs(hash(str(datetime.utcnow()))))[:5]
+            supply_dict["itemCode"] = f"{category_prefix}-{random_num}"
+        
         result = supplies_collection.insert_one(supply_dict)
         created_supply = supplies_collection.find_one({"_id": result.inserted_id})
+        
+        print(f"✅ Supply added: {supply_dict.get('name', 'Unknown')} with itemCode: {supply_dict.get('itemCode')}")
         
         return {
             "success": True,
@@ -267,7 +278,9 @@ async def add_supply(supply: SupplyCreate, token: str = Depends(oauth2_scheme)):
             "data": supply_helper(created_supply)
         }
     except Exception as e:
+        print(f"❌ Error adding supply: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to add supply: {str(e)}")
+
 
 @app.get("/api/supplies", response_model=dict)
 async def get_all_supplies(token: str = Depends(oauth2_scheme)):
