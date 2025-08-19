@@ -667,7 +667,7 @@ function SuppliesPage() {
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Quantity:</span>
-                  <span className="detail-value">{selectedItem.quantity} UPDATE ℧</span>
+                  <span className="detail-value">{selectedItem.quantity}</span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Description:</span>
