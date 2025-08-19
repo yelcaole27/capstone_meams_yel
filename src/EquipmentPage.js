@@ -14,16 +14,17 @@ function EquipmentPage() {
   // Add Equipment Overlay states
   const [isAddEquipmentOverlayOpen, setIsAddEquipmentOverlayOpen] = useState(false);
   const [newEquipment, setNewEquipment] = useState({
-    itemCode: '',
-    quantity: '',
-    unit: '',
-    description: '',
-    category: '',
-    location: '',
-    status: 'Operational',
-    serialNo: '',
-    itemPicture: null
-  });
+  itemCode: '',
+  name: '',        // NEW: Separate name field
+  quantity: '',
+  unit: '',
+  description: '', // Keep description separate
+  category: '',
+  location: '',
+  status: 'Operational',
+  serialNo: '',
+  itemPicture: null
+});
   const [dragActive, setDragActive] = useState(false);
   const [addingEquipment, setAddingEquipment] = useState(false);
   
@@ -88,23 +89,23 @@ function EquipmentPage() {
 
   // Add Equipment Overlay handlers
   const handleAddEquipmentToggle = () => {
-    setIsAddEquipmentOverlayOpen(!isAddEquipmentOverlayOpen);
-    if (isAddEquipmentOverlayOpen) {
-      // Reset form when closing
-      setNewEquipment({
-        itemCode: '',
-        quantity: '',
-        unit: '',
-        description: '',
-        category: '',
-        location: '',
-        status: 'Operational',
-        serialNo: '',
-        itemPicture: null
-      });
-      setError(null); // Clear any previous errors
-    }
-  };
+  setIsAddEquipmentOverlayOpen(!isAddEquipmentOverlayOpen);
+  if (isAddEquipmentOverlayOpen) {
+    setNewEquipment({
+      itemCode: '',
+      name: '',          // Reset name
+      quantity: '',
+      unit: '',
+      description: '',   // Reset description
+      category: '',
+      location: '',
+      status: 'Operational',
+      serialNo: '',
+      itemPicture: null
+    });
+    setError(null);
+  }
+};
 
   const handleEquipmentInputChange = (e) => {
     const { name, value } = e.target;
@@ -173,35 +174,39 @@ function EquipmentPage() {
   };
 
   // Enhanced form validation
-  const validateEquipmentForm = () => {
-    const errors = [];
-    
-    if (!newEquipment.description.trim()) {
-      errors.push('Description is required');
-    }
-    
-    if (!newEquipment.quantity || parseInt(newEquipment.quantity) <= 0) {
-      errors.push('Quantity must be a positive number');
-    }
-    
-    if (!newEquipment.unit) {
-      errors.push('Unit is required');
-    }
-    
-    if (!newEquipment.category) {
-      errors.push('Category is required');
-    }
-    
-    if (!newEquipment.serialNo.trim()) {
-      errors.push('Serial Number is required');
-    }
-    
-    if (!newEquipment.status) {
-      errors.push('Status is required');
-    }
-    
-    return errors;
-  };
+const validateEquipmentForm = () => {
+  const errors = [];
+  
+  if (!newEquipment.name.trim()) {
+    errors.push('Equipment name is required');
+  }
+  
+  if (!newEquipment.description.trim()) {
+    errors.push('Description is required');
+  }
+  
+  if (!newEquipment.quantity || parseInt(newEquipment.quantity) <= 0) {
+    errors.push('Quantity must be a positive number');
+  }
+  
+  if (!newEquipment.unit) {
+    errors.push('Unit is required');
+  }
+  
+  if (!newEquipment.category) {
+    errors.push('Category is required');
+  }
+  
+  if (!newEquipment.serialNo.trim()) {
+    errors.push('Serial Number is required');
+  }
+  
+  if (!newEquipment.status) {
+    errors.push('Status is required');
+  }
+  
+  return errors;
+};
 
   // Enhanced handleAddEquipment with better error handling and validation
   const handleAddEquipment = async () => {
@@ -223,66 +228,57 @@ function EquipmentPage() {
     }
 
     try {
-      setAddingEquipment(true);
-      setError(null);
-      
-      // Prepare data for API
-      const equipmentData = {
-        description: newEquipment.description.trim(),
-        category: newEquipment.category,
-        quantity: parseInt(newEquipment.quantity),
-        unit: newEquipment.unit,
-        location: newEquipment.location.trim() || '',
-        status: newEquipment.status,
-        serialNo: newEquipment.serialNo.trim(),
-        itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-        // Additional fields for backend
-        name: newEquipment.description.trim(),
-        unit_price: 0,
-        supplier: ''
-      };
+    setAddingEquipment(true);
+    setError(null);
+    
+    // Prepare data for API with separate name and description
+    const equipmentData = {
+      name: newEquipment.name.trim(),              // Equipment name
+      description: newEquipment.description.trim(), // Equipment description
+      category: newEquipment.category,
+      quantity: parseInt(newEquipment.quantity),
+      unit: newEquipment.unit,
+      location: newEquipment.location.trim() || '',
+      status: newEquipment.status,
+      serialNo: newEquipment.serialNo.trim(),
+      itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+      unit_price: 0,
+      supplier: ''
+    };
 
-      console.log('📤 Adding new equipment:', equipmentData);
-      
-      // Add to database
-      const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
-      
-      // Transform the response to match your current data structure
-      const newEquipmentItem = {
-        _id: savedEquipment._id || savedEquipment.id,
-        itemCode: equipmentData.itemCode,
-        quantity: parseInt(newEquipment.quantity),
-        unit: newEquipment.unit,
-        description: newEquipment.description.trim(),
-        category: newEquipment.category,
-        location: newEquipment.location.trim(),
-        status: newEquipment.status,
-        serialNo: newEquipment.serialNo.trim(),
-        itemPicture: newEquipment.itemPicture,
-        supplier: '',
-        unit_price: 0
-      };
+    console.log('📤 Adding new equipment:', equipmentData);
+    
+    const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
+    
+    // Transform the response to match your current data structure
+    const newEquipmentItem = {
+      _id: savedEquipment._id || savedEquipment.id,
+      itemCode: equipmentData.itemCode,
+      name: newEquipment.name.trim(),           // Store name separately
+      quantity: parseInt(newEquipment.quantity),
+      unit: newEquipment.unit,
+      description: newEquipment.description.trim(), // Store description separately
+      category: newEquipment.category,
+      location: newEquipment.location.trim(),
+      status: newEquipment.status,
+      serialNo: newEquipment.serialNo.trim(),
+      itemPicture: newEquipment.itemPicture,
+      supplier: '',
+      unit_price: 0
+    };
 
-      // Update local state immediately for better UX
-      setEquipmentData(prevData => [...prevData, newEquipmentItem]);
-      
-      // Show success message
-      alert(`Equipment "${newEquipment.description}" added successfully!`);
-      
-      // Close overlay and reset form
-      handleAddEquipmentToggle();
-      
-      console.log('✅ Equipment added successfully');
-      
-    } catch (error) {
-      console.error('❌ Error adding equipment:', error);
-      setError(`Failed to add equipment: ${error.message}`);
-      alert(`Failed to add equipment: ${error.message}`);
-    } finally {
-      setAddingEquipment(false);
-    }
-  };
-
+    setEquipmentData(prevData => [...prevData, newEquipmentItem]);
+    
+    alert(`Equipment "${newEquipment.name}" added successfully!`);
+    
+    handleAddEquipmentToggle();
+    
+    console.log('✅ Equipment added successfully');
+    
+  } catch (error) {
+    // ... existing error handling ...
+  }
+};
   // Delete equipment function
   const handleDeleteEquipment = async (equipmentId, equipmentDescription) => {
     if (!window.confirm(`Are you sure you want to delete "${equipmentDescription}"? This action cannot be undone.`)) {
@@ -599,7 +595,7 @@ function EquipmentPage() {
                     onClick={() => handleEquipmentClick(equipment)}
                     title="Click to view details"
                   >
-                    {equipment.description}
+                    {equipment.name || equipment.description}
                   </span>
                 </td>
                 <td>
@@ -659,6 +655,18 @@ function EquipmentPage() {
               </div>
 
               <div className="form-group">
+                <label>EQUIPMENT NAME: *</label>
+                  <input 
+                  type="text" 
+                  name="name" 
+                  value={newEquipment.name} 
+                  onChange={handleEquipmentInputChange}
+                  placeholder="Enter equipment name"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
                 <label>QUANTITY: *</label>
                 <input 
                   type="number" 
@@ -688,12 +696,12 @@ function EquipmentPage() {
 
               <div className="form-group">
                 <label>DESCRIPTION: *</label>
-                <input 
-                  type="text" 
+                <textarea 
                   name="description" 
                   value={newEquipment.description} 
                   onChange={handleEquipmentInputChange}
-                  placeholder="Enter equipment description"
+                  placeholder="Enter detailed description"
+                  rows="3"
                   required
                 />
               </div>

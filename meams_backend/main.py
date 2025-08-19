@@ -112,8 +112,8 @@ def supply_helper(supply) -> dict:
 def equipment_helper(equipment) -> dict:
     return {
         "_id": str(equipment["_id"]),
-        "name": equipment.get("name", equipment.get("description", "")),
-        "description": equipment.get("description", equipment.get("name", "")),
+        "name": equipment.get("name", equipment.get("description", "")),           # Equipment name
+        "description": equipment.get("description", equipment.get("name", "")),   # Description
         "category": equipment.get("category", "General"),
         "quantity": equipment.get("quantity", 1),
         "unit": equipment.get("unit", "UNIT"),
@@ -161,8 +161,8 @@ class SupplyResponse(BaseModel):
 
 # NEW: Pydantic models for equipment
 class EquipmentCreate(BaseModel):
-    name: str
-    description: str
+    name: str                    # Equipment name (required)
+    description: str             # Detailed description (required)
     category: str
     quantity: int
     unit: Optional[str] = "UNIT"
@@ -174,8 +174,8 @@ class EquipmentCreate(BaseModel):
     supplier: Optional[str] = ""
 
 class EquipmentUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: Optional[str] = None           # Equipment name
+    description: Optional[str] = None    # Equipment description
     category: Optional[str] = None
     quantity: Optional[int] = None
     unit: Optional[str] = None
@@ -437,7 +437,7 @@ async def search_supplies(query: str, token: str = Depends(oauth2_scheme)):
 @app.post("/api/equipment", response_model=dict)
 async def add_equipment(equipment: EquipmentCreate, token: str = Depends(oauth2_scheme)):
     """Add a new equipment item - requires authentication"""
-    verify_token(token)  # Verify user is authenticated
+    verify_token(token)
     
     try:
         equipment_dict = equipment.dict()
@@ -453,7 +453,7 @@ async def add_equipment(equipment: EquipmentCreate, token: str = Depends(oauth2_
         result = equipment_collection.insert_one(equipment_dict)
         created_equipment = equipment_collection.find_one({"_id": result.inserted_id})
         
-        print(f"✅ Equipment added: {equipment_dict.get('description', 'Unknown')}")
+        print(f"✅ Equipment added: {equipment_dict.get('name', 'Unknown')}")
         
         return {
             "success": True,
@@ -629,10 +629,10 @@ async def get_equipment_by_location(location: str, token: str = Depends(oauth2_s
 @app.get("/api/equipment/search/{query}", response_model=dict)
 async def search_equipment(query: str, token: str = Depends(oauth2_scheme)):
     """Search equipment by name, description, serial number, or item code - requires authentication"""
-    verify_token(token)  # Verify user is authenticated
+    verify_token(token)
     
     try:
-        # Case-insensitive search in multiple fields
+        # Case-insensitive search in multiple fields including name
         search_filter = {
             "$or": [
                 {"name": {"$regex": query, "$options": "i"}},
