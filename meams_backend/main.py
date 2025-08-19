@@ -52,6 +52,7 @@ except Exception as e:
 
 # Collections
 supplies_collection = db.supplies
+equipment_collection = db.equipment  # NEW: Equipment collection
 
 # Authentication Models
 class User(BaseModel):
@@ -92,7 +93,7 @@ def verify_token(token: str):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-# Helper function to convert ObjectId to string
+# Helper function to convert ObjectId to string for supplies
 def supply_helper(supply) -> dict:
     return {
         "_id": str(supply["_id"]),
@@ -105,6 +106,25 @@ def supply_helper(supply) -> dict:
         "status": supply.get("status", "available"),
         "created_at": supply.get("created_at", datetime.utcnow()),
         "updated_at": supply.get("updated_at", datetime.utcnow())
+    }
+
+# NEW: Helper function to convert ObjectId to string for equipment
+def equipment_helper(equipment) -> dict:
+    return {
+        "_id": str(equipment["_id"]),
+        "name": equipment.get("name", equipment.get("description", "")),
+        "description": equipment.get("description", equipment.get("name", "")),
+        "category": equipment.get("category", "General"),
+        "quantity": equipment.get("quantity", 1),
+        "unit": equipment.get("unit", "UNIT"),
+        "location": equipment.get("location", ""),
+        "status": equipment.get("status", "Operational"),
+        "serialNo": equipment.get("serialNo", equipment.get("serial_number", "")),
+        "itemCode": equipment.get("itemCode", equipment.get("item_code", "")),
+        "unit_price": equipment.get("unit_price", 0.0),
+        "supplier": equipment.get("supplier", ""),
+        "created_at": equipment.get("created_at", datetime.utcnow()),
+        "updated_at": equipment.get("updated_at", datetime.utcnow())
     }
 
 # Pydantic models for supplies
@@ -138,6 +158,33 @@ class SupplyResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+# NEW: Pydantic models for equipment
+class EquipmentCreate(BaseModel):
+    name: str
+    description: str
+    category: str
+    quantity: int
+    unit: Optional[str] = "UNIT"
+    location: Optional[str] = ""
+    status: Optional[str] = "Operational"
+    serialNo: Optional[str] = ""
+    itemCode: Optional[str] = ""
+    unit_price: Optional[float] = 0.0
+    supplier: Optional[str] = ""
+
+class EquipmentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    quantity: Optional[int] = None
+    unit: Optional[str] = None
+    location: Optional[str] = None
+    status: Optional[str] = None
+    serialNo: Optional[str] = None
+    itemCode: Optional[str] = None
+    unit_price: Optional[float] = None
+    supplier: Optional[str] = None
 
 # Authentication Routes
 
@@ -197,7 +244,9 @@ async def health_check():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
 
-# Supplies API Routes
+# =============================================================================
+# SUPPLIES API ROUTES (EXISTING - UNCHANGED)
+# =============================================================================
 
 @app.post("/api/supplies", response_model=dict)
 async def add_supply(supply: SupplyCreate, token: str = Depends(oauth2_scheme)):
@@ -380,6 +429,356 @@ async def search_supplies(query: str, token: str = Depends(oauth2_scheme)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+# =============================================================================
+# NEW: EQUIPMENT API ROUTES
+# =============================================================================
+
+@app.post("/api/equipment", response_model=dict)
+async def add_equipment(equipment: EquipmentCreate, token: str = Depends(oauth2_scheme)):
+    """Add a new equipment item - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_dict = equipment.dict()
+        equipment_dict["created_at"] = datetime.utcnow()
+        equipment_dict["updated_at"] = datetime.utcnow()
+        
+        # Generate item code if not provided
+        if not equipment_dict.get("itemCode"):
+            category_prefix = equipment_dict.get("category", "EQP")[:3].upper()
+            random_num = str(abs(hash(str(datetime.utcnow()))))[:5]
+            equipment_dict["itemCode"] = f"{category_prefix}-E-{random_num}"
+        
+        result = equipment_collection.insert_one(equipment_dict)
+        created_equipment = equipment_collection.find_one({"_id": result.inserted_id})
+        
+        print(f"✅ Equipment added: {equipment_dict.get('description', 'Unknown')}")
+        
+        return {
+            "success": True,
+            "message": "Equipment added successfully",
+            "data": equipment_helper(created_equipment)
+        }
+    except Exception as e:
+        print(f"❌ Error adding equipment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add equipment: {str(e)}")
+
+@app.get("/api/equipment", response_model=dict)
+async def get_all_equipment(token: str = Depends(oauth2_scheme)):
+    """Get all equipment items - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_list = []
+        for equipment in equipment_collection.find():
+            equipment_list.append(equipment_helper(equipment))
+        
+        print(f"📦 Retrieved {len(equipment_list)} equipment items")
+        
+        return {
+            "success": True,
+            "message": f"Found {len(equipment_list)} equipment items",
+            "data": equipment_list
+        }
+    except Exception as e:
+        print(f"❌ Error retrieving equipment: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment: {str(e)}")
+
+@app.get("/api/equipment/{equipment_id}", response_model=dict)
+async def get_equipment(equipment_id: str, token: str = Depends(oauth2_scheme)):
+    """Get a specific equipment item by ID - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        if not ObjectId.is_valid(equipment_id):
+            raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+        
+        equipment = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
+        if not equipment:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        return {
+            "success": True,
+            "message": "Equipment found",
+            "data": equipment_helper(equipment)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment: {str(e)}")
+
+@app.put("/api/equipment/{equipment_id}", response_model=dict)
+async def update_equipment(equipment_id: str, equipment_update: EquipmentUpdate, token: str = Depends(oauth2_scheme)):
+    """Update an equipment item - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        if not ObjectId.is_valid(equipment_id):
+            raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+        
+        # Only update fields that are provided
+        update_data = {k: v for k, v in equipment_update.dict().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+        
+        update_data["updated_at"] = datetime.utcnow()
+        
+        result = equipment_collection.update_one(
+            {"_id": ObjectId(equipment_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        updated_equipment = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
+        
+        print(f"✅ Equipment updated: {equipment_id}")
+        
+        return {
+            "success": True,
+            "message": "Equipment updated successfully",
+            "data": equipment_helper(updated_equipment)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update equipment: {str(e)}")
+
+@app.delete("/api/equipment/{equipment_id}", response_model=dict)
+async def delete_equipment(equipment_id: str, token: str = Depends(oauth2_scheme)):
+    """Delete an equipment item - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        if not ObjectId.is_valid(equipment_id):
+            raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+        
+        result = equipment_collection.delete_one({"_id": ObjectId(equipment_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        print(f"🗑️ Equipment deleted: {equipment_id}")
+        
+        return {
+            "success": True,
+            "message": "Equipment deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete equipment: {str(e)}")
+
+@app.get("/api/equipment/category/{category}", response_model=dict)
+async def get_equipment_by_category(category: str, token: str = Depends(oauth2_scheme)):
+    """Get equipment by category - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_list = []
+        for equipment in equipment_collection.find({"category": category}):
+            equipment_list.append(equipment_helper(equipment))
+        
+        return {
+            "success": True,
+            "message": f"Found {len(equipment_list)} equipment items in category '{category}'",
+            "data": equipment_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment by category: {str(e)}")
+
+@app.get("/api/equipment/status/{status}", response_model=dict)
+async def get_equipment_by_status(status: str, token: str = Depends(oauth2_scheme)):
+    """Get equipment by status - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_list = []
+        for equipment in equipment_collection.find({"status": status}):
+            equipment_list.append(equipment_helper(equipment))
+        
+        return {
+            "success": True,
+            "message": f"Found {len(equipment_list)} equipment items with status '{status}'",
+            "data": equipment_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment by status: {str(e)}")
+
+@app.get("/api/equipment/location/{location}", response_model=dict)
+async def get_equipment_by_location(location: str, token: str = Depends(oauth2_scheme)):
+    """Get equipment by location - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_list = []
+        for equipment in equipment_collection.find({"location": location}):
+            equipment_list.append(equipment_helper(equipment))
+        
+        return {
+            "success": True,
+            "message": f"Found {len(equipment_list)} equipment items at location '{location}'",
+            "data": equipment_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment by location: {str(e)}")
+
+@app.get("/api/equipment/search/{query}", response_model=dict)
+async def search_equipment(query: str, token: str = Depends(oauth2_scheme)):
+    """Search equipment by name, description, serial number, or item code - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        # Case-insensitive search in multiple fields
+        search_filter = {
+            "$or": [
+                {"name": {"$regex": query, "$options": "i"}},
+                {"description": {"$regex": query, "$options": "i"}},
+                {"serialNo": {"$regex": query, "$options": "i"}},
+                {"itemCode": {"$regex": query, "$options": "i"}},
+                {"category": {"$regex": query, "$options": "i"}}
+            ]
+        }
+        
+        equipment_list = []
+        for equipment in equipment_collection.find(search_filter):
+            equipment_list.append(equipment_helper(equipment))
+        
+        return {
+            "success": True,
+            "message": f"Found {len(equipment_list)} equipment items matching '{query}'",
+            "data": equipment_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Equipment search failed: {str(e)}")
+
+@app.get("/api/equipment/categories", response_model=dict)
+async def get_equipment_categories(token: str = Depends(oauth2_scheme)):
+    """Get all unique equipment categories - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        categories = equipment_collection.distinct("category")
+        if not categories:
+            # Return default categories if none exist
+            categories = ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety']
+        
+        return {
+            "success": True,
+            "message": f"Found {len(categories)} equipment categories",
+            "data": categories
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment categories: {str(e)}")
+
+@app.get("/api/equipment/statuses", response_model=dict)
+async def get_equipment_statuses(token: str = Depends(oauth2_scheme)):
+    """Get all unique equipment statuses - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        statuses = equipment_collection.distinct("status")
+        if not statuses:
+            # Return default statuses if none exist
+            statuses = ['Operational', 'Maintenance', 'Out of Service', 'Under Repair']
+        
+        return {
+            "success": True,
+            "message": f"Found {len(statuses)} equipment statuses",
+            "data": statuses
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment statuses: {str(e)}")
+
+@app.get("/api/equipment/locations", response_model=dict)
+async def get_equipment_locations(token: str = Depends(oauth2_scheme)):
+    """Get all unique equipment locations - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        locations = equipment_collection.distinct("location")
+        # Filter out empty locations
+        locations = [loc for loc in locations if loc and loc.strip()]
+        
+        return {
+            "success": True,
+            "message": f"Found {len(locations)} equipment locations",
+            "data": locations
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment locations: {str(e)}")
+
+@app.post("/api/equipment/batch", response_model=dict)
+async def add_multiple_equipment(equipment_data: dict, token: str = Depends(oauth2_scheme)):
+    """Add multiple equipment items at once - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_list = equipment_data.get("equipment", [])
+        if not equipment_list or not isinstance(equipment_list, list):
+            raise HTTPException(status_code=400, detail="Invalid equipment array provided")
+        
+        added_equipment = []
+        for eq_data in equipment_list:
+            try:
+                equipment = EquipmentCreate(**eq_data)
+                equipment_dict = equipment.dict()
+                equipment_dict["created_at"] = datetime.utcnow()
+                equipment_dict["updated_at"] = datetime.utcnow()
+                
+                # Generate item code if not provided
+                if not equipment_dict.get("itemCode"):
+                    category_prefix = equipment_dict.get("category", "EQP")[:3].upper()
+                    random_num = str(abs(hash(str(datetime.utcnow()) + str(len(added_equipment)))))[:5]
+                    equipment_dict["itemCode"] = f"{category_prefix}-E-{random_num}"
+                
+                result = equipment_collection.insert_one(equipment_dict)
+                created_equipment = equipment_collection.find_one({"_id": result.inserted_id})
+                added_equipment.append(equipment_helper(created_equipment))
+                
+            except Exception as e:
+                print(f"❌ Failed to add equipment item: {str(e)}")
+                continue
+        
+        return {
+            "success": True,
+            "message": f"Successfully added {len(added_equipment)} equipment items",
+            "data": added_equipment
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add multiple equipment: {str(e)}")
+
+@app.get("/api/equipment/export", response_model=dict)
+async def export_equipment(format: str = "json", token: str = Depends(oauth2_scheme)):
+    """Export equipment data - requires authentication"""
+    verify_token(token)  # Verify user is authenticated
+    
+    try:
+        equipment_list = []
+        for equipment in equipment_collection.find():
+            equipment_list.append(equipment_helper(equipment))
+        
+        if format.lower() == "csv":
+            # Return data formatted for CSV export
+            return {
+                "success": True,
+                "message": f"Exported {len(equipment_list)} equipment items as CSV",
+                "data": equipment_list,
+                "format": "csv"
+            }
+        else:
+            # Return JSON format
+            return {
+                "success": True,
+                "message": f"Exported {len(equipment_list)} equipment items as JSON",
+                "data": equipment_list,
+                "format": "json"
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export equipment: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
