@@ -528,7 +528,7 @@ function EquipmentPage() {
       )}
       
       <div className="equipment-header">
-        <h2 className="page-title">Equipment Inventory ({equipmentData.length} items)</h2>
+        <h2 className="page-title">Equipment Inventory</h2>
         <div className="table-controls">
           <div className="search-input-wrapper">
             <input
