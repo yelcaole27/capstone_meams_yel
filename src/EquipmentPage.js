@@ -587,11 +587,11 @@ function EquipmentPage() {
         <table className="equipment-table">
           <thead>
             <tr>
-              <th>Item Code</th>
-              <th>Quantity</th>
-              <th>Unit</th>
-              <th>Equipment Name</th> {/* FIXED: Changed from "Description" to "Equipment Name" */}
-              <th>Action</th>
+              <th>ITEM CODE</th>
+              <th>QUANTITY</th>
+              <th>UNIT</th>
+              <th>EQUIPMENT NAME</th>
+              <th>ACTION</th>
             </tr>
           </thead>
           <tbody>
