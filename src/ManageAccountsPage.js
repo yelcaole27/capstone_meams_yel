@@ -3,6 +3,13 @@ import './ManageAccountsPage.css';
 
 function ManageAccountsPage() {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    profilePicture: null
+  });
 
   const accountsData = [
     { 
@@ -68,8 +75,73 @@ function ManageAccountsPage() {
   };
 
   const handleAddAccount = () => {
-    console.log('Add new account');
-    // Add new account functionality here
+    setShowAddModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setFormData({
+      name: '',
+      username: '',
+      email: '',
+      profilePicture: null
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: file
+      }));
+    }
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: file
+      }));
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleSubmitAccount = () => {
+    // Here you would typically send the data to your backend
+    console.log('Adding account:', formData);
+    
+    // For demo purposes, add to local state
+    const newAccount = {
+      id: accounts.length + 1,
+      name: formData.name,
+      username: formData.username,
+      email: formData.email,
+      status: true,
+      accountCreation: new Date().toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric'
+      }),
+      role: formData.username
+    };
+
+    setAccounts([...accounts, newAccount]);
+    handleCloseModal();
   };
 
   return (
@@ -160,6 +232,113 @@ function ManageAccountsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Add Account Modal */}
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h3 className="modal-title">ADD ACCOUNT</h3>
+            </div>
+            
+            <div className="modal-content">
+              <div className="form-group">
+                <label className="form-label">NAME:</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="Input text"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">USERNAME:</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="Input text"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">EMAIL:</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="Input text"
+                />
+              </div>
+
+              <div className="upload-section">
+                <label className="upload-label">UPLOAD PICTURE</label>
+                <div 
+                  className="upload-area"
+                  onDrop={handleFileDrop}
+                  onDragOver={handleDragOver}
+                >
+                  <div className="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="12" y1="17" x2="12" y2="9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="upload-text">
+                    Drag and Drop files here or{' '}
+                    <span className="upload-link">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        onChange={handleFileChange}
+                        className="file-input"
+                        id="file-upload"
+                      />
+                      <label htmlFor="file-upload" className="file-label">
+                        Choose file
+                      </label>
+                    </span>
+                  </div>
+                  {formData.profilePicture && (
+                    <div className="selected-file">
+                      Selected: {formData.profilePicture.name}
+                    </div>
+                  )}
+                </div>
+                <div className="upload-info">
+                  <span className="format-info">Supported formats: JPEG, PNG</span>
+                  <span className="size-info">Maximum size: 10MB</span>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  className="cancel-button"
+                  onClick={handleCloseModal}
+                >
+                  CANCEL
+                </button>
+                <button 
+                  className="submit-button"
+                  onClick={handleSubmitAccount}
+                  disabled={!formData.name || !formData.username || !formData.email}
+                >
+                  ADD ACCOUNT
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
