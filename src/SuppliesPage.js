@@ -15,6 +15,10 @@ function SuppliesPage() {
     quantity: '', 
     category: '',
     description: '',
+    unit: '', // NEW FIELD
+    location: '', // NEW FIELD
+    status: 'Normal', // NEW FIELD with default value
+    date: '',
     itemPicture: null
   });
   const [suppliesData, setSuppliesData] = useState([]);
@@ -49,25 +53,29 @@ function SuppliesPage() {
     const supplies = await SuppliesAPI.getAllSupplies();
     // Transform database data to match your current structure
     const transformedSupplies = supplies.map(supply => {
-      // Generate a proper item code if one doesn't exist
-      let itemCode = supply.itemCode;
-      if (!itemCode) {
-        // Generate item code based on category and random number
-        const categoryPrefix = supply.category ? supply.category.substring(0, 3).toUpperCase() : 'SUP';
-        const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-        itemCode = `${categoryPrefix}-${randomNum}`;
-      }
-      
-      return {
-        _id: supply._id,
-        itemCode: itemCode, // Use generated or existing itemCode
-        stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
-        quantity: supply.quantity,
-        itemName: supply.name, // Keep the actual name here
-        category: supply.category,
-        description: supply.description || ''
-      };
-    });
+  // Generate a proper item code if one doesn't exist
+  let itemCode = supply.itemCode;
+  if (!itemCode) {
+    // Generate item code based on category and random number
+    const categoryPrefix = supply.category ? supply.category.substring(0, 3).toUpperCase() : 'SUP';
+    const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    itemCode = `${categoryPrefix}-${randomNum}`;
+  }
+  
+  return {
+    _id: supply._id,
+    itemCode: itemCode, // Use generated or existing itemCode
+    stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
+    quantity: supply.quantity,
+    itemName: supply.name, // Keep the actual name here
+    category: supply.category,
+    description: supply.description || '',
+    unit: supply.unit || 'piece',
+    location: supply.location || '',
+    status: supply.status || 'Normal',
+    date: supply.date || ''  // NEW FIELD: Date field
+  };
+});
     setSuppliesData(transformedSupplies);
     setError(null);
   } catch (err) {
@@ -219,6 +227,10 @@ function SuppliesPage() {
                 <p><strong>Item Code:</strong> ${qrCodeItem.itemCode}</p>
                 <p><strong>Stock No:</strong> ${qrCodeItem.stockNo}</p>
                 <p><strong>Category:</strong> ${qrCodeItem.category}</p>
+                <p><strong>Unit:</strong> ${qrCodeItem.unit}</p>
+                <p><strong>Location:</strong> ${qrCodeItem.location}</p>
+                <p><strong>Status:</strong> ${qrCodeItem.status}</p>
+                <p><strong>Date:</strong> ${qrCodeItem.date || 'Not specified'}</p>
                 <p><strong>Description:</strong> ${qrCodeItem.description || 'N/A'}</p>
               </div>
             </div>
@@ -245,6 +257,10 @@ function SuppliesPage() {
         quantity: '', 
         category: '',
         description: '',
+        unit: '', // NEW FIELD
+        location: '', // NEW FIELD
+        status: 'Normal', // NEW FIELD with default
+        date: '',
         itemPicture: null
       });
     }
@@ -301,15 +317,17 @@ function SuppliesPage() {
     try {
       // Prepare data for API (matching your backend structure) - UPDATED with new fields
       const supplyData = {
-        name: newItem.itemName,
-        category: newItem.category,
-        description: newItem.description,
-        quantity: parseInt(newItem.quantity),
-        unit_price: 0, // You might want to add a unit price field to your form
-        supplier: newItem.stockNo || '', // Using stockNo as supplier for now
-        location: '', // Add location field if needed
-        status: 'available'
-      };
+  name: newItem.itemName,
+  category: newItem.category,
+  description: newItem.description,
+  quantity: parseInt(newItem.quantity),
+  unit_price: 0, 
+  supplier: newItem.stockNo || '', 
+  location: newItem.location,
+  status: newItem.status,
+  unit: newItem.unit,
+  date: newItem.date  // NEW FIELD: Date field
+};
 
       // Show loading state
       setLoading(true);
@@ -326,6 +344,10 @@ function SuppliesPage() {
         itemName: newItem.itemName,
         category: newItem.category,
         description: newItem.description,
+        unit: newItem.unit, // NEW FIELD
+        location: newItem.location, // NEW FIELD
+        status: newItem.status, // NEW FIELD
+        date: newItem.date,
         itemPicture: newItem.itemPicture
       };
 
@@ -601,9 +623,58 @@ function SuppliesPage() {
                   name="description" 
                   value={newItem.description || ''} 
                   onChange={handleInputChange}
-                  placeholder="Item description"
+                  placeholder="Enter detailed description (e.g., 'Broken display, needs repair')"
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    resize: 'vertical'
+                  }}
+                  required
                 />
               </div>
+
+              {/* NEW FIELD: LOCATION */}
+              <div className="form-group">
+                <label>LOCATION:</label>
+                <input 
+                  type="text" 
+                  name="location" 
+                  value={newItem.location} 
+                  onChange={handleInputChange}
+                  placeholder="Enter location (optional)"
+                />
+              </div>
+
+              {/* NEW FIELD: STATUS */}
+              <div className="form-group">
+                <label>STATUS: <span style={{color: 'red'}}>*</span></label>
+                <div className="category-dropdown">
+                  <select 
+                    name="status" 
+                    value={newItem.status} 
+                    onChange={handleInputChange}
+                    required
+                  >
+                    {statusOptions.map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>DATE:</label>
+                <input
+                type="date"
+                name="date"
+                value={newItem.date}
+                onChange={handleInputChange}
+                className="date-input"
+              />
+            </div>
 
               <div className="form-group">
                 <label>ITEM PICTURE:</label>
@@ -695,6 +766,25 @@ function SuppliesPage() {
                 <div className="detail-row">
                   <span className="detail-label">Quantity:</span>
                   <span className="detail-value">{selectedItem.quantity}</span>
+                </div>
+                {/* NEW FIELD DISPLAY: UNIT */}
+                <div className="detail-row">
+                  <span className="detail-label">Unit:</span>
+                  <span className="detail-value">{selectedItem.unit || 'N/A'}</span>
+                </div>
+                {/* NEW FIELD DISPLAY: LOCATION */}
+                <div className="detail-row">
+                  <span className="detail-label">Location:</span>
+                  <span className="detail-value">{selectedItem.location || 'N/A'}</span>
+                </div>
+                {/* NEW FIELD DISPLAY: STATUS */}
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className="detail-value">{selectedItem.status || 'N/A'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date:</span>
+                  <span className="detail-value">{selectedItem.date || 'N/A'}</span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Description:</span>
@@ -804,7 +894,30 @@ function SuppliesPage() {
           
           <div className="qr-detail-row">
             <span className="qr-detail-label">Quantity:</span>
-            <span className="qr-detail-value">{qrCodeItem.quantity} units</span>
+            <span className="qr-detail-value">{qrCodeItem.quantity} {qrCodeItem.unit || 'units'}</span>
+          </div>
+          
+          {/* NEW FIELD DISPLAY: UNIT */}
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Unit:</span>
+            <span className="qr-detail-value">{qrCodeItem.unit || 'N/A'}</span>
+          </div>
+          
+          {/* NEW FIELD DISPLAY: LOCATION */}
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Location:</span>
+            <span className="qr-detail-value">{qrCodeItem.location || 'N/A'}</span>
+          </div>
+          
+          {/* NEW FIELD DISPLAY: STATUS */}
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Status:</span>
+            <span className="qr-detail-value">{qrCodeItem.status || 'N/A'}</span>
+          </div>
+
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Date:</span>
+            <span className="qr-detail-value">{qrCodeItem.date || 'N/A'}</span>
           </div>
           
           <div className="qr-detail-row">
@@ -842,6 +955,10 @@ function SuppliesPage() {
             stockNo: qrCodeItem.stockNo,
             category: qrCodeItem.category,
             quantity: qrCodeItem.quantity,
+            unit: qrCodeItem.unit,
+            location: qrCodeItem.location,
+            status: qrCodeItem.status,
+            date: qrCodeItem.date,
             description: qrCodeItem.description
           });
           navigator.clipboard.writeText(qrData);

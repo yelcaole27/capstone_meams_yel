@@ -745,3 +745,51 @@
     align-self: center;
   }
 }
+
+.date-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  background-color: #ffffff;
+  padding: 2px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.date-input::-webkit-calendar-picker-indicator:hover {
+  background-color: #e0e0e0;
+}
+
+/* Dark theme adjustments for date input */
+.dark-theme .date-input {
+  background: #1a1a1a;
+  border-color: #555;
+  color: #ffffff;
+}
+
+.dark-theme .date-input:focus {
+  border-color: #4a9eff;
+}
+
+/* Responsive design for date input */
+@media (max-width: 768px) {
+  .date-input {
+    padding: 10px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
