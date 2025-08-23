@@ -15,6 +15,9 @@ function SuppliesPage() {
     quantity: '', 
     category: '',
     description: '',
+    unit: '', // NEW FIELD
+    location: '', // NEW FIELD
+    status: 'Normal', // NEW FIELD with default value
     itemPicture: null
   });
   const [suppliesData, setSuppliesData] = useState([]);
@@ -30,6 +33,12 @@ function SuppliesPage() {
   const [qrCodeItem, setQrCodeItem] = useState(null);
 
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
+  
+  // NEW: Define unit options
+  const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'set', 'roll', 'bag', 'meter', 'ream'];
+  
+  // NEW: Define status options
+  const statusOptions = ['Understock', 'Normal', 'Overstock'];
 
   // Load supplies from database when component mounts
   useEffect(() => {
@@ -59,7 +68,10 @@ function SuppliesPage() {
         quantity: supply.quantity,
         itemName: supply.name, // Keep the actual name here
         category: supply.category,
-        description: supply.description || ''
+        description: supply.description || '',
+        unit: supply.unit || 'piece', // NEW FIELD with fallback
+        location: supply.location || '', // NEW FIELD
+        status: supply.status || 'Normal' // NEW FIELD with fallback
       };
     });
     setSuppliesData(transformedSupplies);
@@ -69,8 +81,8 @@ function SuppliesPage() {
     setError('Failed to load supplies. Please try again.');
     // Keep existing sample data as fallback
     setSuppliesData([
-      { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml' },
-      { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge' }
+      { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml', unit: 'bottle', location: 'Storage Room A', status: 'Normal' },
+      { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge', unit: 'piece', location: 'Office Supply Cabinet', status: 'Normal' }
     ]);
   } finally {
     setLoading(false);
@@ -117,7 +129,7 @@ function SuppliesPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // QR Code generation function
+  // QR Code generation function - UPDATED to include new fields
   const generateQRCode = async (item) => {
     try {
       const qrData = JSON.stringify({
@@ -127,6 +139,9 @@ function SuppliesPage() {
         category: item.category,
         quantity: item.quantity,
         description: item.description,
+        unit: item.unit, // NEW FIELD
+        location: item.location, // NEW FIELD
+        status: item.status, // NEW FIELD
         timestamp: new Date().toISOString()
       });
 
@@ -210,6 +225,9 @@ function SuppliesPage() {
                 <p><strong>Item Code:</strong> ${qrCodeItem.itemCode}</p>
                 <p><strong>Stock No:</strong> ${qrCodeItem.stockNo}</p>
                 <p><strong>Category:</strong> ${qrCodeItem.category}</p>
+                <p><strong>Unit:</strong> ${qrCodeItem.unit}</p>
+                <p><strong>Location:</strong> ${qrCodeItem.location}</p>
+                <p><strong>Status:</strong> ${qrCodeItem.status}</p>
                 <p><strong>Description:</strong> ${qrCodeItem.description || 'N/A'}</p>
               </div>
             </div>
@@ -236,6 +254,9 @@ function SuppliesPage() {
         quantity: '', 
         category: '',
         description: '',
+        unit: '', // NEW FIELD
+        location: '', // NEW FIELD
+        status: 'Normal', // NEW FIELD with default
         itemPicture: null
       });
     }
@@ -281,15 +302,16 @@ function SuppliesPage() {
     setNewItem({ ...newItem, itemCode: generatedCode });
   };
 
-  // Updated handleAddItem to save to database
+  // Updated handleAddItem to save to database - UPDATED with new fields
   const handleAddItem = async () => {
-    if (!newItem.itemName || !newItem.quantity || !newItem.category) {
-      alert('Please fill in all required fields');
+    // UPDATED validation to include new required fields
+    if (!newItem.itemName || !newItem.quantity || !newItem.category || !newItem.unit) {
+      alert('Please fill in all required fields (Item Name, Quantity, Category, Unit)');
       return;
     }
 
     try {
-      // Prepare data for API (matching your backend structure)
+      // Prepare data for API (matching your backend structure) - UPDATED with new fields
       const supplyData = {
         name: newItem.itemName,
         category: newItem.category,
@@ -297,8 +319,9 @@ function SuppliesPage() {
         quantity: parseInt(newItem.quantity),
         unit_price: 0, // You might want to add a unit price field to your form
         supplier: newItem.stockNo || '', // Using stockNo as supplier for now
-        location: '', // Add location field if needed
-        status: 'available'
+        location: newItem.location, // NEW FIELD
+        status: newItem.status, // NEW FIELD
+        unit: newItem.unit // NEW FIELD (if your backend supports it)
       };
 
       // Show loading state
@@ -307,7 +330,7 @@ function SuppliesPage() {
       // Add to database
       const savedSupply = await SuppliesAPI.addSupply(supplyData);
       
-      // Transform the response to match your current data structure
+      // Transform the response to match your current data structure - UPDATED with new fields
       const newSupplyItem = {
         _id: savedSupply._id,
         itemCode: newItem.itemCode || `GEN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
@@ -316,6 +339,9 @@ function SuppliesPage() {
         itemName: newItem.itemName,
         category: newItem.category,
         description: newItem.description,
+        unit: newItem.unit, // NEW FIELD
+        location: newItem.location, // NEW FIELD
+        status: newItem.status, // NEW FIELD
         itemPicture: newItem.itemPicture
       };
 
@@ -486,7 +512,7 @@ function SuppliesPage() {
         {loading ? 'Loading...' : 'Add Item Supply'}
       </button>
 
-      {/* Enhanced Overlay Form - Same as before but handleAddItem now saves to database */}
+      {/* Enhanced Overlay Form - UPDATED WITH NEW FIELDS */}
       {isOverlayOpen && (
         <div className="overlay" onClick={handleOverlayToggle}>
           <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
@@ -550,6 +576,24 @@ function SuppliesPage() {
                 />
               </div>
 
+              {/* NEW FIELD: UNIT */}
+              <div className="form-group">
+                <label>UNIT: <span style={{color: 'red'}}>*</span></label>
+                <div className="category-dropdown">
+                  <select 
+                    name="unit" 
+                    value={newItem.unit} 
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Unit</option>
+                    {unitOptions.map(unit => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label>CATEGORY:</label>
                 <div className="category-dropdown">
@@ -568,14 +612,51 @@ function SuppliesPage() {
               </div>
 
               <div className="form-group">
-                <label>DESCRIPTION:</label>
-                <input 
-                  type="text" 
+                <label>DESCRIPTION: <span style={{color: 'red'}}>*</span></label>
+                <textarea 
                   name="description" 
                   value={newItem.description || ''} 
                   onChange={handleInputChange}
-                  placeholder="Item description"
+                  placeholder="Enter detailed description (e.g., 'Broken display, needs repair')"
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    resize: 'vertical'
+                  }}
+                  required
                 />
+              </div>
+
+              {/* NEW FIELD: LOCATION */}
+              <div className="form-group">
+                <label>LOCATION:</label>
+                <input 
+                  type="text" 
+                  name="location" 
+                  value={newItem.location} 
+                  onChange={handleInputChange}
+                  placeholder="Enter location (optional)"
+                />
+              </div>
+
+              {/* NEW FIELD: STATUS */}
+              <div className="form-group">
+                <label>STATUS: <span style={{color: 'red'}}>*</span></label>
+                <div className="category-dropdown">
+                  <select 
+                    name="status" 
+                    value={newItem.status} 
+                    onChange={handleInputChange}
+                    required
+                  >
+                    {statusOptions.map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="form-group">
@@ -637,7 +718,7 @@ function SuppliesPage() {
         </div>
       )}
 
-      {/* Item Overview Overlay - UPDATED WITH DELETE BUTTON */}
+      {/* Item Overview Overlay - UPDATED TO SHOW NEW FIELDS */}
       {isItemOverviewOpen && selectedItem && (
         <div className="overlay" onClick={handleCloseItemOverview}>
           <div className="item-overview-content" onClick={(e) => e.stopPropagation()}>
@@ -668,6 +749,21 @@ function SuppliesPage() {
                 <div className="detail-row">
                   <span className="detail-label">Quantity:</span>
                   <span className="detail-value">{selectedItem.quantity}</span>
+                </div>
+                {/* NEW FIELD DISPLAY: UNIT */}
+                <div className="detail-row">
+                  <span className="detail-label">Unit:</span>
+                  <span className="detail-value">{selectedItem.unit || 'N/A'}</span>
+                </div>
+                {/* NEW FIELD DISPLAY: LOCATION */}
+                <div className="detail-row">
+                  <span className="detail-label">Location:</span>
+                  <span className="detail-value">{selectedItem.location || 'N/A'}</span>
+                </div>
+                {/* NEW FIELD DISPLAY: STATUS */}
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className="detail-value">{selectedItem.status || 'N/A'}</span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Description:</span>
@@ -737,7 +833,7 @@ function SuppliesPage() {
         </div>
       )}
 
-{/* Compact QR Code Modal - Matching Item Overview Theme */}
+{/* Compact QR Code Modal - UPDATED TO SHOW NEW FIELDS */}
 {isQRModalOpen && qrCodeItem && (
   <div className="overlay" onClick={handleCloseQRModal}>
     <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -758,7 +854,7 @@ function SuppliesPage() {
           </div>
         </div>
         
-        {/* Item Information - Matching detail-row style */}
+        {/* Item Information - UPDATED WITH NEW FIELDS */}
         <div className="qr-item-info">
           <div className="qr-detail-row">
             <span className="qr-detail-label">Item Code:</span>
@@ -777,7 +873,25 @@ function SuppliesPage() {
           
           <div className="qr-detail-row">
             <span className="qr-detail-label">Quantity:</span>
-            <span className="qr-detail-value">{qrCodeItem.quantity} units</span>
+            <span className="qr-detail-value">{qrCodeItem.quantity} {qrCodeItem.unit || 'units'}</span>
+          </div>
+          
+          {/* NEW FIELD DISPLAY: UNIT */}
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Unit:</span>
+            <span className="qr-detail-value">{qrCodeItem.unit || 'N/A'}</span>
+          </div>
+          
+          {/* NEW FIELD DISPLAY: LOCATION */}
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Location:</span>
+            <span className="qr-detail-value">{qrCodeItem.location || 'N/A'}</span>
+          </div>
+          
+          {/* NEW FIELD DISPLAY: STATUS */}
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Status:</span>
+            <span className="qr-detail-value">{qrCodeItem.status || 'N/A'}</span>
           </div>
           
           <div className="qr-detail-row">
@@ -808,13 +922,16 @@ function SuppliesPage() {
         </button>
         
         <button className="qr-action-btn" onClick={() => {
-          // Copy QR data to clipboard
+          // Copy QR data to clipboard - UPDATED TO INCLUDE NEW FIELDS
           const qrData = JSON.stringify({
             itemCode: qrCodeItem.itemCode,
             itemName: qrCodeItem.itemName,
             stockNo: qrCodeItem.stockNo,
             category: qrCodeItem.category,
             quantity: qrCodeItem.quantity,
+            unit: qrCodeItem.unit,
+            location: qrCodeItem.location,
+            status: qrCodeItem.status,
             description: qrCodeItem.description
           });
           navigator.clipboard.writeText(qrData);
