@@ -23,6 +23,7 @@ function EquipmentPage() {
     location: '',
     status: 'Operational',
     serialNo: '',
+    date: '',
     itemPicture: null
   });
   const [dragActive, setDragActive] = useState(false);
@@ -54,20 +55,20 @@ function EquipmentPage() {
       
       // Transform database data to match your current structure
        const transformedEquipment = equipment.map(item => ({
-        _id: item._id || item.id,
-        itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-        quantity: item.quantity || 1,
-        unit: item.unit || 'UNIT',
-        // FIXED: Properly map name and description fields
-        name: item.name || 'Unknown Equipment',                    // Equipment name (what shows in table)
-        description: item.description || 'No description available', // Detailed description
-        category: item.category || 'General',
-        location: item.location || 'Unknown',
-        status: item.status || 'Operational',
-        serialNo: item.serialNo || item.serial_number || `SN-${Math.floor(Math.random() * 10000)}`,
-        supplier: item.supplier || '',
-        unit_price: item.unit_price || 0
-      }));
+  _id: item._id || item.id,
+  itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+  quantity: item.quantity || 1,
+  unit: item.unit || 'UNIT',
+  name: item.name || 'Unknown Equipment',
+  description: item.description || 'No description available',
+  category: item.category || 'General',
+  location: item.location || 'Unknown',
+  status: item.status || 'Operational',
+  serialNo: item.serialNo || item.serial_number || `SN-${Math.floor(Math.random() * 10000)}`,
+  supplier: item.supplier || '',
+  unit_price: item.unit_price || 0,
+  date: item.date || ''  // NEW FIELD: Date field
+}));
       
       setEquipmentData(transformedEquipment);
       console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
@@ -105,6 +106,7 @@ function EquipmentPage() {
         location: '',
         status: 'Operational',
         serialNo: '',
+        date: '',
         itemPicture: null
       });
       setError(null);
@@ -237,18 +239,19 @@ function EquipmentPage() {
       
       // FIXED: Prepare data with correct mapping
       const equipmentData = {
-        name: newEquipment.name.trim(),              // This is the equipment name (what shows in table)
-        description: newEquipment.description.trim(), // This is the detailed description
-        category: newEquipment.category,
-        quantity: parseInt(newEquipment.quantity),
-        unit: newEquipment.unit,
-        location: newEquipment.location.trim() || '',
-        status: newEquipment.status,
-        serialNo: newEquipment.serialNo.trim(),
-        itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-        unit_price: 0,
-        supplier: ''
-      };
+  name: newEquipment.name.trim(),
+  description: newEquipment.description.trim(),
+  category: newEquipment.category,
+  quantity: parseInt(newEquipment.quantity),
+  unit: newEquipment.unit,
+  location: newEquipment.location.trim() || '',
+  status: newEquipment.status,
+  serialNo: newEquipment.serialNo.trim(),
+  itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+  unit_price: 0,
+  supplier: '',
+  date: newEquipment.date  // NEW FIELD: Date field
+};
 
       console.log('📤 Adding new equipment:', equipmentData);
       
@@ -256,20 +259,21 @@ function EquipmentPage() {
       
       // FIXED: Transform the response to match your current data structure
       const newEquipmentItem = {
-        _id: savedEquipment._id || savedEquipment.id,
-        itemCode: equipmentData.itemCode,
-        name: newEquipment.name.trim(),           // Store name properly
-        quantity: parseInt(newEquipment.quantity),
-        unit: newEquipment.unit,
-        description: newEquipment.description.trim(), // Store description properly
-        category: newEquipment.category,
-        location: newEquipment.location.trim(),
-        status: newEquipment.status,
-        serialNo: newEquipment.serialNo.trim(),
-        itemPicture: newEquipment.itemPicture,
-        supplier: '',
-        unit_price: 0
-      };
+  _id: savedEquipment._id || savedEquipment.id,
+  itemCode: equipmentData.itemCode,
+  name: newEquipment.name.trim(),
+  quantity: parseInt(newEquipment.quantity),
+  unit: newEquipment.unit,
+  description: newEquipment.description.trim(),
+  category: newEquipment.category,
+  location: newEquipment.location.trim(),
+  status: newEquipment.status,
+  serialNo: newEquipment.serialNo.trim(),
+  itemPicture: newEquipment.itemPicture,
+  supplier: '',
+  unit_price: 0,
+  date: newEquipment.date  // NEW FIELD: Date field
+};
 
       setEquipmentData(prevData => [...prevData, newEquipmentItem]);
       
@@ -332,6 +336,7 @@ function EquipmentPage() {
         location: equipment.location,
         status: equipment.status,
         serialNo: equipment.serialNo,
+        date: equipment.date,
         id: equipment._id,
         timestamp: new Date().toISOString(),
         generatedBy: 'Equipment Management System'
@@ -444,6 +449,7 @@ function EquipmentPage() {
                 <p><strong>Location:</strong> ${qrCodeEquipment.location}</p>
                 <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
                 <p><strong>Quantity:</strong> ${qrCodeEquipment.quantity} ${qrCodeEquipment.unit}</p>
+                <p><strong>Date:</strong> ${qrCodeEquipment.date || 'Not specified'}</p>
                 <p><strong>Description:</strong> ${qrCodeEquipment.description}</p>
               </div>
             </div>
@@ -770,6 +776,17 @@ function EquipmentPage() {
               </div>
 
               <div className="form-group">
+                 <label>DATE:</label>
+                 <input
+                  type="date"
+                  name="date"
+                  value={newEquipment.date}
+                  onChange={handleEquipmentInputChange}
+                  className="date-input"
+                />
+              </div>
+
+              <div className="form-group">
                 <label>ITEM PICTURE:</label>
                 <div className="file-input-container">
                   <input 
@@ -874,6 +891,12 @@ function EquipmentPage() {
                     {selectedEquipment.status}
                   </span>
                 </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Date:</span>
+                  <span className="detail-value">{selectedEquipment.date || 'Not specified'}</span>
+                </div>
+
                 <div className="detail-row">
                   <span className="detail-label">Description:</span>
                   <span className="detail-value">{selectedEquipment.description}</span>
