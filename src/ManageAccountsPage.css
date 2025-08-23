@@ -137,6 +137,19 @@
   background-color: #242424;
 }
 
+/* Clickable Name Styles */
+.clickable-name {
+  color: #e0e0e0;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.clickable-name:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
 .status-toggle {
   position: relative;
   display: inline-block;
@@ -455,6 +468,123 @@ input:checked + .slider:before {
   cursor: not-allowed;
 }
 
+/* Account Overview Modal Styles */
+.account-overview-modal {
+  background: #f0f0f0;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.account-overview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.account-overview-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: #e0e0e0;
+  color: #333333;
+}
+
+.account-overview-content {
+  padding: 30px;
+  display: flex;
+  gap: 30px;
+}
+
+.account-image-section {
+  flex-shrink: 0;
+}
+
+.account-image-placeholder {
+  width: 150px;
+  height: 200px;
+  border: 2px dashed #cccccc;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #999999;
+}
+
+.account-image-placeholder svg {
+  color: #cccccc;
+  margin-bottom: 10px;
+}
+
+.no-image-text {
+  font-size: 14px;
+  color: #999999;
+  font-weight: 500;
+}
+
+.account-details-section {
+  flex-grow: 1;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555555;
+  min-width: 140px;
+  font-size: 14px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  color: #333333;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.status-active {
+  color: #28a745 !important;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #dc3545 !important;
+  font-weight: 600;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .account-cards-grid {
@@ -505,5 +635,33 @@ input:checked + .slider:before {
     flex-direction: column;
     gap: 4px;
     text-align: center;
+  }
+
+  /* Account Overview Responsive */
+  .account-overview-modal {
+    max-width: 100%;
+    margin: 10px;
+  }
+
+  .account-overview-content {
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .account-image-placeholder {
+    width: 120px;
+    height: 160px;
+    align-self: center;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    margin-bottom: 12px;
+  }
+
+  .detail-label {
+    min-width: auto;
+    margin-bottom: 4px;
   }
 }
