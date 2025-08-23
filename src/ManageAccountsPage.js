@@ -4,6 +4,8 @@ import './ManageAccountsPage.css';
 function ManageAccountsPage() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAccountOverview, setShowAccountOverview] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -19,7 +21,11 @@ function ManageAccountsPage() {
       email: 'sample@email.com', 
       status: true, 
       accountCreation: '05/10/2025',
-      role: 'admin'
+      role: 'admin',
+      department: 'Engineering',
+      lastLogin: '08/23/2025',
+      phoneNumber: '+63 912 345 6789',
+      position: 'System Administrator'
     },
     { 
       id: 2, 
@@ -28,7 +34,11 @@ function ManageAccountsPage() {
       email: 'sample@email.com', 
       status: true, 
       accountCreation: '05/10/2025',
-      role: 'staff1'
+      role: 'staff1',
+      department: 'Operations',
+      lastLogin: '08/22/2025',
+      phoneNumber: '+63 912 345 6780',
+      position: 'Staff Member'
     },
     { 
       id: 3, 
@@ -37,7 +47,11 @@ function ManageAccountsPage() {
       email: 'sample@email.com', 
       status: true, 
       accountCreation: '05/10/2025',
-      role: 'staff2'
+      role: 'staff2',
+      department: 'Operations',
+      lastLogin: '08/21/2025',
+      phoneNumber: '+63 912 345 6781',
+      position: 'Staff Member'
     },
     { 
       id: 4, 
@@ -46,7 +60,11 @@ function ManageAccountsPage() {
       email: 'sample@email.com', 
       status: true, 
       accountCreation: '05/10/2025',
-      role: 'staff3'
+      role: 'staff3',
+      department: 'Operations',
+      lastLogin: '08/20/2025',
+      phoneNumber: '+63 912 345 6782',
+      position: 'Staff Member'
     }
   ];
 
@@ -86,6 +104,16 @@ function ManageAccountsPage() {
       email: '',
       profilePicture: null
     });
+  };
+
+  const handleNameClick = (account) => {
+    setSelectedAccount(account);
+    setShowAccountOverview(true);
+  };
+
+  const handleCloseAccountOverview = () => {
+    setShowAccountOverview(false);
+    setSelectedAccount(null);
   };
 
   const handleInputChange = (e) => {
@@ -137,7 +165,11 @@ function ManageAccountsPage() {
         day: '2-digit',
         year: 'numeric'
       }),
-      role: formData.username
+      role: formData.username,
+      department: 'Operations',
+      lastLogin: 'Never',
+      phoneNumber: 'Not provided',
+      position: 'Staff Member'
     };
 
     setAccounts([...accounts, newAccount]);
@@ -187,7 +219,14 @@ function ManageAccountsPage() {
             {accounts.map((account) => (
               <tr key={account.id}>
                 <td>{account.id}</td>
-                <td>{account.name}</td>
+                <td>
+                  <span 
+                    className="clickable-name"
+                    onClick={() => handleNameClick(account)}
+                  >
+                    {account.name}
+                  </span>
+                </td>
                 <td>{account.username}</td>
                 <td>{account.email}</td>
                 <td>
@@ -334,6 +373,84 @@ function ManageAccountsPage() {
                 >
                   ADD ACCOUNT
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Overview Modal */}
+      {showAccountOverview && selectedAccount && (
+        <div className="modal-overlay">
+          <div className="account-overview-modal">
+            <div className="account-overview-header">
+              <h3 className="account-overview-title">Account Overview</h3>
+              <button 
+                className="close-button"
+                onClick={handleCloseAccountOverview}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="account-overview-content">
+              <div className="account-image-section">
+                <div className="account-image-placeholder">
+                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div className="no-image-text">No Image</div>
+                </div>
+              </div>
+
+              <div className="account-details-section">
+                <div className="detail-row">
+                  <span className="detail-label">Account Name:</span>
+                  <span className="detail-value">{selectedAccount.name}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Username:</span>
+                  <span className="detail-value">{selectedAccount.username}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Email:</span>
+                  <span className="detail-value">{selectedAccount.email}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Department:</span>
+                  <span className="detail-value">{selectedAccount.department}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Position:</span>
+                  <span className="detail-value">{selectedAccount.position}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Phone Number:</span>
+                  <span className="detail-value">{selectedAccount.phoneNumber}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className={`detail-value status-${selectedAccount.status ? 'active' : 'inactive'}`}>
+                    {selectedAccount.status ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Account Creation:</span>
+                  <span className="detail-value">{selectedAccount.accountCreation}</span>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-label">Last Login:</span>
+                  <span className="detail-value">{selectedAccount.lastLogin}</span>
+                </div>
               </div>
             </div>
           </div>
