@@ -5,7 +5,12 @@ function ManageAccountsPage() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAccountOverview, setShowAccountOverview] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    username: ''
+  });
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -81,9 +86,16 @@ function ManageAccountsPage() {
   };
 
   const handleEdit = (id) => {
-    console.log('Edit account:', id);
+    const accountToEdit = accounts.find(account => account.id === id);
+    if (accountToEdit) {
+      setSelectedAccount(accountToEdit);
+      setEditFormData({
+        name: accountToEdit.name,
+        username: accountToEdit.username
+      });
+      setShowEditModal(true);
+    }
     setOpenDropdown(null);
-    // Add edit functionality here
   };
 
   const handleDelete = (id) => {
@@ -106,6 +118,15 @@ function ManageAccountsPage() {
     });
   };
 
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedAccount(null);
+    setEditFormData({
+      name: '',
+      username: ''
+    });
+  };
+
   const handleNameClick = (account) => {
     setSelectedAccount(account);
     setShowAccountOverview(true);
@@ -119,6 +140,14 @@ function ManageAccountsPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
       ...prev,
       [name]: value
     }));
@@ -174,6 +203,21 @@ function ManageAccountsPage() {
 
     setAccounts([...accounts, newAccount]);
     handleCloseModal();
+  };
+
+  const handleSaveChanges = () => {
+    if (selectedAccount) {
+      setAccounts(accounts.map(account => 
+        account.id === selectedAccount.id 
+          ? { 
+              ...account, 
+              name: editFormData.name, 
+              username: editFormData.username 
+            }
+          : account
+      ));
+      handleCloseEditModal();
+    }
   };
 
   return (
@@ -372,6 +416,87 @@ function ManageAccountsPage() {
                   disabled={!formData.name || !formData.username || !formData.email}
                 >
                   ADD ACCOUNT
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Account Modal */}
+      {showEditModal && selectedAccount && (
+        <div className="modal-overlay">
+          <div className="edit-account-modal">
+            <div className="edit-modal-header">
+              <h3 className="edit-modal-title">Account Overview</h3>
+            </div>
+            
+            <div className="edit-modal-content">
+              <div className="edit-image-section">
+                <div className="edit-image-placeholder">
+                  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+
+              <div className="edit-form-section">
+                <div className="edit-form-left">
+                  <div className="edit-form-group">
+                    <label className="edit-form-label">Name:</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={editFormData.name}
+                      onChange={handleEditInputChange}
+                      className="edit-form-input"
+                    />
+                  </div>
+
+                  <div className="edit-form-group">
+                    <label className="edit-form-label">Username:</label>
+                    <input
+                      type="text"
+                      name="username"
+                      value={editFormData.username}
+                      onChange={handleEditInputChange}
+                      className="edit-form-input"
+                    />
+                  </div>
+
+                  <div className="edit-form-group">
+                    <label className="edit-form-label">ID:</label>
+                    <span className="edit-form-readonly">{selectedAccount.id}</span>
+                  </div>
+                </div>
+
+                <div className="edit-form-right">
+                  <div className="edit-form-group">
+                    <label className="edit-form-label">Status:</label>
+                    <span className="edit-form-readonly">
+                      {selectedAccount.status ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  <div className="edit-form-group">
+                    <label className="edit-form-label">Account Created:</label>
+                    <span className="edit-form-readonly">{selectedAccount.accountCreation}</span>
+                  </div>
+
+                  <div className="edit-form-group">
+                    <label className="edit-form-label">Email:</label>
+                    <span className="edit-form-readonly">{selectedAccount.email}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="edit-modal-actions">
+                <button 
+                  className="save-changes-button"
+                  onClick={handleSaveChanges}
+                >
+                  SAVE CHANGES
                 </button>
               </div>
             </div>
