@@ -112,71 +112,74 @@ const EquipmentAPI = {
 
   // Add new equipment - ENHANCED WITH DEBUG LOGGING
   async addEquipment(equipmentData) {
-    try {
-      // Enhanced validation - check for both name and description
-      if (!equipmentData.name?.trim()) {
-        throw new Error('Equipment name is required');
-      }
-      if (!equipmentData.description?.trim()) {
-        throw new Error('Equipment description is required');
-      }
-      if (!equipmentData.category?.trim()) {
-        throw new Error('Equipment category is required');
-      }
-      if (!equipmentData.quantity || equipmentData.quantity <= 0) {
-        throw new Error('Equipment quantity must be greater than 0');
-      }
+  try {
+    // Enhanced validation - check for both name and description
+    if (!equipmentData.name?.trim()) {
+      throw new Error('Equipment name is required');
+    }
+    if (!equipmentData.description?.trim()) {
+      throw new Error('Equipment description is required');
+    }
+    if (!equipmentData.category?.trim()) {
+      throw new Error('Equipment category is required');
+    }
+    if (!equipmentData.quantity || equipmentData.quantity <= 0) {
+      throw new Error('Equipment quantity must be greater than 0');
+    }
 
-      // 🔍 DEBUG: Log the incoming data
-      console.log('🔍 DEBUG - Raw incoming equipmentData:', equipmentData);
-      console.log('🔍 DEBUG - Name field:', equipmentData.name);
-      console.log('🔍 DEBUG - Description field:', equipmentData.description);
+    // 🔍 DEBUG: Log the incoming data
+    console.log('🔍 DEBUG - Raw incoming equipmentData:', equipmentData);
+    console.log('🔍 DEBUG - Date field:', equipmentData.date);
+    console.log('🔍 DEBUG - Date field type:', typeof equipmentData.date);
+    console.log('🔍 DEBUG - Date field value:', JSON.stringify(equipmentData.date));
 
-      // FIXED: Process and clean data with correct field mapping
-      const processedData = {
-        name: equipmentData.name.trim(),              // ✅ Equipment name (e.g., "Printer")
-        description: equipmentData.description.trim(), // ✅ Equipment description (e.g., "Epson L5290")
-        category: equipmentData.category.trim(),
-        quantity: parseInt(equipmentData.quantity) || 0,
-        unit: equipmentData.unit || 'UNIT',
-        location: equipmentData.location?.trim() || '',
-        status: equipmentData.status || 'Operational',
-        serialNo: equipmentData.serialNo?.trim() || '',
-        itemCode: equipmentData.itemCode?.trim() || '',
-        // Additional fields
-        unit_price: parseFloat(equipmentData.unit_price) || 0,
-        supplier: equipmentData.supplier?.trim() || '',
-      };
+    // FIXED: Process and clean data with correct field mapping
+    const processedData = {
+      name: equipmentData.name.trim(),
+      description: equipmentData.description.trim(),
+      category: equipmentData.category.trim(),
+      quantity: parseInt(equipmentData.quantity) || 0,
+      unit: equipmentData.unit || 'UNIT',
+      location: equipmentData.location?.trim() || '',
+      status: equipmentData.status || 'Operational',
+      serialNo: equipmentData.serialNo?.trim() || '',
+      itemCode: equipmentData.itemCode?.trim() || '',
+      unit_price: parseFloat(equipmentData.unit_price) || 0,
+      supplier: equipmentData.supplier?.trim() || '',
+      date: equipmentData.date || ''  // 🔥 EXPLICITLY INCLUDE DATE
+    };
 
       // 🔍 DEBUG: Log the processed data that will be sent
-      console.log('🔍 DEBUG - Processed data being sent to backend:', processedData);
-      console.log('🔍 DEBUG - Processed name field:', processedData.name);
-      console.log('🔍 DEBUG - Processed description field:', processedData.description);
+       console.log('🔍 DEBUG - Processed data being sent to backend:', processedData);
+    console.log('🔍 DEBUG - Processed date field:', processedData.date);
+    console.log('🔍 DEBUG - Processed date type:', typeof processedData.date);
 
-      // Remove empty string fields (optional - depends on your backend)
-      Object.keys(processedData).forEach(key => {
-        if (processedData[key] === '') {
-          delete processedData[key];
-        }
-      });
+    // Don't remove empty string fields for date - we want to preserve it
+    const fieldsToSend = { ...processedData };
+    Object.keys(fieldsToSend).forEach(key => {
+      if (key !== 'date' && fieldsToSend[key] === '') {
+        delete fieldsToSend[key];
+      }
+    });
 
-      console.log('📤 Final data being sent to backend:', processedData);
-      
-      const response = await apiClient.post('/api/equipment', processedData);
-      const savedEquipment = response.data.data || response.data;
-      
-      // 🔍 DEBUG: Log what the backend returned
-      console.log('🔍 DEBUG - Backend response:', savedEquipment);
-      console.log('🔍 DEBUG - Saved name field:', savedEquipment.name);
-      console.log('🔍 DEBUG - Saved description field:', savedEquipment.description);
-      
-      console.log('✅ Equipment added successfully:', savedEquipment);
-      return savedEquipment;
-    } catch (error) {
-      console.error('❌ Failed to add equipment:', error);
-      throw error;
-    }
-  },
+      console.log('📤 Final data being sent to backend:', fieldsToSend);
+    console.log('📤 Final date field:', fieldsToSend.date);
+    
+    const response = await apiClient.post('/api/equipment', fieldsToSend);
+    const savedEquipment = response.data.data || response.data;
+    
+    // 🔍 DEBUG: Log what the backend returned
+    console.log('🔍 DEBUG - Backend response:', savedEquipment);
+    console.log('🔍 DEBUG - Backend returned date field:', savedEquipment.date);
+    console.log('🔍 DEBUG - Backend date type:', typeof savedEquipment.date);
+    
+    console.log('✅ Equipment added successfully:', savedEquipment);
+    return savedEquipment;
+  } catch (error) {
+    console.error('❌ Failed to add equipment:', error);
+    throw error;
+  }
+},
 
   // Update equipment
   async updateEquipment(id, updateData) {

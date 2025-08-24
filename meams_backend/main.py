@@ -113,8 +113,8 @@ def supply_helper(supply) -> dict:
 def equipment_helper(equipment) -> dict:
     return {
         "_id": str(equipment["_id"]),
-        "name": equipment.get("name", equipment.get("description", "")),           # Equipment name
-        "description": equipment.get("description", equipment.get("name", "")),   # Description
+        "name": equipment.get("name", equipment.get("description", "")),           
+        "description": equipment.get("description", equipment.get("name", "")),   
         "category": equipment.get("category", "General"),
         "quantity": equipment.get("quantity", 1),
         "unit": equipment.get("unit", "UNIT"),
@@ -124,6 +124,7 @@ def equipment_helper(equipment) -> dict:
         "itemCode": equipment.get("itemCode", equipment.get("item_code", "")),
         "unit_price": equipment.get("unit_price", 0.0),
         "supplier": equipment.get("supplier", ""),
+        "date": equipment.get("date", ""),           # 🔥 ADD THIS LINE
         "created_at": equipment.get("created_at", datetime.utcnow()),
         "updated_at": equipment.get("updated_at", datetime.utcnow())
     }
@@ -175,7 +176,9 @@ class EquipmentCreate(BaseModel):
     itemCode: Optional[str] = ""
     unit_price: Optional[float] = 0.0
     supplier: Optional[str] = ""
+    date: Optional[str] = ""     # 🔥 ADD THIS LINE
 
+# 2. UPDATE the EquipmentUpdate model (around line 145):
 class EquipmentUpdate(BaseModel):
     name: Optional[str] = None           # Equipment name
     description: Optional[str] = None    # Equipment description
@@ -188,6 +191,7 @@ class EquipmentUpdate(BaseModel):
     itemCode: Optional[str] = None
     unit_price: Optional[float] = None
     supplier: Optional[str] = None
+    date: Optional[str] = None           # 🔥 ADD THIS LINE
 
 # Authentication Routes
 
