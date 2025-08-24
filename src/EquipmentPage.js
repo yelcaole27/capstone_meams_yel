@@ -21,7 +21,7 @@ function EquipmentPage() {
     description: '', // Separate description field
     category: '',
     location: '',
-    status: 'Operational',
+    status: 'Within-Useful-Life',
     serialNo: '',
     date: '',
     itemPicture: null
@@ -36,7 +36,7 @@ function EquipmentPage() {
 
   // Equipment categories and statuses
   const equipmentCategories = ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety'];
-  const equipmentStatuses = ['Operational', 'Maintenance', 'Out of Service', 'Under Repair'];
+  const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
   const equipmentUnits = ['UNIT', 'SET', 'PIECE', 'LOT'];
 
 
@@ -63,7 +63,7 @@ function EquipmentPage() {
   description: item.description || 'No description available',
   category: item.category || 'General',
   location: item.location || 'Unknown',
-  status: item.status || 'Operational',
+  status: item.status || 'Within-Useful-Life',
   serialNo: item.serialNo || item.serial_number || `SN-${Math.floor(Math.random() * 10000)}`,
   supplier: item.supplier || '',
   unit_price: item.unit_price || 0,
@@ -104,7 +104,7 @@ function EquipmentPage() {
         description: '',   // Reset description
         category: '',
         location: '',
-        status: 'Operational',
+        status: 'Within-Useful-Life',
         serialNo: '',
         date: '',
         itemPicture: null
@@ -884,9 +884,9 @@ function EquipmentPage() {
                 <div className="detail-row">
                   <span className="detail-label">Status:</span>
                   <span className="detail-value" style={{
-                    color: selectedEquipment.status === 'Operational' ? '#28a745' : 
+                    color: selectedEquipment.status === 'Within-Useful-Life' ? '#28a745' : 
                            selectedEquipment.status === 'Maintenance' ? '#ffc107' :
-                           selectedEquipment.status === 'Under Repair' ? '#fd7e14' : '#dc3545'
+                           selectedEquipment.status === 'Beyond-Useful-Life' ? '#fd7e14' : '#dc3545'
                   }}>
                     {selectedEquipment.status}
                   </span>
