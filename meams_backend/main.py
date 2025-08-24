@@ -105,6 +105,7 @@ def supply_helper(supply) -> dict:
         "location": supply.get("location", ""),
         "status": supply.get("status", "available"),
         "itemCode": supply.get("itemCode", ""),
+        "date": supply.get("date", ""),
         "created_at": supply.get("created_at", datetime.utcnow()),
         "updated_at": supply.get("updated_at", datetime.utcnow())
     }
@@ -139,6 +140,7 @@ class SupplyCreate(BaseModel):
     location: Optional[str] = ""
     status: Optional[str] = "available"
     itemCode: Optional[str] = ""
+    date: Optional[str] = ""
 
 class SupplyUpdate(BaseModel):
     name: Optional[str] = None
@@ -149,6 +151,7 @@ class SupplyUpdate(BaseModel):
     location: Optional[str] = None
     status: Optional[str] = None
     itemCode: Optional[str] = None
+    date: Optional[str] = None
 
 class SupplyResponse(BaseModel):
     _id: str

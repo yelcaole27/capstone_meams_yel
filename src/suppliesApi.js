@@ -113,30 +113,75 @@ const SuppliesAPI = {
 
   // Add new supply
   async addSupply(supplyData) {
-    try {
-      // Validate required fields
-      if (!supplyData.name || !supplyData.category || !supplyData.quantity) {
-        throw new Error('Name, category, and quantity are required fields');
-      }
-
-      // Ensure quantity is a number
-      const processedData = {
-        ...supplyData,
-        quantity: parseInt(supplyData.quantity) || 0,
-        unit_price: parseFloat(supplyData.unit_price) || 0,
-      };
-
-      console.log('📤 Sending supply data:', processedData);
-      
-      const response = await apiClient.post('/api/supplies', processedData);
-      console.log('✅ Supply added successfully:', response.data);
-      
-      return response.data.data;
-    } catch (error) {
-      console.error('Failed to add supply:', error);
-      throw error;
+  try {
+    // Enhanced validation - check for both name and description
+    if (!supplyData.name?.trim()) {
+      throw new Error('Supply name is required');
     }
-  },
+    if (!supplyData.description?.trim()) {
+      throw new Error('Supply description is required');
+    }
+    if (!supplyData.category?.trim()) {
+      throw new Error('Supply category is required');
+    }
+    if (!supplyData.quantity || supplyData.quantity <= 0) {
+      throw new Error('Supply quantity must be greater than 0');
+    }
+
+    // 🔍 DEBUG: Log the incoming data
+    console.log('🔍 DEBUG - Raw incoming supplyData:', supplyData);
+    console.log('🔍 DEBUG - Date field:', supplyData.date);
+    console.log('🔍 DEBUG - Date field type:', typeof supplyData.date);
+    console.log('🔍 DEBUG - Date field value:', JSON.stringify(supplyData.date));
+
+    // FIXED: Process and clean data with correct field mapping
+    const processedData = {
+      name: supplyData.name.trim(),
+      description: supplyData.description.trim(),
+      category: supplyData.category.trim(),
+      quantity: parseInt(supplyData.quantity) || 0,
+      unit: supplyData.unit || 'UNIT',
+      location: supplyData.location?.trim() || '',
+      status: supplyData.status || 'Available',
+      serialNo: supplyData.serialNo?.trim() || '',
+      itemCode: supplyData.itemCode?.trim() || '',
+      unit_price: parseFloat(supplyData.unit_price) || 0,
+      supplier: supplyData.supplier?.trim() || '',
+      date: supplyData.date || '' // 🔥 EXPLICITLY INCLUDE DATE
+    };
+
+    // 🔍 DEBUG: Log the processed data
+    console.log('🔍 DEBUG - Processed data being sent to backend:', processedData);
+    console.log('🔍 DEBUG - Processed date field:', processedData.date);
+    console.log('🔍 DEBUG - Processed date type:', typeof processedData.date);
+
+    // Don't remove empty string fields for date - we want to preserve it
+    const fieldsToSend = { ...processedData };
+    Object.keys(fieldsToSend).forEach(key => {
+      if (key !== 'date' && fieldsToSend[key] === '') {
+        delete fieldsToSend[key];
+      }
+    });
+
+    console.log('📤 Final data being sent to backend:', fieldsToSend);
+    console.log('📤 Final date field:', fieldsToSend.date);
+
+    const response = await apiClient.post('/api/supplies', fieldsToSend);
+    const savedSupply = response.data.data || response.data;
+
+    // 🔍 DEBUG: Log what the backend returned
+    console.log('🔍 DEBUG - Backend response:', savedSupply);
+    console.log('🔍 DEBUG - Backend returned date field:', savedSupply.date);
+    console.log('🔍 DEBUG - Backend date type:', typeof savedSupply.date);
+
+    console.log('✅ Supply added successfully:', savedSupply);
+    return savedSupply;
+
+  } catch (error) {
+    console.error('❌ Failed to add supply:', error);
+    throw error;
+  }
+},
 
   // Update supply
   async updateSupply(id, updateData) {
