@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Sector } from 'recharts';
 import SuppliesAPI from './suppliesApi';
 import EquipmentAPI from './EquipmentApi';
 import './DashboardPage.css';
@@ -9,32 +9,32 @@ function DashboardPage() {
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeSupplyIndex, setActiveSupplyIndex] = useState(null);
+  const [activeEquipmentIndex, setActiveEquipmentIndex] = useState(null);
 
-  // Get actual understock supplies from API data - only those with "Understock" status
+  // Get actual understock supplies from API data
   const getUnderstockData = () => {
     return suppliesData.filter(supply => {
       const status = supply.status || '';
-      // Only show items with exact "Understock" status
       return status.toLowerCase() === 'understock';
-    }).slice(0, 10); // Limit to 10 items for display
+    }).slice(0, 10);
   };
 
-  // Get actual equipment beyond useful life from API data - only those with "Beyond-Useful-Life" status
+  // Get actual equipment beyond useful life from API data
   const getEquipmentBeyondLifeData = () => {
     return equipmentData.filter(equipment => {
       const status = equipment.status || '';
-      // Only show items with exact "Beyond-Useful-Life" status
       return status.toLowerCase() === 'beyond-useful-life' ||
              status.toLowerCase() === 'beyond useful life';
-    }).slice(0, 10); // Limit to 10 items for display
+    }).slice(0, 10);
   };
 
   const understockData = getUnderstockData();
   const equipmentLifeData = getEquipmentBeyondLifeData();
 
-  // Colors for pie charts
-  const supplyColors = ['#4CAF50', '#f44336', '#FF9800']; // Green, Orange, Red
-  const equipmentColors = ['#4CAF50', '#FF9800', '#f44336']; // Blue, Orange, Purple  
+  // Clean, professional color palette
+  const supplyColors = ['#4CAF50', '#F44336', '#FF9800']; 
+  const equipmentColors = ['#4CAF50', '#FF9800', '#F44336']; 
 
   // Fetch data on component mount
   useEffect(() => {
@@ -42,7 +42,6 @@ function DashboardPage() {
       try {
         setLoading(true);
         
-        // Check if user is authenticated first
         if (!SuppliesAPI.isAuthenticated() || !EquipmentAPI.isAuthenticated()) {
           console.warn('User not authenticated, using empty data for charts');
           setSuppliesData([]);
@@ -51,7 +50,6 @@ function DashboardPage() {
           return;
         }
         
-        // Fetch supplies and equipment data in parallel
         const [supplies, equipment] = await Promise.all([
           SuppliesAPI.getAllSupplies().catch(err => {
             console.warn('Failed to fetch supplies:', err);
@@ -90,7 +88,6 @@ function DashboardPage() {
   // Process supplies data for pie chart
   const getSupplyStatusData = () => {
     if (!suppliesData.length) {
-      // Return sample data when no real data is available
       return [
         { name: 'Normal', value: 15, color: supplyColors[0] },
         { name: 'Understock', value: 5, color: supplyColors[1] },
@@ -101,7 +98,6 @@ function DashboardPage() {
     const statusCounts = suppliesData.reduce((acc, supply) => {
       const status = supply.status || 'Normal';
       
-      // Map your actual status values to the three categories
       if (status.toLowerCase().includes('understock') || status.toLowerCase().includes('low')) {
         acc.Understock += 1;
       } else if (status.toLowerCase().includes('overstock') || status.toLowerCase().includes('excess')) {
@@ -117,13 +113,12 @@ function DashboardPage() {
       { name: 'Normal', value: statusCounts.Normal, color: supplyColors[0] },
       { name: 'Understock', value: statusCounts.Understock, color: supplyColors[1] },
       { name: 'Overstock', value: statusCounts.Overstock, color: supplyColors[2] }
-    ];
+    ].filter(item => item.value > 0);
   };
 
   // Process equipment data for pie chart
   const getEquipmentStatusData = () => {
     if (!equipmentData.length) {
-      // Return sample data when no real data is available
       return [
         { name: 'Within-Useful-Life', value: 12, color: equipmentColors[0] },
         { name: 'Maintenance', value: 4, color: equipmentColors[1] },
@@ -134,7 +129,6 @@ function DashboardPage() {
     const statusCounts = equipmentData.reduce((acc, equipment) => {
       const status = equipment.status || 'Within-Useful-Life';
       
-      // Map your actual status values to the three categories
       if (status.toLowerCase().includes('maintenance') || status.toLowerCase().includes('repair')) {
         acc.Maintenance += 1;
       } else if (status.toLowerCase().includes('beyond') || status.toLowerCase().includes('end') || 
@@ -151,15 +145,15 @@ function DashboardPage() {
       { name: 'Within-Useful-Life', value: statusCounts['Within-Useful-Life'], color: equipmentColors[0] },
       { name: 'Maintenance', value: statusCounts.Maintenance, color: equipmentColors[1] },
       { name: 'Beyond-Useful-Life', value: statusCounts['Beyond-Useful-Life'], color: equipmentColors[2] }
-    ];
+    ].filter(item => item.value > 0);
   };
 
-  // Custom label function for pie charts
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
-    if (percent === 0) return null;
+  // Minimalist label function
+  const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+    if (percent < 0.05) return null;
     
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const radius = (innerRadius + outerRadius) / 2;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -167,8 +161,8 @@ function DashboardPage() {
       <text 
         x={x} 
         y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+        fill="#ffffff" 
+        textAnchor="middle" 
         dominantBaseline="central"
         fontSize="12"
         fontWeight="600"
@@ -178,22 +172,35 @@ function DashboardPage() {
     );
   };
 
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }) => {
+  // Clean tooltip
+  const renderTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const data = payload[0];
       return (
         <div style={{
           backgroundColor: '#333',
           padding: '10px',
-          border: '1px solid #555',
-          borderRadius: '5px',
-          color: 'white'
+          border: 'none',
+          borderRadius: '4px',
+          color: 'white',
+          fontSize: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}>
-          <p>{`${payload[0].name}: ${payload[0].value}`}</p>
+          <div style={{ fontWeight: 'bold' }}>{data.name}</div>
+          <div>Count: {data.value}</div>
         </div>
       );
     }
     return null;
+  };
+
+  // Simple hover effect
+  const onPieEnter = (data, index, setActiveIndex) => {
+    setActiveIndex(index);
+  };
+
+  const onPieLeave = (setActiveIndex) => {
+    setActiveIndex(null);
   };
 
   const supplyChartData = getSupplyStatusData();
@@ -212,10 +219,10 @@ function DashboardPage() {
           <div className="graph-placeholder">Line Graph 2 Data</div>
         </div>
 
-        {/* Middle Row: Pie Graphs */}
+        {/* Middle Row: Simple Pie Charts */}
         <div className="graph-card pie-graph-1">
-          <h3>Supply Category Distribution</h3>
-          <div style={{ width: '100%', height: '200px' }}>
+          <h3>Supply Status Distribution</h3>
+          <div style={{ width: '100%', height: '280px' }}>
             {loading ? (
               <div className="graph-placeholder">Loading supply data...</div>
             ) : error ? (
@@ -228,20 +235,29 @@ function DashboardPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={renderCustomizedLabel}
-                    outerRadius={60}
+                    label={renderLabel}
+                    outerRadius={80}
+                    innerRadius={0}
                     fill="#8884d8"
                     dataKey="value"
+                    onMouseEnter={(data, index) => onPieEnter(data, index, setActiveSupplyIndex)}
+                    onMouseLeave={() => onPieLeave(setActiveSupplyIndex)}
                   >
                     {supplyChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color}
+                        stroke={activeSupplyIndex === index ? '#fff' : 'none'}
+                        strokeWidth={activeSupplyIndex === index ? 2 : 0}
+                        style={{
+                          filter: activeSupplyIndex === index ? 'brightness(1.1)' : 'none',
+                          cursor: 'pointer'
+                        }}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    wrapperStyle={{ color: '#fff', fontSize: '12px' }}
-                    iconType="circle"
-                  />
+                  <Tooltip content={renderTooltip} />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -249,8 +265,8 @@ function DashboardPage() {
         </div>
         
         <div className="graph-card pie-graph-2">
-          <h3>Equipment Status Breakdown</h3>
-          <div style={{ width: '100%', height: '200px' }}>
+          <h3>Equipment Status Distribution</h3>
+          <div style={{ width: '100%', height: '280px' }}>
             {loading ? (
               <div className="graph-placeholder">Loading equipment data...</div>
             ) : error ? (
@@ -263,27 +279,36 @@ function DashboardPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={renderCustomizedLabel}
-                    outerRadius={60}
+                    label={renderLabel}
+                    outerRadius={80}
+                    innerRadius={0}
                     fill="#8884d8"
                     dataKey="value"
+                    onMouseEnter={(data, index) => onPieEnter(data, index, setActiveEquipmentIndex)}
+                    onMouseLeave={() => onPieLeave(setActiveEquipmentIndex)}
                   >
                     {equipmentChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color}
+                        stroke={activeEquipmentIndex === index ? '#fff' : 'none'}
+                        strokeWidth={activeEquipmentIndex === index ? 2 : 0}
+                        style={{
+                          filter: activeEquipmentIndex === index ? 'brightness(1.1)' : 'none',
+                          cursor: 'pointer'
+                        }}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend 
-                    wrapperStyle={{ color: '#fff', fontSize: '12px' }}
-                    iconType="circle"
-                  />
+                  <Tooltip content={renderTooltip} />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Bottom Row: Tables - Now in a new flex container */}
+        {/* Bottom Row: Tables */}
         <div className="dashboard-tables-row">
           <div className="table-card understock-table">
             <h3>Items Understock!</h3>
