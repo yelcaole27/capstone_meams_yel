@@ -793,3 +793,294 @@
     font-size: 16px; /* Prevents zoom on iOS */
   }
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Repair Card Modal */
+.repair-card-modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding: 40px;
+}
+
+/* Modal Close Button */
+.modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #666;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.modal-logo {
+  width: 50px;
+  height: 50px;
+}
+
+.modal-title-section {
+  text-align: center;
+}
+
+.modal-university-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.modal-document-type {
+  font-size: 14px;
+  color: #666;
+  margin: 2px 0 0 0;
+}
+
+/* Modal Divider */
+.modal-divider {
+  border-top: 2px solid #333;
+  margin: 20px 0;
+}
+
+/* Modal Info Table */
+.modal-info-table {
+  margin-bottom: 25px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.info-details-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.info-details-table td {
+  border: 1px solid #333;
+  padding: 12px 15px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.info-label-cell {
+  background: #f8f9fa;
+  font-weight: bold;
+  color: #333;
+  width: 15%;
+  text-align: left;
+}
+
+.info-value-cell {
+  background: white;
+  color: #333;
+  text-decoration: underline;
+  text-decoration-color: #666;
+  text-underline-offset: 2px;
+  width: 35%;
+}
+
+/* Modal Table Container */
+.modal-table-container {
+  border: 2px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 25px;
+}
+
+/* Modal Repair Table */
+.modal-repair-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.modal-repair-table th {
+  background: #f8f9fa;
+  border: 1px solid #333;
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-repair-table td {
+  border: 1px solid #333;
+  padding: 10px 8px;
+  text-align: center;
+  min-height: 20px;
+  height: 35px;
+}
+
+/* Table Column Widths */
+.receipt-col {
+  width: 18%;
+}
+
+.unit-col {
+  width: 18%;
+}
+
+.date-repair-col {
+  width: 20%;
+}
+
+.details-col {
+  width: 28%;
+  text-align: left !important;
+}
+
+.amount-col {
+  width: 16%;
+}
+
+.quantity-header,
+.repair-header {
+  text-align: center;
+  font-weight: bold;
+  font-style: italic;
+}
+
+/* Table Cells */
+.receipt-cell,
+.unit-cell,
+.date-repair-cell,
+.amount-cell {
+  text-align: center;
+}
+
+.details-cell {
+  text-align: left;
+  padding-left: 12px;
+}
+
+/* Modal Print Section */
+.modal-print-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.modal-print-btn {
+  background: white;
+  color: #333;
+  border: 2px solid #333;
+  padding: 12px 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.modal-print-btn:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-print-btn svg {
+  stroke: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .repair-card-modal {
+    width: 95%;
+    padding: 25px;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-info-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .modal-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .modal-repair-table {
+    font-size: 11px;
+  }
+
+  .modal-repair-table th,
+  .modal-repair-table td {
+    padding: 6px 4px;
+  }
+
+  .modal-close-btn {
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .repair-card-modal {
+    padding: 20px;
+  }
+
+  .modal-repair-table {
+    font-size: 10px;
+  }
+
+  .modal-repair-table th,
+  .modal-repair-table td {
+    padding: 4px 3px;
+  }
+
+  .modal-print-btn {
+    padding: 10px 20px;
+    font-size: 12px;
+  }
+}
+

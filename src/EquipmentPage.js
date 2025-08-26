@@ -34,11 +34,29 @@ function EquipmentPage() {
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
   const [qrCodeEquipment, setQrCodeEquipment] = useState(null);
 
+  // Maintenance
+ // Add this state to your existing useState declarations
+const [showRepairDocument, setShowRepairDocument] = useState(false);
+
+// Add this function to handle the View Maintenance Log button click
+const handleViewMaintenanceLog = () => {
+  setShowRepairDocument(true);
+};
+
+// Add this function to close the repair document
+const closeRepairDocument = () => {
+  setShowRepairDocument(false);
+};
+
+// Add this function to handle printing
+const handlePrintStockCard = () => {
+  window.print();
+};
+
   // Equipment categories and statuses
   const equipmentCategories = ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety'];
   const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
   const equipmentUnits = ['UNIT', 'SET', 'PIECE', 'LOT'];
-
 
   // Load equipment from database when component mounts
    useEffect(() => {
@@ -905,16 +923,16 @@ function EquipmentPage() {
             </div>
             
             <div className="item-overview-actions">
-              <button className="action-btn view-stock-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                View Maintenance Log ▪
-              </button>
+              <button className="action-btn view-stock-btn" onClick={handleViewMaintenanceLog}>
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+  View Maintenance Log ▪
+</button>
               
               <button className="action-btn view-docs-btn">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1072,8 +1090,264 @@ function EquipmentPage() {
           </div>
         </div>
       )}
+
+    {showRepairDocument && selectedEquipment && (
+  <div className="modal-overlay">
+    <div className="repair-card-modal">
+      <button className="modal-close-btn" onClick={closeRepairDocument}>
+        ×
+      </button>
+      
+      <div className="modal-header">
+        <img src="/UDMLOGO.png" alt="University Logo" className="modal-logo" />
+        <div className="modal-title-section">
+          <h3 className="modal-university-name">Universidad De Manila</h3>
+          <p className="modal-document-type">Repair History</p>
+        </div>
+      </div>
+      
+      <div className="modal-divider"></div>
+      
+      <div className="modal-info-table">
+        <table className="info-details-table">
+          <tbody>
+            <tr>
+              <td className="info-label-cell">Equipment Name:</td>
+              <td className="info-value-cell">{selectedEquipment.name || 'N/A'}</td>
+              <td className="info-label-cell">Item Code:</td>
+              <td className="info-value-cell">{selectedEquipment.itemCode || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td className="info-label-cell">Description:</td>
+              <td className="info-value-cell">{selectedEquipment.description || 'N/A'}</td>
+              <td className="info-label-cell">PAR No.:</td>
+              <td className="info-value-cell"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="modal-table-container">
+        <table className="modal-repair-table">
+          <thead>
+            <tr>
+              <th className="quantity-header" colSpan="2">Quantity</th>
+              <th className="repair-header" colSpan="3">Repair</th>
+            </tr>
+            <tr>
+              <th className="receipt-col">Receipt</th>
+              <th className="unit-col">Unit</th>
+              <th className="date-repair-col">Date of Last Repair</th>
+              <th className="details-col">Details</th>
+              <th className="amount-col">Amount Used</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 12 }, (_, index) => (
+              <tr key={index}>
+                <td className="receipt-cell"></td>
+                <td className="unit-cell"></td>
+                <td className="date-repair-cell"></td>
+                <td className="details-cell"></td>
+                <td className="amount-cell"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="modal-print-section">
+        <button 
+          className="modal-print-btn"
+          onClick={() => {
+            const printWindow = window.open('', '_blank');
+            closeRepairDocument();
+            printWindow.document.write(`
+              <html>
+                <head>
+                  <title>Repair History - ${selectedEquipment.name || 'Equipment'}</title>
+                  <style>
+                    body {
+                      font-family: Arial, sans-serif;
+                      margin: 0;
+                      padding: 20px;
+                      background: white;
+                    }
+                    .print-container {
+                      max-width: 800px;
+                      margin: 0 auto;
+                      border: 2px solid #333;
+                      border-radius: 8px;
+                      padding: 30px;
+                    }
+                    .print-header {
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      margin-bottom: 20px;
+                      gap: 15px;
+                    }
+                    .print-logo {
+                      width: 50px;
+                      height: 50px;
+                    }
+                    .print-title {
+                      text-align: center;
+                    }
+                    .print-university {
+                      font-size: 16px;
+                      font-weight: bold;
+                      margin: 0;
+                      color: #333;
+                    }
+                    .print-document-type {
+                      font-size: 12px;
+                      margin: 2px 0 0 0;
+                      color: #666;
+                    }
+                    .print-divider {
+                      border-top: 1px solid #333;
+                      margin: 20px 0;
+                    }
+                    .print-info-table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      margin-bottom: 20px;
+                      border: 1px solid #333;
+                    }
+                    .print-info-table td {
+                      padding: 8px 12px;
+                      border: 1px solid #333;
+                      font-size: 12px;
+                    }
+                    .print-info-label {
+                      background: #f8f9fa;
+                      font-weight: bold;
+                      width: 15%;
+                      color: #333;
+                    }
+                    .print-info-value {
+                      width: 35%;
+                      text-decoration: underline;
+                    }
+                    .print-table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      border: 2px solid #333;
+                      margin-top: 10px;
+                    }
+                    .print-table th,
+                    .print-table td {
+                      border: 1px solid #333;
+                      padding: 8px;
+                      text-align: center;
+                      font-size: 11px;
+                    }
+                    .print-table th {
+                      background: #f8f9fa;
+                      font-weight: bold;
+                    }
+                    .print-table .details-col {
+                      width: 40%;
+                      text-align: left;
+                    }
+                    .print-table .date-col { width: 15%; }
+                    .print-table .receipt-col { width: 15%; }
+                    .print-table .unit-col { width: 15%; }
+                    .print-table .amount-col { width: 15%; }
+                    .quantity-header,
+                    .repair-header {
+                      font-weight: bold;
+                      background: #e9ecef;
+                    }
+                    @media print {
+                      body { padding: 0; }
+                      .print-container { 
+                        border: 1px solid #333;
+                        box-shadow: none;
+                      }
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="print-container">
+                    <div class="print-header">
+                      <img src="/UDMLOGO.png" alt="University Logo" class="print-logo" />
+                      <div class="print-title">
+                        <h3 class="print-university">Universidad De Manila</h3>
+                        <p class="print-document-type">Repair History</p>
+                      </div>
+                    </div>
+                    
+                    <div class="print-divider"></div>
+                    
+                    <table class="print-info-table">
+                      <tr>
+                        <td class="print-info-label">Equipment Name:</td>
+                        <td class="print-info-value">${selectedEquipment.name || 'N/A'}</td>
+                        <td class="print-info-label">Item Code:</td>
+                        <td class="print-info-value">${selectedEquipment.itemCode || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td class="print-info-label">Description:</td>
+                        <td class="print-info-value">${selectedEquipment.description || 'N/A'}</td>
+                        <td class="print-info-label">PAR No.:</td>
+                        <td class="print-info-value"></td>
+                      </tr>
+                    </table>
+                    
+                    <table class="print-table">
+                      <thead>
+                        <tr>
+                          <th colspan="2" class="quantity-header">Quantity</th>
+                          <th colspan="3" class="repair-header">Repair</th>
+                        </tr>
+                        <tr>
+                          <th class="receipt-col">Receipt</th>
+                          <th class="unit-col">Unit</th>
+                          <th class="date-col">Date of Last Repair</th>
+                          <th class="details-col">Details</th>
+                          <th class="amount-col">Amount Used</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${Array.from({ length: 20 }, () => `
+                          <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                </body>
+              </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+              printWindow.print();
+              printWindow.close();
+            }, 250);
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.21071 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Print Stock Card
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
 
 export default EquipmentPage;
+

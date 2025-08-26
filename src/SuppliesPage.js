@@ -165,6 +165,18 @@ function SuppliesPage() {
     }
   };
 
+  // FOR STOCK CARD //
+const [isStockCardOpen, setIsStockCardOpen] = useState(false);
+
+  const handleViewStockCard = (item) => {
+  setSelectedItem(item);
+  setIsStockCardOpen(true);
+};
+
+const handleCloseStockCard = () => {
+  setIsStockCardOpen(false);
+};
+
   const downloadQRCode = () => {
     if (!qrCodeDataURL || !qrCodeItem) return;
     const link = document.createElement('a');
@@ -794,16 +806,19 @@ function SuppliesPage() {
             </div>
             
             <div className="item-overview-actions">
-              <button className="action-btn view-stock-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                View Stock Card ▦
-              </button>
+              <button 
+                className="action-btn view-stock-btn"
+                onClick={() => handleViewStockCard(selectedItem)}
+>
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+  View Stock Card ▦
+</button>
               
               <button className="action-btn view-docs-btn">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -976,6 +991,262 @@ function SuppliesPage() {
         ×
       </button>
     </div>
+    
+  </div>
+)}
+
+{isStockCardOpen && selectedItem && (
+  <div className="modal-overlay">
+    <div className="repair-card-modal">
+      <button className="modal-close-btn" onClick={handleCloseStockCard}>
+        ×
+      </button>
+
+      <div className="modal-header">
+        <img src="/UDMLOGO.png" alt="University Logo" className="modal-logo" />
+        <div className="modal-title-section">
+          <h3 className="modal-university-name">Universidad De Manila</h3>
+          <p className="modal-document-type">Stock Card</p>
+        </div>
+      </div>
+
+      <div className="modal-divider"></div>
+
+      <div className="modal-info-table">
+        <table className="info-details-table">
+          <tbody>
+            <tr>
+              <td className="info-label-cell">Item:</td>
+              <td className="info-value-cell">{selectedItem.itemName || 'N/A'}</td>
+              <td className="info-label-cell">Stock No.:</td>
+              <td className="info-value-cell">{selectedItem.stockNo || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td className="info-label-cell">Category:</td>
+              <td className="info-value-cell">{selectedItem.category || 'N/A'}</td>
+              <td className="info-label-cell">Description:</td>
+              <td className="info-value-cell">{selectedItem.description || 'N/A'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="modal-table-container">
+        <table className="modal-repair-table">
+          <thead>
+            <tr>
+              <th rowSpan="2" className="date-column">Date</th>
+              <th colSpan="3" className="quantity-header">Quantity</th>
+            </tr>
+            <tr>
+              <th className="receipt-column">Receipt</th>
+              <th className="quantity-issue-column">Issue</th>
+              <th className="balance-column">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="stock-row">
+              <td className="date-cell">{selectedItem.date}</td>
+              <td className="receipt-cell">{selectedItem.quantity}</td>
+              <td className="quantity-issue-cell"></td>
+              <td className="balance-cell">{selectedItem.quantity}</td>
+            </tr>
+            {Array.from({ length: 9 }, (_, index) => (
+              <tr key={index} className="stock-row">
+                <td className="date-cell"></td>
+                <td className="receipt-cell"></td>
+                <td className="quantity-issue-cell"></td>
+                <td className="balance-column"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="modal-print-section">
+        <button
+          className="modal-print-btn"
+          onClick={() => {
+            const printWindow = window.open('', '_blank');
+            handleCloseStockCard();
+            printWindow.document.write(`
+              <html>
+                <head>
+                  <title>Stock Card - ${selectedItem.itemName || 'Item'}</title>
+                  <style>
+                    body {
+                      font-family: Arial, sans-serif;
+                      margin: 0;
+                      padding: 20px;
+                      background: white;
+                    }
+                    .print-container {
+                      max-width: 800px;
+                      margin: 0 auto;
+                      border: 2px solid #333;
+                      border-radius: 8px;
+                      padding: 30px;
+                    }
+                    .print-header {
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      margin-bottom: 20px;
+                      gap: 15px;
+                    }
+                    .print-logo {
+                      width: 50px;
+                      height: 50px;
+                    }
+                    .print-title {
+                      text-align: center;
+                    }
+                    .print-university {
+                      font-size: 16px;
+                      font-weight: bold;
+                      margin: 0;
+                      color: #333;
+                    }
+                    .print-document-type {
+                      font-size: 12px;
+                      margin: 2px 0 0 0;
+                      color: #666;
+                    }
+                    .print-divider {
+                      border-top: 1px solid #333;
+                      margin: 20px 0;
+                    }
+                    .print-info-table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      margin-bottom: 20px;
+                      border: 1px solid #333;
+                    }
+                    .print-info-table td {
+                      padding: 8px 12px;
+                      border: 1px solid #333;
+                      font-size: 12px;
+                    }
+                    .print-info-label {
+                      background: #f8f9fa;
+                      font-weight: bold;
+                      width: 15%;
+                      color: #333;
+                    }
+                    .print-info-value {
+                      width: 35%;
+                      text-decoration: underline;
+                    }
+                    .print-table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      border: 2px solid #333;
+                      margin-top: 10px;
+                    }
+                    .print-table th,
+                    .print-table td {
+                      border: 1px solid #333;
+                      padding: 8px;
+                      text-align: center;
+                      font-size: 11px;
+                    }
+                    .print-table th {
+                      font-weight: bold;
+                      background: #e9ecef;
+                    }
+                    .print-table .date-column, .print-table .receipt-column, .print-table .quantity-issue-column, .print-table .balance-column {
+                      width: 25%;
+                    }
+                    .quantity-header {
+                      font-weight: bold;
+                      background: #e9ecef;
+                    }
+                    @media print {
+                      body { padding: 0; }
+                      .print-container {
+                        border: 1px solid #333;
+                        box-shadow: none;
+                      }
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="print-container">
+                    <div class="print-header">
+                      <img src="/UDMLOGO.png" alt="University Logo" class="print-logo" />
+                      <div class="print-title">
+                        <h3 class="print-university">Universidad De Manila</h3>
+                        <p class="print-document-type">Stock Card</p>
+                      </div>
+                    </div>
+
+                    <div class="print-divider"></div>
+
+                    <table class="print-info-table">
+                      <tr>
+                        <td class="print-info-label">Item:</td>
+                        <td class="print-info-value">${selectedItem.itemName || 'N/A'}</td>
+                        <td class="print-info-label">Stock No.:</td>
+                        <td class="print-info-value">${selectedItem.stockNo || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td class="print-info-label">Category:</td>
+                        <td class="print-info-value">${selectedItem.category || 'N/A'}</td>
+                        <td class="print-info-label">Description:</td>
+                        <td class="print-info-value">${selectedItem.description || 'N/A'}</td>
+                      </tr>
+                    </table>
+
+                    <table class="print-table">
+                      <thead>
+                        <tr>
+                          <th rowSpan="2" class="date-column">Date</th>
+                          <th colSpan="3" class="quantity-header">Quantity</th>
+                        </tr>
+                        <tr>
+                          <th class="receipt-column">Receipt</th>
+                          <th class="quantity-issue-column">Issue</th>
+                          <th class="balance-column">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="date-cell" style="color: black;">${selectedItem.date}</td>
+                          <td>${selectedItem.quantity}</td>
+                          <td>&nbsp;</td>
+                          <td>${selectedItem.quantity}</td>
+                        </tr>
+                        ${Array.from({ length: 20 }, () => `
+                          <tr>
+                            <td class="date-cell">&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                </body>
+              </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+              printWindow.print();
+              printWindow.close();
+            }, 250);
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.21071 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Print Stock Card
+        </button>
+      </div>
+    </div>
   </div>
 )}
     </div>
@@ -983,3 +1254,4 @@ function SuppliesPage() {
 }
 
 export default SuppliesPage;
+
