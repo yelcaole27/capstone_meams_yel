@@ -30,6 +30,8 @@
 - pip install python-dotenv
 - pip install python-multipart
 - pip install Pillow
+- pip install pydantic[email]
+- pip install email-validator
 
 Put the backend files on venv.
 

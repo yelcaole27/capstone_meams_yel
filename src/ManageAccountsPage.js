@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+// COMPLETE UPDATED ManageAccountsPage.js file:
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import './ManageAccountsPage.css';
 
 function ManageAccountsPage() {
+  const { authToken, adminToken } = useAuth();
+  
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAccountOverview, setShowAccountOverview] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [editFormData, setEditFormData] = useState({
     name: '',
     username: ''
@@ -15,70 +23,100 @@ function ManageAccountsPage() {
     name: '',
     username: '',
     email: '',
+    role: 'staff',
+    department: 'Operations',
+    position: 'Staff Member',
+    phone_number: '',
     profilePicture: null
   });
 
-  const accountsData = [
-    { 
-      id: 1, 
-      name: 'Engr. Jayson Valeroso', 
-      username: 'admin', 
-      email: 'sample@email.com', 
-      status: true, 
-      accountCreation: '05/10/2025',
-      role: 'admin',
-      department: 'Engineering',
-      lastLogin: '08/23/2025',
-      phoneNumber: '+63 912 345 6789',
-      position: 'System Administrator'
-    },
-    { 
-      id: 2, 
-      name: 'Admin Name', 
-      username: 'staff1', 
-      email: 'sample@email.com', 
-      status: true, 
-      accountCreation: '05/10/2025',
-      role: 'staff1',
-      department: 'Operations',
-      lastLogin: '08/22/2025',
-      phoneNumber: '+63 912 345 6780',
-      position: 'Staff Member'
-    },
-    { 
-      id: 3, 
-      name: 'Admin Name', 
-      username: 'staff2', 
-      email: 'sample@email.com', 
-      status: true, 
-      accountCreation: '05/10/2025',
-      role: 'staff2',
-      department: 'Operations',
-      lastLogin: '08/21/2025',
-      phoneNumber: '+63 912 345 6781',
-      position: 'Staff Member'
-    },
-    { 
-      id: 4, 
-      name: 'Admin Name', 
-      username: 'staff3', 
-      email: 'sample@email.com', 
-      status: true, 
-      accountCreation: '05/10/2025',
-      role: 'staff3',
-      department: 'Operations',
-      lastLogin: '08/20/2025',
-      phoneNumber: '+63 912 345 6782',
-      position: 'Staff Member'
+  // State for accounts from API
+  const [accounts, setAccounts] = useState([]);
+
+  // Get auth token - FIXED VERSION
+  const getAuthToken = () => {
+    // Check for admin token first, then regular auth token
+    return adminToken || authToken || localStorage.getItem('adminToken') || localStorage.getItem('authToken') || '';
+  };
+
+  // Fetch accounts from API
+  const fetchAccounts = async () => {
+    try {
+      setLoading(true);
+      const token = getAuthToken();
+      
+      if (!token) {
+        setError('No authentication token found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:8000/api/accounts', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError('Authentication failed. Please log in again.');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setAccounts(data.data);
+        setError(''); // Clear any previous errors
+      } else {
+        setError('Failed to fetch accounts');
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      setError('Failed to load accounts. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const [accounts, setAccounts] = useState(accountsData);
+  // Load accounts on component mount
+  useEffect(() => {
+    fetchAccounts();
+  }, [authToken, adminToken]); // Re-fetch when tokens change
 
-  const handleStatusToggle = (id) => {
-    setAccounts(accounts.map(account => 
-      account.id === id ? { ...account, status: !account.status } : account
-    ));
+  const handleStatusToggle = async (accountId) => {
+    try {
+      const account = accounts.find(acc => acc._id === accountId);
+      if (!account) return;
+
+      const response = await fetch(`http://localhost:8000/api/accounts/${accountId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: !account.status
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        // Update local state
+        setAccounts(accounts.map(acc => 
+          acc._id === accountId ? { ...acc, status: !acc.status } : acc
+        ));
+        setSuccess('Account status updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating account status:', error);
+      setError('Failed to update account status');
+    }
   };
 
   const toggleDropdown = (id) => {
@@ -86,7 +124,7 @@ function ManageAccountsPage() {
   };
 
   const handleEdit = (id) => {
-    const accountToEdit = accounts.find(account => account.id === id);
+    const accountToEdit = accounts.find(account => account._id === id);
     if (accountToEdit) {
       setSelectedAccount(accountToEdit);
       setEditFormData({
@@ -98,14 +136,75 @@ function ManageAccountsPage() {
     setOpenDropdown(null);
   };
 
-  const handleDelete = (id) => {
-    console.log('Delete account:', id);
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this account?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8000/api/accounts/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setAccounts(accounts.filter(acc => acc._id !== id));
+        setSuccess('Account deleted successfully');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setError('Failed to delete account');
+    } finally {
+      setLoading(false);
+    }
     setOpenDropdown(null);
-    // Add delete functionality here
+  };
+
+  const handleResetPassword = async (id) => {
+    if (!window.confirm('Are you sure you want to reset this account\'s password? A new password will be sent to their email.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8000/api/accounts/${id}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(data.message);
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      setError('Failed to reset password');
+    } finally {
+      setLoading(false);
+    }
+    setOpenDropdown(null);
   };
 
   const handleAddAccount = () => {
     setShowAddModal(true);
+    setError('');
+    setSuccess('');
   };
 
   const handleCloseModal = () => {
@@ -114,8 +213,14 @@ function ManageAccountsPage() {
       name: '',
       username: '',
       email: '',
+      role: 'staff',
+      department: 'Operations',
+      position: 'Staff Member',
+      phone_number: '',
       profilePicture: null
     });
+    setError('');
+    setSuccess('');
   };
 
   const handleCloseEditModal = () => {
@@ -178,50 +283,127 @@ function ManageAccountsPage() {
     e.preventDefault();
   };
 
-  const handleSubmitAccount = () => {
-    // Here you would typically send the data to your backend
-    console.log('Adding account:', formData);
-    
-    // For demo purposes, add to local state
-    const newAccount = {
-      id: accounts.length + 1,
-      name: formData.name,
-      username: formData.username,
-      email: formData.email,
-      status: true,
-      accountCreation: new Date().toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
-      }),
-      role: formData.username,
-      department: 'Operations',
-      lastLogin: 'Never',
-      phoneNumber: 'Not provided',
-      position: 'Staff Member'
-    };
+  const handleSubmitAccount = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
-    setAccounts([...accounts, newAccount]);
-    handleCloseModal();
-  };
+    try {
+      const accountData = {
+        name: formData.name,
+        username: formData.username,
+        email: formData.email,
+        role: formData.role,
+        department: formData.department,
+        position: formData.position,
+        phone_number: formData.phone_number
+      };
 
-  const handleSaveChanges = () => {
-    if (selectedAccount) {
-      setAccounts(accounts.map(account => 
-        account.id === selectedAccount.id 
-          ? { 
-              ...account, 
-              name: editFormData.name, 
-              username: editFormData.username 
-            }
-          : account
-      ));
-      handleCloseEditModal();
+      const response = await fetch('http://localhost:8000/api/accounts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(accountData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(data.message);
+        // Refresh accounts list
+        await fetchAccounts();
+        // Close modal after a short delay to show success message
+        setTimeout(() => {
+          handleCloseModal();
+        }, 2000);
+      } else {
+        setError('Failed to create account');
+      }
+
+    } catch (error) {
+      console.error('Error creating account:', error);
+      setError(error.message || 'Failed to create account. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!selectedAccount) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/accounts/${selectedAccount._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: editFormData.name,
+          username: editFormData.username
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        // Update local state
+        setAccounts(accounts.map(account => 
+          account._id === selectedAccount._id 
+            ? { 
+                ...account, 
+                name: editFormData.name, 
+                username: editFormData.username 
+              }
+            : account
+        ));
+        setSuccess('Account updated successfully');
+        handleCloseEditModal();
+      }
+    } catch (error) {
+      console.error('Error updating account:', error);
+      setError('Failed to update account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
   return (
     <div className="manage-accounts-page-container">
+      {/* Error/Success Messages */}
+      {error && (
+        <div className="alert alert-error">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success">
+          {success}
+        </div>
+      )}
+
       <div className="accounts-header">
         <h2 className="page-title">Manage Accounts</h2>
         <button className="add-account-button" onClick={handleAddAccount}>
@@ -229,10 +411,12 @@ function ManageAccountsPage() {
         </button>
       </div>
 
+      {loading && <div className="loading-spinner">Loading...</div>}
+
       <div className="account-cards-grid">
         {accounts.map((account) => (
           <div 
-            key={account.id} 
+            key={account._id} 
             className={`account-card ${!account.status ? 'inactive' : ''}`}
           >
             <div className="account-avatar">
@@ -260,9 +444,9 @@ function ManageAccountsPage() {
             </tr>
           </thead>
           <tbody>
-            {accounts.map((account) => (
-              <tr key={account.id}>
-                <td>{account.id}</td>
+            {accounts.map((account, index) => (
+              <tr key={account._id}>
+                <td>{index + 1}</td>
                 <td>
                   <span 
                     className="clickable-name"
@@ -278,31 +462,37 @@ function ManageAccountsPage() {
                     <input 
                       type="checkbox" 
                       checked={account.status}
-                      onChange={() => handleStatusToggle(account.id)}
+                      onChange={() => handleStatusToggle(account._id)}
                     />
                     <span className="slider"></span>
                   </label>
                 </td>
-                <td>{account.accountCreation}</td>
+                <td>{account.account_creation}</td>
                 <td>
                   <div className="manage-dropdown">
                     <button 
                       className="manage-button"
-                      onClick={() => toggleDropdown(account.id)}
+                      onClick={() => toggleDropdown(account._id)}
                     >
                       MANAGE
                     </button>
-                    {openDropdown === account.id && (
+                    {openDropdown === account._id && (
                       <div className="manage-dropdown-menu">
                         <div 
                           className="manage-dropdown-item edit"
-                          onClick={() => handleEdit(account.id)}
+                          onClick={() => handleEdit(account._id)}
                         >
                           Edit
                         </div>
                         <div 
+                          className="manage-dropdown-item reset"
+                          onClick={() => handleResetPassword(account._id)}
+                        >
+                          Reset Password
+                        </div>
+                        <div 
                           className="manage-dropdown-item delete"
-                          onClick={() => handleDelete(account.id)}
+                          onClick={() => handleDelete(account._id)}
                         >
                           Delete
                         </div>
@@ -325,6 +515,9 @@ function ManageAccountsPage() {
             </div>
             
             <div className="modal-content">
+              {error && <div className="modal-error">{error}</div>}
+              {success && <div className="modal-success">{success}</div>}
+
               <div className="form-group">
                 <label className="form-label">NAME:</label>
                 <input
@@ -333,7 +526,8 @@ function ManageAccountsPage() {
                   value={formData.name}
                   onChange={handleInputChange}
                   className="form-input"
-                  placeholder="Input text"
+                  placeholder="Full Name"
+                  required
                 />
               </div>
 
@@ -345,7 +539,8 @@ function ManageAccountsPage() {
                   value={formData.username}
                   onChange={handleInputChange}
                   className="form-input"
-                  placeholder="Input text"
+                  placeholder="Username"
+                  required
                 />
               </div>
 
@@ -357,7 +552,57 @@ function ManageAccountsPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   className="form-input"
-                  placeholder="Input text"
+                  placeholder="email@example.com"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">ROLE:</label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="form-input"
+                >
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">DEPARTMENT:</label>
+                <input
+                  type="text"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="Department"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">POSITION:</label>
+                <input
+                  type="text"
+                  name="position"
+                  value={formData.position}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="Job Position"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">PHONE NUMBER:</label>
+                <input
+                  type="tel"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  placeholder="+63 912 345 6789"
                 />
               </div>
 
@@ -403,19 +648,24 @@ function ManageAccountsPage() {
                 </div>
               </div>
 
+              <div className="password-notice">
+                <p><strong>📧 Password Notification:</strong> A secure password will be automatically generated and sent to the provided email address.</p>
+              </div>
+
               <div className="modal-actions">
                 <button 
                   className="cancel-button"
                   onClick={handleCloseModal}
+                  disabled={loading}
                 >
                   CANCEL
                 </button>
                 <button 
                   className="submit-button"
                   onClick={handleSubmitAccount}
-                  disabled={!formData.name || !formData.username || !formData.email}
+                  disabled={loading || !formData.name || !formData.username || !formData.email}
                 >
-                  ADD ACCOUNT
+                  {loading ? 'CREATING...' : 'ADD ACCOUNT'}
                 </button>
               </div>
             </div>
@@ -428,7 +678,7 @@ function ManageAccountsPage() {
         <div className="modal-overlay">
           <div className="edit-account-modal">
             <div className="edit-modal-header">
-              <h3 className="edit-modal-title">Account Overview</h3>
+              <h3 className="edit-modal-title">Edit Account</h3>
             </div>
             
             <div className="edit-modal-content">
@@ -467,7 +717,7 @@ function ManageAccountsPage() {
 
                   <div className="edit-form-group">
                     <label className="edit-form-label">ID:</label>
-                    <span className="edit-form-readonly">{selectedAccount.id}</span>
+                    <span className="edit-form-readonly">{selectedAccount._id}</span>
                   </div>
                 </div>
 
@@ -481,7 +731,7 @@ function ManageAccountsPage() {
 
                   <div className="edit-form-group">
                     <label className="edit-form-label">Account Created:</label>
-                    <span className="edit-form-readonly">{selectedAccount.accountCreation}</span>
+                    <span className="edit-form-readonly">{selectedAccount.account_creation}</span>
                   </div>
 
                   <div className="edit-form-group">
@@ -495,8 +745,9 @@ function ManageAccountsPage() {
                 <button 
                   className="save-changes-button"
                   onClick={handleSaveChanges}
+                  disabled={loading}
                 >
-                  SAVE CHANGES
+                  {loading ? 'SAVING...' : 'SAVE CHANGES'}
                 </button>
               </div>
             </div>
@@ -546,6 +797,11 @@ function ManageAccountsPage() {
                 </div>
 
                 <div className="detail-row">
+                  <span className="detail-label">Role:</span>
+                  <span className="detail-value">{selectedAccount.role}</span>
+                </div>
+
+                <div className="detail-row">
                   <span className="detail-label">Department:</span>
                   <span className="detail-value">{selectedAccount.department}</span>
                 </div>
@@ -557,7 +813,7 @@ function ManageAccountsPage() {
 
                 <div className="detail-row">
                   <span className="detail-label">Phone Number:</span>
-                  <span className="detail-value">{selectedAccount.phoneNumber}</span>
+                  <span className="detail-value">{selectedAccount.phone_number || 'Not provided'}</span>
                 </div>
 
                 <div className="detail-row">
@@ -569,12 +825,12 @@ function ManageAccountsPage() {
 
                 <div className="detail-row">
                   <span className="detail-label">Account Creation:</span>
-                  <span className="detail-value">{selectedAccount.accountCreation}</span>
+                  <span className="detail-value">{selectedAccount.account_creation}</span>
                 </div>
 
                 <div className="detail-row">
                   <span className="detail-label">Last Login:</span>
-                  <span className="detail-value">{selectedAccount.lastLogin}</span>
+                  <span className="detail-value">{selectedAccount.last_login}</span>
                 </div>
               </div>
             </div>

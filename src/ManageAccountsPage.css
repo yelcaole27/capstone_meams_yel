@@ -719,3 +719,160 @@ input:checked + .slider:before {
     font-size: 11px;
   }
 }
+
+/* Add these styles to your existing ManageAccountsPage.css */
+
+/* Alert messages */
+.alert {
+  padding: 12px 20px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.alert-error {
+  background-color: #fee;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+
+.alert-success {
+  background-color: #f0fff4;
+  color: #22543d;
+  border: 1px solid #9ae6b4;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+/* Modal error/success messages */
+.modal-error {
+  background-color: #fee;
+  color: #c53030;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  border: 1px solid #feb2b2;
+}
+
+.modal-success {
+  background-color: #f0fff4;
+  color: #22543d;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  border: 1px solid #9ae6b4;
+}
+
+/* Password notice in add modal */
+.password-notice {
+  background-color: #e6f3ff;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+  border-left: 4px solid #3182ce;
+}
+
+.password-notice p {
+  margin: 0;
+  color: #2d3748;
+}
+
+/* Enhanced dropdown menu */
+.manage-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 140px;
+}
+
+.manage-dropdown-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.manage-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.manage-dropdown-item:hover {
+  background-color: #f8fafc;
+}
+
+.manage-dropdown-item.edit:hover {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.manage-dropdown-item.reset:hover {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.manage-dropdown-item.delete:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* Form improvements */
+.form-input, select.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus, select.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Status indicators */
+.status-active {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Disabled button states */
+.submit-button:disabled,
+.save-changes-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .modal-container,
+  .edit-account-modal,
+  .account-overview-modal {
+    width: 95%;
+    margin: 10px auto;
+  }
+  
+  .accounts-table {
+    font-size: 12px;
+  }
+  
+  .account-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
