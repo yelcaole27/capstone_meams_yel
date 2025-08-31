@@ -80,6 +80,20 @@ function ManageAccountsPage() {
     }
   };
 
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (openDropdown && !event.target.closest('.manage-dropdown')) {
+      setOpenDropdown(null);
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, [openDropdown]);
+
   // Load accounts on component mount
   useEffect(() => {
     fetchAccounts();
@@ -841,4 +855,7 @@ function ManageAccountsPage() {
   );
 }
 
+
+
 export default ManageAccountsPage;
+

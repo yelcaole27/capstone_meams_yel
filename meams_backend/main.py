@@ -134,7 +134,7 @@ def create_welcome_email_body(name: str, username: str, password: str) -> str:
         <div class="container">
             <div class="header">
                 <h1>Welcome to MEAMS</h1>
-                <p>Mechanical Engineering Asset Management System</p>
+                <p>Maintenance and Engineering Asset Management System</p>
             </div>
             
             <div class="content">
@@ -155,7 +155,7 @@ def create_welcome_email_body(name: str, username: str, password: str) -> str:
             </div>
             
             <div class="footer">
-                <p>&copy; 2025 MEAMS - Mechanical Engineering Asset Management System</p>
+                <p>&copy; 2025 MEAMS - Maintenance and Engineering Asset Management System</p>
             </div>
         </div>
     </body>
