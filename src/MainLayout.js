@@ -7,10 +7,42 @@ function MainLayout() {
   const location = useLocation();
   const [showAdminMenu, setShowAdminMenu] = useState(false);
 
-  const handleSignOut = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('adminToken'); // Also clear admin token
-    navigate('/login');
+  const getAuthToken = () => {
+    return localStorage.getItem('authToken') || localStorage.getItem('adminToken');
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const token = getAuthToken();
+      
+      // Call logout endpoint to log the logout action
+      if (token) {
+        try {
+          await fetch('http://localhost:8000/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        } catch (error) {
+          console.warn('Failed to log logout action:', error);
+          // Continue with logout even if logging fails
+        }
+      }
+      
+      // Clear tokens and redirect
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('adminToken');
+      navigate('/login');
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout even if there's an error
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('adminToken');
+      navigate('/login');
+    }
   };
 
   const toggleAdminMenu = () => {

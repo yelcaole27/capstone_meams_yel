@@ -32,7 +32,7 @@
 - pip install Pillow
 - pip install pydantic[email]
 - pip install email-validator
-
+- pip install bcrypt
 Put the backend files on venv.
 
 Running the project:

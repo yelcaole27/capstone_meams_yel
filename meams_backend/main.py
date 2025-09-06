@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, status
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pymongo import MongoClient
@@ -26,14 +26,14 @@ app = FastAPI(title="MEAMS Asset Management API", version="1.0.0")
 # CORS middleware to allow frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Your React app URLs
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Authentication setup
-SECRET_KEY = "your_secret_key"  # Change this in production
+SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -43,11 +43,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 # CryptContext for password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Email configuration - UPDATE THESE WITH YOUR GMAIL CREDENTIALS
+# Email configuration
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
-EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "your-email@gmail.com")  # Your Gmail address
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "your-app-password")      # Your Gmail App Password
+EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "your-email@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "your-app-password")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <your-email@gmail.com>")
 
 # MongoDB connection
@@ -57,7 +57,6 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 try:
     client = MongoClient(MONGODB_URL)
     db = client[DATABASE_NAME]
-    # Test connection
     client.admin.command('ping')
     print(f"✅ Connected to MongoDB: {DATABASE_NAME}")
 except Exception as e:
@@ -66,10 +65,53 @@ except Exception as e:
 # Collections
 supplies_collection = db.supplies
 equipment_collection = db.equipment
-accounts_collection = db.accounts  # NEW: Accounts collection
+accounts_collection = db.accounts
+logs_collection = db.logs  # NEW: Logs collection
 
 # ===============================================
-# PASSWORD AND EMAIL UTILITIES
+# LOGGING UTILITIES
+# ===============================================
+
+async def create_log_entry(username: str, action: str, details: str = "", ip_address: str = "unknown"):
+    """Create a log entry in the database"""
+    try:
+        log_entry = {
+            "timestamp": datetime.utcnow(),
+            "username": username,
+            "action": action,
+            "details": details,
+            "ip_address": ip_address,
+            "formatted_timestamp": datetime.utcnow().strftime("%m/%d/%Y - %H:%M:%S")
+        }
+        logs_collection.insert_one(log_entry)
+        print(f"📝 Log created: {username} - {action}")
+    except Exception as e:
+        print(f"❌ Failed to create log entry: {str(e)}")
+
+def log_helper(log) -> dict:
+    """Helper function to format log data"""
+    return {
+        "_id": str(log["_id"]),
+        "timestamp": log.get("formatted_timestamp", log.get("timestamp", "")),
+        "username": log.get("username", ""),
+        "action": log.get("action", ""),
+        "details": log.get("details", ""),
+        "ip_address": log.get("ip_address", "unknown"),
+        "created_at": log.get("timestamp", datetime.utcnow())
+    }
+
+# ===============================================
+# LOGS MODELS
+# ===============================================
+
+class LogsFilter(BaseModel):
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    username: Optional[str] = None
+    search: Optional[str] = None
+
+# ===============================================
+# PASSWORD AND EMAIL UTILITIES (EXISTING)
 # ===============================================
 
 def generate_secure_password(length: int = 12) -> str:
@@ -89,16 +131,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 async def send_email(to_email: str, subject: str, body: str) -> bool:
     """Send email with generated password"""
     try:
-        # Create message
         msg = MIMEMultipart()
         msg['From'] = EMAIL_FROM
         msg['To'] = to_email
         msg['Subject'] = subject
-        
-        # Attach body to email
         msg.attach(MIMEText(body, 'html'))
         
-        # Gmail SMTP configuration
         context = ssl.create_default_context()
         
         with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
@@ -163,7 +201,7 @@ def create_welcome_email_body(name: str, username: str, password: str) -> str:
     """
 
 # ===============================================
-# ACCOUNT MODELS
+# EXISTING MODELS (ACCOUNTS, SUPPLIES, EQUIPMENT)
 # ===============================================
 
 class AccountCreate(BaseModel):
@@ -203,12 +241,10 @@ def account_helper(account) -> dict:
         "updated_at": account.get("updated_at", datetime.utcnow())
     }
 
-# Authentication Models
 class User(BaseModel):
     username: str
     password: str
 
-# Function to create JWT token
 def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
@@ -216,7 +252,6 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Updated token verification to check both hardcoded users and database users
 def verify_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -236,7 +271,6 @@ def verify_token(token: str):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-# Helper functions for supplies and equipment (keeping existing)
 def supply_helper(supply) -> dict:
     return {
         "_id": str(supply["_id"]),
@@ -272,7 +306,6 @@ def equipment_helper(equipment) -> dict:
         "updated_at": equipment.get("updated_at", datetime.utcnow())
     }
 
-# Pydantic models for supplies (keeping existing)
 class SupplyCreate(BaseModel):
     name: str
     description: Optional[str] = ""
@@ -295,7 +328,6 @@ class SupplyUpdate(BaseModel):
     itemCode: Optional[str] = None
     date: Optional[str] = None
 
-# Equipment models (keeping existing)
 class EquipmentCreate(BaseModel):
     name: str
     description: str
@@ -325,7 +357,156 @@ class EquipmentUpdate(BaseModel):
     date: Optional[str] = None
 
 # ===============================================
-# AUTHENTICATION ROUTES
+# LOGS API ROUTES - NEW
+# ===============================================
+
+@app.get("/api/logs", response_model=dict)
+async def get_logs(
+    request: Request,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    username: Optional[str] = None,
+    search: Optional[str] = None,
+    token: str = Depends(oauth2_scheme)
+):
+    """Get filtered logs - admin only"""
+    payload = verify_token(token)
+    
+    # Only admin can view logs
+    if payload.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can view logs"
+        )
+    
+    try:
+        # Build filter query
+        filter_query = {}
+        
+        # Date filtering
+        if date_from or date_to:
+            date_filter = {}
+            if date_from:
+                try:
+                    start_date = datetime.strptime(date_from, "%Y-%m-%d")
+                    date_filter["$gte"] = start_date
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Invalid date_from format. Use YYYY-MM-DD")
+            
+            if date_to:
+                try:
+                    end_date = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+                    date_filter["$lt"] = end_date
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Invalid date_to format. Use YYYY-MM-DD")
+            
+            filter_query["timestamp"] = date_filter
+        
+        # Username filtering
+        if username and username != "ALL USERS":
+            filter_query["username"] = username
+        
+        # Search filtering (search in username, action, and details)
+        if search:
+            filter_query["$or"] = [
+                {"username": {"$regex": search, "$options": "i"}},
+                {"action": {"$regex": search, "$options": "i"}},
+                {"details": {"$regex": search, "$options": "i"}}
+            ]
+        
+        # Get logs with filtering and sorting (newest first)
+        logs_cursor = logs_collection.find(filter_query).sort("timestamp", -1).limit(1000)  # Limit to 1000 most recent
+        logs = []
+        
+        for log in logs_cursor:
+            log_data = log_helper(log)
+            # Format the remarks field to match frontend expectations
+            log_data["remarks"] = log_data["action"]
+            if log_data["details"]:
+                log_data["remarks"] += f" - {log_data['details']}"
+            logs.append(log_data)
+        
+        # Get unique usernames for dropdown
+        unique_usernames = logs_collection.distinct("username")
+        
+        return {
+            "success": True,
+            "message": f"Found {len(logs)} log entries",
+            "data": logs,
+            "usernames": ["ALL USERS"] + sorted(unique_usernames)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error retrieving logs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve logs: {str(e)}")
+
+@app.post("/api/logs/export", response_model=dict)
+async def export_logs(
+    logs_filter: LogsFilter,
+    token: str = Depends(oauth2_scheme)
+):
+    """Export logs as CSV data - admin only"""
+    payload = verify_token(token)
+    
+    if payload.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can export logs"
+        )
+    
+    try:
+        # Build filter query (same logic as get_logs)
+        filter_query = {}
+        
+        if logs_filter.date_from or logs_filter.date_to:
+            date_filter = {}
+            if logs_filter.date_from:
+                start_date = datetime.strptime(logs_filter.date_from, "%Y-%m-%d")
+                date_filter["$gte"] = start_date
+            if logs_filter.date_to:
+                end_date = datetime.strptime(logs_filter.date_to, "%Y-%m-%d") + timedelta(days=1)
+                date_filter["$lt"] = end_date
+            filter_query["timestamp"] = date_filter
+        
+        if logs_filter.username and logs_filter.username != "ALL USERS":
+            filter_query["username"] = logs_filter.username
+        
+        if logs_filter.search:
+            filter_query["$or"] = [
+                {"username": {"$regex": logs_filter.search, "$options": "i"}},
+                {"action": {"$regex": logs_filter.search, "$options": "i"}},
+                {"details": {"$regex": logs_filter.search, "$options": "i"}}
+            ]
+        
+        # Get all matching logs
+        logs_cursor = logs_collection.find(filter_query).sort("timestamp", -1)
+        
+        # Convert to CSV format
+        csv_data = "Timestamp,Username,Action,Details,IP Address\n"
+        for log in logs_cursor:
+            timestamp = log.get("formatted_timestamp", "")
+            username = log.get("username", "")
+            action = log.get("action", "")
+            details = log.get("details", "")
+            ip_address = log.get("ip_address", "unknown")
+            
+            # Escape commas and quotes in CSV
+            csv_data += f'"{timestamp}","{username}","{action}","{details}","{ip_address}"\n'
+        
+        return {
+            "success": True,
+            "message": "Logs exported successfully",
+            "csv_data": csv_data,
+            "filename": f"meams_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export logs: {str(e)}")
+
+# ===============================================
+# AUTHENTICATION ROUTES (UPDATED WITH LOGGING)
 # ===============================================
 
 @app.get("/")
@@ -333,20 +514,24 @@ async def root():
     return {"message": "MEAMS Asset Management API is running!", "status": "active"}
 
 @app.post("/login")
-async def login(user: User):
-    """Login endpoint for authentication - checks both hardcoded and database users"""
+async def login(user: User, request: Request):
+    """Login endpoint for authentication - with logging"""
     print(f"Login attempt: {user.username}")
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
-    # First check hardcoded users (for backwards compatibility)
+    # Check hardcoded users first
     valid_users = {
         "admin": {"password": "password123", "role": "admin"},
         "staff": {"password": "staff123", "role": "staff"},
     }
     
-    # Check hardcoded users first
     if user.username in valid_users and user.password == valid_users[user.username]["password"]:
         role = valid_users[user.username]["role"]
         print(f"Login successful for hardcoded user {user.username} with role {role}")
+        
+        # Log successful login
+        await create_log_entry(user.username, "Logged in.", f"Role: {role}", client_ip)
+        
         access_token = create_access_token(data={"sub": user.username, "role": role})
         return {"access_token": access_token, "token_type": "bearer"}
     
@@ -363,13 +548,19 @@ async def login(user: User):
             )
             
             print(f"Login successful for database user {user.username} with role {role}")
+            
+            # Log successful login
+            await create_log_entry(user.username, "Logged in.", f"Role: {role}", client_ip)
+            
             access_token = create_access_token(data={"sub": user.username, "role": role})
             return {"access_token": access_token, "token_type": "bearer"}
         
     except Exception as e:
         print(f"Error checking database users: {str(e)}")
     
-    # If no user found
+    # Log failed login attempt
+    await create_log_entry(user.username, "Failed login attempt.", "Invalid credentials", client_ip)
+    
     print(f"Invalid credentials for user: {user.username}")
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -377,16 +568,29 @@ async def login(user: User):
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+@app.post("/logout")
+async def logout(request: Request, token: str = Depends(oauth2_scheme)):
+    """Logout endpoint - creates log entry"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    # Log logout
+    await create_log_entry(username, "Logged out.", "", client_ip)
+    
+    return {"message": "Successfully logged out"}
+
 # ===============================================
-# ACCOUNT MANAGEMENT ROUTES
+# ACCOUNT MANAGEMENT ROUTES (UPDATED WITH LOGGING)
 # ===============================================
 
 @app.post("/api/accounts", response_model=dict)
-async def create_account(account: AccountCreate, token: str = Depends(oauth2_scheme)):
+async def create_account(account: AccountCreate, request: Request, token: str = Depends(oauth2_scheme)):
     """Create a new account with generated password and email notification"""
     payload = verify_token(token)
+    admin_username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
-    # Only admin can create accounts
     if payload.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -410,11 +614,9 @@ async def create_account(account: AccountCreate, token: str = Depends(oauth2_sch
                 detail="Email already exists"
             )
         
-        # Generate secure password
         generated_password = generate_secure_password()
         password_hash = hash_password(generated_password)
         
-        # Create account document
         account_dict = account.dict()
         account_dict.update({
             "password_hash": password_hash,
@@ -425,17 +627,22 @@ async def create_account(account: AccountCreate, token: str = Depends(oauth2_sch
             "updated_at": datetime.utcnow()
         })
         
-        # Insert into database
         result = accounts_collection.insert_one(account_dict)
         created_account = accounts_collection.find_one({"_id": result.inserted_id})
         
-        # Send welcome email with password
+        # Send welcome email
         email_subject = "Welcome to MEAMS - Your Account Credentials"
         email_body = create_welcome_email_body(account.name, account.username, generated_password)
-        
         email_sent = await send_email(account.email, email_subject, email_body)
         
-        # Remove password_hash from response for security
+        # Log account creation
+        await create_log_entry(
+            admin_username, 
+            "Added an account.", 
+            f"Created account for {account.username} ({account.name})", 
+            client_ip
+        )
+        
         response_data = account_helper(created_account)
         response_data.pop("password_hash", None)
         
@@ -459,7 +666,6 @@ async def get_all_accounts(token: str = Depends(oauth2_scheme)):
     """Get all accounts - admin only"""
     payload = verify_token(token)
     
-    # Only admin can view all accounts
     if payload.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -470,7 +676,6 @@ async def get_all_accounts(token: str = Depends(oauth2_scheme)):
         accounts = []
         for account in accounts_collection.find():
             account_data = account_helper(account)
-            # Remove sensitive data from response
             account_data.pop("password_hash", None)
             accounts.append(account_data)
         
@@ -502,7 +707,7 @@ async def get_account(account_id: str, token: str = Depends(oauth2_scheme)):
             raise HTTPException(status_code=404, detail="Account not found")
         
         account_data = account_helper(account)
-        account_data.pop("password_hash", None)  # Remove sensitive data
+        account_data.pop("password_hash", None)
         
         return {
             "success": True,
@@ -515,9 +720,11 @@ async def get_account(account_id: str, token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve account: {str(e)}")
 
 @app.put("/api/accounts/{account_id}", response_model=dict)
-async def update_account(account_id: str, account_update: AccountUpdate, token: str = Depends(oauth2_scheme)):
+async def update_account(account_id: str, account_update: AccountUpdate, request: Request, token: str = Depends(oauth2_scheme)):
     """Update account - admin only"""
     payload = verify_token(token)
+    admin_username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     if payload.get("role") != "admin":
         raise HTTPException(
@@ -529,7 +736,11 @@ async def update_account(account_id: str, account_update: AccountUpdate, token: 
         if not ObjectId.is_valid(account_id):
             raise HTTPException(status_code=400, detail="Invalid account ID format")
         
-        # Only update fields that are provided
+        # Get account before update for logging
+        account_before = accounts_collection.find_one({"_id": ObjectId(account_id)})
+        if not account_before:
+            raise HTTPException(status_code=404, detail="Account not found")
+        
         update_data = {k: v for k, v in account_update.dict().items() if v is not None}
         
         if not update_data:
@@ -546,6 +757,15 @@ async def update_account(account_id: str, account_update: AccountUpdate, token: 
             raise HTTPException(status_code=404, detail="Account not found")
         
         updated_account = accounts_collection.find_one({"_id": ObjectId(account_id)})
+        
+        # Log account update
+        await create_log_entry(
+            admin_username,
+            "Updated an account.",
+            f"Updated account for {account_before['username']} ({account_before['name']})",
+            client_ip
+        )
+        
         response_data = account_helper(updated_account)
         response_data.pop("password_hash", None)
         
@@ -560,9 +780,11 @@ async def update_account(account_id: str, account_update: AccountUpdate, token: 
         raise HTTPException(status_code=500, detail=f"Failed to update account: {str(e)}")
 
 @app.delete("/api/accounts/{account_id}", response_model=dict)
-async def delete_account(account_id: str, token: str = Depends(oauth2_scheme)):
+async def delete_account(account_id: str, request: Request, token: str = Depends(oauth2_scheme)):
     """Delete account - admin only"""
     payload = verify_token(token)
+    admin_username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     if payload.get("role") != "admin":
         raise HTTPException(
@@ -574,10 +796,23 @@ async def delete_account(account_id: str, token: str = Depends(oauth2_scheme)):
         if not ObjectId.is_valid(account_id):
             raise HTTPException(status_code=400, detail="Invalid account ID format")
         
+        # Get account before deletion for logging
+        account_to_delete = accounts_collection.find_one({"_id": ObjectId(account_id)})
+        if not account_to_delete:
+            raise HTTPException(status_code=404, detail="Account not found")
+        
         result = accounts_collection.delete_one({"_id": ObjectId(account_id)})
         
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Account not found")
+        
+        # Log account deletion
+        await create_log_entry(
+            admin_username,
+            "Deleted an account.",
+            f"Deleted account for {account_to_delete['username']} ({account_to_delete['name']})",
+            client_ip
+        )
         
         return {
             "success": True,
@@ -589,9 +824,11 @@ async def delete_account(account_id: str, token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
 
 @app.post("/api/accounts/{account_id}/reset-password", response_model=dict)
-async def reset_password(account_id: str, token: str = Depends(oauth2_scheme)):
+async def reset_password(account_id: str, request: Request, token: str = Depends(oauth2_scheme)):
     """Reset account password and send new password via email - admin only"""
     payload = verify_token(token)
+    admin_username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     if payload.get("role") != "admin":
         raise HTTPException(
@@ -659,6 +896,14 @@ async def reset_password(account_id: str, token: str = Depends(oauth2_scheme)):
         
         email_sent = await send_email(account["email"], email_subject, email_body)
         
+        # Log password reset
+        await create_log_entry(
+            admin_username,
+            "Reset password.",
+            f"Reset password for {account['username']} ({account['name']})",
+            client_ip
+        )
+        
         return {
             "success": True,
             "message": f"Password reset successfully. {'New password sent via email.' if email_sent else 'Password reset but email failed to send.'}",
@@ -670,7 +915,10 @@ async def reset_password(account_id: str, token: str = Depends(oauth2_scheme)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
 
-# Protected routes (keeping existing)
+# ===============================================
+# PROTECTED ROUTES (UPDATED WITH LOGGING)
+# ===============================================
+
 @app.get("/dashboard")
 async def dashboard(token: str = Depends(oauth2_scheme)):
     """Dashboard endpoint - requires authentication"""
@@ -699,13 +947,15 @@ async def health_check():
         raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
 
 # ===============================================
-# SUPPLIES API ROUTES (KEEPING ALL EXISTING)
+# SUPPLIES API ROUTES (UPDATED WITH LOGGING)
 # ===============================================
 
 @app.post("/api/supplies", response_model=dict)
-async def add_supply(supply: SupplyCreate, token: str = Depends(oauth2_scheme)):
+async def add_supply(supply: SupplyCreate, request: Request, token: str = Depends(oauth2_scheme)):
     """Add a new supply item - requires authentication"""
-    verify_token(token)
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     try:
         supply_dict = supply.dict()
@@ -719,6 +969,14 @@ async def add_supply(supply: SupplyCreate, token: str = Depends(oauth2_scheme)):
         
         result = supplies_collection.insert_one(supply_dict)
         created_supply = supplies_collection.find_one({"_id": result.inserted_id})
+        
+        # Log supply addition
+        await create_log_entry(
+            username,
+            "Added a supply.",
+            f"Added supply: {supply_dict.get('name', 'Unknown')} ({supply_dict.get('itemCode')})",
+            client_ip
+        )
         
         print(f"✅ Supply added: {supply_dict.get('name', 'Unknown')} with itemCode: {supply_dict.get('itemCode')}")
         
@@ -749,14 +1007,105 @@ async def get_all_supplies(token: str = Depends(oauth2_scheme)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve supplies: {str(e)}")
 
+@app.put("/api/supplies/{supply_id}", response_model=dict)
+async def update_supply(supply_id: str, supply_update: SupplyUpdate, request: Request, token: str = Depends(oauth2_scheme)):
+    """Update supply item - requires authentication"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        if not ObjectId.is_valid(supply_id):
+            raise HTTPException(status_code=400, detail="Invalid supply ID format")
+        
+        # Get supply before update for logging
+        supply_before = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        if not supply_before:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        
+        update_data = {k: v for k, v in supply_update.dict().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+        
+        update_data["updated_at"] = datetime.utcnow()
+        
+        result = supplies_collection.update_one(
+            {"_id": ObjectId(supply_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        
+        updated_supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        
+        # Log supply update
+        await create_log_entry(
+            username,
+            "Updated a supply.",
+            f"Updated supply: {supply_before.get('name', 'Unknown')} ({supply_before.get('itemCode')})",
+            client_ip
+        )
+        
+        return {
+            "success": True,
+            "message": "Supply updated successfully",
+            "data": supply_helper(updated_supply)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update supply: {str(e)}")
+
+@app.delete("/api/supplies/{supply_id}", response_model=dict)
+async def delete_supply(supply_id: str, request: Request, token: str = Depends(oauth2_scheme)):
+    """Delete supply item - requires authentication"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        if not ObjectId.is_valid(supply_id):
+            raise HTTPException(status_code=400, detail="Invalid supply ID format")
+        
+        # Get supply before deletion for logging
+        supply_to_delete = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        if not supply_to_delete:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        
+        result = supplies_collection.delete_one({"_id": ObjectId(supply_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        
+        # Log supply deletion
+        await create_log_entry(
+            username,
+            "Deleted a supply.",
+            f"Deleted supply: {supply_to_delete.get('name', 'Unknown')} ({supply_to_delete.get('itemCode')})",
+            client_ip
+        )
+        
+        return {
+            "success": True,
+            "message": "Supply deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete supply: {str(e)}")
+
 # ===============================================
-# EQUIPMENT API ROUTES (KEEPING ALL EXISTING)
+# EQUIPMENT API ROUTES (UPDATED WITH LOGGING)
 # ===============================================
 
 @app.post("/api/equipment", response_model=dict)
-async def add_equipment(equipment: EquipmentCreate, token: str = Depends(oauth2_scheme)):
+async def add_equipment(equipment: EquipmentCreate, request: Request, token: str = Depends(oauth2_scheme)):
     """Add a new equipment item - requires authentication"""
-    verify_token(token)
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     try:
         equipment_dict = equipment.dict()
@@ -770,6 +1119,14 @@ async def add_equipment(equipment: EquipmentCreate, token: str = Depends(oauth2_
         
         result = equipment_collection.insert_one(equipment_dict)
         created_equipment = equipment_collection.find_one({"_id": result.inserted_id})
+        
+        # Log equipment addition
+        await create_log_entry(
+            username,
+            "Added equipment.",
+            f"Added equipment: {equipment_dict.get('name', 'Unknown')} ({equipment_dict.get('itemCode')})",
+            client_ip
+        )
         
         print(f"✅ Equipment added: {equipment_dict.get('name', 'Unknown')}")
         
@@ -799,6 +1156,95 @@ async def get_all_equipment(token: str = Depends(oauth2_scheme)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve equipment: {str(e)}")
+
+@app.put("/api/equipment/{equipment_id}", response_model=dict)
+async def update_equipment(equipment_id: str, equipment_update: EquipmentUpdate, request: Request, token: str = Depends(oauth2_scheme)):
+    """Update equipment item - requires authentication"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        if not ObjectId.is_valid(equipment_id):
+            raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+        
+        # Get equipment before update for logging
+        equipment_before = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
+        if not equipment_before:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        update_data = {k: v for k, v in equipment_update.dict().items() if v is not None}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+        
+        update_data["updated_at"] = datetime.utcnow()
+        
+        result = equipment_collection.update_one(
+            {"_id": ObjectId(equipment_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        updated_equipment = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
+        
+        # Log equipment update
+        await create_log_entry(
+            username,
+            "Updated equipment.",
+            f"Updated equipment: {equipment_before.get('name', 'Unknown')} ({equipment_before.get('itemCode')})",
+            client_ip
+        )
+        
+        return {
+            "success": True,
+            "message": "Equipment updated successfully",
+            "data": equipment_helper(updated_equipment)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update equipment: {str(e)}")
+
+@app.delete("/api/equipment/{equipment_id}", response_model=dict)
+async def delete_equipment(equipment_id: str, request: Request, token: str = Depends(oauth2_scheme)):
+    """Delete equipment item - requires authentication"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        if not ObjectId.is_valid(equipment_id):
+            raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+        
+        # Get equipment before deletion for logging
+        equipment_to_delete = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
+        if not equipment_to_delete:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        result = equipment_collection.delete_one({"_id": ObjectId(equipment_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Equipment not found")
+        
+        # Log equipment deletion
+        await create_log_entry(
+            username,
+            "Deleted equipment.",
+            f"Deleted equipment: {equipment_to_delete.get('name', 'Unknown')} ({equipment_to_delete.get('itemCode')})",
+            client_ip
+        )
+        
+        return {
+            "success": True,
+            "message": "Equipment deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete equipment: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
