@@ -1,4 +1,4 @@
-// AuthContext.js - Create this file
+// AuthContext.js - Updated with first login support
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -44,7 +44,9 @@ export const AuthProvider = ({ children }) => {
 
   const adminLogin = (token) => {
     setAdminToken(token);
+    setAuthToken(token); // Admin token is also stored as auth token
     localStorage.setItem('adminToken', token);
+    localStorage.setItem('authToken', token);
   };
 
   const logout = () => {
@@ -54,12 +56,30 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('adminToken');
   };
 
+  // Helper function to get current user info from token
+  const getCurrentUser = () => {
+    const token = authToken || adminToken;
+    if (!token) return null;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return {
+        username: payload.sub,
+        role: payload.role
+      };
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
+
   const value = {
     authToken,
     adminToken,
     login,
     adminLogin,
     logout,
+    getCurrentUser,
     isAuthenticated: !!authToken,
     isAdmin: !!adminToken,
     loading

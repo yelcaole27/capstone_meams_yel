@@ -7,59 +7,172 @@ function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState(''); // This will now handle login messages as well
-  const [passwordVisible, setPasswordVisible] = useState(false); // State to toggle password visibility
+  const [message, setMessage] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  
+  // Password change modal states
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [authToken, setAuthToken] = useState('');
+  const [userRole, setUserRole] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState('');
+  const [newPasswordVisible, setNewPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-  // Updated handleLogin function for LoginPage.js
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setMessage('');
-  setIsLoading(true);
+  // Updated handleLogin function
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setIsLoading(true);
 
-  try {
-    const response = await fetch('http://localhost:8000/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: username,
-        password: password,
-      }),
-    });
+    try {
+      const response = await fetch('http://localhost:8000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      setMessage("Login successful!");
-      
-      // Decode the token to get the role
-      const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-      const role = payload.role;
-      
-      // Store token based on role
-      if (role === 'admin') {
-        localStorage.setItem('adminToken', data.access_token);
-        localStorage.setItem('authToken', data.access_token); // Also store as authToken for general auth
-        setTimeout(() => {
-          window.location.href = '/administrator';
-        }, 1500);
-      } else if (role === 'staff') {
-        localStorage.setItem('authToken', data.access_token);
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
+      if (response.ok) {
+        setMessage("Login successful!");
+        
+        // Decode the token to get the role
+        const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+        const role = payload.role;
+        
+        // Check if this is a first login
+        if (data.first_login) {
+          console.log('First login detected, showing password change modal');
+          // Store token and role for password change process
+          setAuthToken(data.access_token);
+          setUserRole(role);
+          setIsFirstLogin(true);
+          setCurrentPassword(password); // Pre-fill current password
+          setShowPasswordChange(true);
+          setMessage('Please set a new password for your account.');
+          setIsLoading(false); // Important: Stop loading here
+          return; // Don't redirect yet
+        }
+        
+        // Store token based on role (existing logic)
+        if (role === 'admin') {
+          localStorage.setItem('adminToken', data.access_token);
+          localStorage.setItem('authToken', data.access_token);
+          setTimeout(() => {
+            window.location.href = '/administrator';
+          }, 1500);
+        } else if (role === 'staff') {
+          localStorage.setItem('authToken', data.access_token);
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        }
+      } else {
+        setMessage(data.detail || 'Invalid username or password');
       }
-    } else {
-      setMessage(data.detail || 'Invalid username or password');
+    } catch (error) {
+      setMessage('Connection error. Please check if the server is running.');
+      console.error('Login error:', error);
     }
-  } catch (error) {
-    setMessage('Connection error. Please check if the server is running.');
-    console.error('Login error:', error);
-  }
 
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
+
+  // Handle password change for first login
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    console.log('Password change form submitted');
+    
+    setPasswordChangeMessage('');
+    
+    // Validate that all fields are filled
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordChangeMessage('Please fill in all password fields');
+      return;
+    }
+    
+    // Validate passwords
+    if (newPassword !== confirmPassword) {
+      setPasswordChangeMessage('New passwords do not match');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordChangeMessage('New password must be at least 6 characters long');
+      return;
+    }
+    
+    if (newPassword === currentPassword) {
+      setPasswordChangeMessage('New password must be different from current password');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPasswordChangeMessage('Password changed successfully! Redirecting...');
+        
+        // Store the token and redirect after successful password change
+        if (userRole === 'admin') {
+          localStorage.setItem('adminToken', authToken);
+          localStorage.setItem('authToken', authToken);
+          setTimeout(() => {
+            window.location.href = '/administrator';
+          }, 2000);
+        } else if (userRole === 'staff') {
+          localStorage.setItem('authToken', authToken);
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 2000);
+        }
+      } else {
+        setPasswordChangeMessage(data.detail || 'Failed to change password');
+      }
+    } catch (error) {
+      setPasswordChangeMessage('Connection error. Please try again.');
+      console.error('Password change error:', error);
+    }
+    
+    setIsLoading(false);
+  };
+
+  // Close password change modal (only if not first login)
+  const closePasswordChange = () => {
+    if (isFirstLogin) {
+      console.log('Cannot close modal - first login required');
+      return;
+    }
+    console.log('Closing password change modal');
+    setShowPasswordChange(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordChangeMessage('');
+  };
 
   // Forgot password handler
   const handleForgotPassword = async (e) => {
@@ -76,10 +189,9 @@ const handleLogin = async (e) => {
     }
 
     setIsLoading(true);
-    setMessage(''); // Clear any previous messages
+    setMessage('');
 
     try {
-      // Send a request to the backend to initiate password reset
       const response = await fetch('http://localhost:8000/api/auth/forgot-password', {
         method: 'POST',
         headers: {
@@ -89,9 +201,9 @@ const handleLogin = async (e) => {
       });
 
       const data = await response.json();
-      setMessage(data.message); // Show message based on the response from the backend
+      setMessage(data.message);
     } catch (error) {
-      setMessage('Error: ' + error.message); // Show any error messages
+      setMessage('Error: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -110,9 +222,17 @@ const handleLogin = async (e) => {
     return emailRegex.test(email);
   };
 
-  // Toggle password visibility
+  // Toggle password visibility functions
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
+  };
+
+  const toggleNewPasswordVisibility = () => {
+    setNewPasswordVisible(!newPasswordVisible);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setConfirmPasswordVisible(!confirmPasswordVisible);
   };
 
   // Eye icon components
@@ -137,7 +257,6 @@ const handleLogin = async (e) => {
           <h1 className="logo-text">MEAMS</h1>
         </div>
 
-        {/* Wrap login inputs and button in a form for Enter key submission */}
         <form onSubmit={handleLogin}>
           <div className="input-group">
             <div className="input-wrapper">
@@ -164,7 +283,7 @@ const handleLogin = async (e) => {
                 <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2"/>
               </svg>
               <input
-                type={passwordVisible ? "text" : "password"}  // Toggle between text and password field
+                type={passwordVisible ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -173,7 +292,7 @@ const handleLogin = async (e) => {
               />
               <button
                 type="button"
-                onClick={togglePasswordVisibility}  // Toggle visibility when clicked
+                onClick={togglePasswordVisibility}
                 className="password-toggle"
                 disabled={isLoading}
                 aria-label={passwordVisible ? "Hide password" : "Show password"}
@@ -183,8 +302,7 @@ const handleLogin = async (e) => {
             </div>
           </div>
 
-          {/* Message for login errors/success */}
-          {message && !showForgotPassword && ( // Only show if not in forgot password modal
+          {message && !showForgotPassword && !showPasswordChange && (
             <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>
               {message}
             </div>
@@ -197,7 +315,7 @@ const handleLogin = async (e) => {
 
         <div className="forgot-password">
           <button
-            onClick={() => { setShowForgotPassword(true); setMessage(''); }} // Clear message when opening forgot password
+            onClick={() => { setShowForgotPassword(true); setMessage(''); }}
             className="forgot-link"
           >
             Forgot password?
@@ -240,7 +358,7 @@ const handleLogin = async (e) => {
               </div>
             </div>
 
-            {message && showForgotPassword && ( // Only show if in forgot password modal
+            {message && showForgotPassword && (
               <div className={`message ${message.includes('sent') ? 'success' : 'error'}`}>
                 {message}
               </div>
@@ -253,6 +371,132 @@ const handleLogin = async (e) => {
             >
               {isLoading ? 'Sending...' : 'Send Reset Link'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Modal - FIXED VERSION */}
+      {showPasswordChange && (
+        <div 
+          className="overlay"
+          onMouseDown={(e) => {
+            // Only close if clicking the overlay itself AND not first login
+            if (e.target === e.currentTarget && !isFirstLogin) {
+              closePasswordChange();
+            }
+          }}
+        >
+          <div 
+            className="forgot-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2>Change Password</h2>
+              {!isFirstLogin && (
+                <button className="close-btn" onClick={closePasswordChange}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <p className="modal-description">
+              {isFirstLogin ? 
+                "This is your first login. Please set a new password for your account." :
+                "Enter your current password and choose a new password."
+              }
+            </p>
+
+            <form onSubmit={handlePasswordChange}>
+              {!isFirstLogin && (
+                <div className="input-group">
+                  <div className="input-wrapper">
+                    <svg className="input-icon" width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                      <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                      <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    <input
+                      type="password"
+                      placeholder="Current Password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="login-input"
+                      disabled={isLoading}
+                      autoComplete="current-password"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="input-group">
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                    <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <input
+                    type={newPasswordVisible ? "text" : "password"}
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="login-input"
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleNewPasswordVisibility}
+                    className="password-toggle"
+                    disabled={isLoading}
+                    aria-label={newPasswordVisible ? "Hide password" : "Show password"}
+                  >
+                    {newPasswordVisible ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="input-group">
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                    <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <input
+                    type={confirmPasswordVisible ? "text" : "password"}
+                    placeholder="Confirm New Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="login-input"
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleConfirmPasswordVisibility}
+                    className="password-toggle"
+                    disabled={isLoading}
+                    aria-label={confirmPasswordVisible ? "Hide password" : "Show password"}
+                  >
+                    {confirmPasswordVisible ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                  </button>
+                </div>
+              </div>
+
+              {passwordChangeMessage && (
+                <div className={`message ${passwordChangeMessage.includes('successfully') ? 'success' : 'error'}`}>
+                  {passwordChangeMessage}
+                </div>
+              )}
+
+              <button type="submit" className="reset-button" disabled={isLoading}>
+                {isLoading ? 'Changing...' : 'Change Password'}
+              </button>
+            </form>
           </div>
         </div>
       )}

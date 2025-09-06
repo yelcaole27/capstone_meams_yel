@@ -223,6 +223,11 @@ class AccountUpdate(BaseModel):
     phone_number: Optional[str] = None
     status: Optional[bool] = None
 
+# NEW: Password change model
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 def account_helper(account) -> dict:
     """Helper function to format account data"""
     return {
@@ -237,6 +242,7 @@ def account_helper(account) -> dict:
         "status": account.get("status", True),
         "account_creation": account.get("account_creation", ""),
         "last_login": account.get("last_login", "Never"),
+        "first_login": account.get("first_login", True),  # NEW: Add this field
         "created_at": account.get("created_at", datetime.utcnow()),
         "updated_at": account.get("updated_at", datetime.utcnow())
     }
@@ -506,7 +512,7 @@ async def export_logs(
         raise HTTPException(status_code=500, detail=f"Failed to export logs: {str(e)}")
 
 # ===============================================
-# AUTHENTICATION ROUTES (UPDATED WITH LOGGING)
+# AUTHENTICATION ROUTES (UPDATED WITH LOGGING AND FIRST LOGIN)
 # ===============================================
 
 @app.get("/")
@@ -515,7 +521,7 @@ async def root():
 
 @app.post("/login")
 async def login(user: User, request: Request):
-    """Login endpoint for authentication - with logging"""
+    """Login endpoint for authentication - with logging and first login check"""
     print(f"Login attempt: {user.username}")
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
@@ -533,13 +539,18 @@ async def login(user: User, request: Request):
         await create_log_entry(user.username, "Logged in.", f"Role: {role}", client_ip)
         
         access_token = create_access_token(data={"sub": user.username, "role": role})
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {
+            "access_token": access_token, 
+            "token_type": "bearer",
+            "first_login": False  # Hardcoded users don't need password change
+        }
     
     # Check database users
     try:
         db_user = accounts_collection.find_one({"username": user.username})
         if db_user and verify_password(user.password, db_user["password_hash"]):
             role = db_user.get("role", "staff")
+            first_login = db_user.get("first_login", True)  # NEW: Check first login status
             
             # Update last login
             accounts_collection.update_one(
@@ -547,13 +558,17 @@ async def login(user: User, request: Request):
                 {"$set": {"last_login": datetime.utcnow().strftime("%m/%d/%Y")}}
             )
             
-            print(f"Login successful for database user {user.username} with role {role}")
+            print(f"Login successful for database user {user.username} with role {role}, first_login: {first_login}")
             
             # Log successful login
             await create_log_entry(user.username, "Logged in.", f"Role: {role}", client_ip)
             
             access_token = create_access_token(data={"sub": user.username, "role": role})
-            return {"access_token": access_token, "token_type": "bearer"}
+            return {
+                "access_token": access_token, 
+                "token_type": "bearer",
+                "first_login": first_login  # NEW: Include first login status
+            }
         
     except Exception as e:
         print(f"Error checking database users: {str(e)}")
@@ -567,6 +582,62 @@ async def login(user: User, request: Request):
         detail="Invalid username or password",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+# NEW: Password change endpoint for first login
+@app.post("/api/change-password", response_model=dict)
+async def change_password(
+    password_change: PasswordChangeRequest, 
+    request: Request, 
+    token: str = Depends(oauth2_scheme)
+):
+    """Change password - for first login or regular password changes"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        # Find the user
+        user = accounts_collection.find_one({"username": username})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify current password
+        if not verify_password(password_change.current_password, user["password_hash"]):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Hash the new password
+        new_password_hash = hash_password(password_change.new_password)
+        
+        # Update password and set first_login to False
+        accounts_collection.update_one(
+            {"username": username},
+            {
+                "$set": {
+                    "password_hash": new_password_hash,
+                    "first_login": False,  # NEW: Mark as no longer first login
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Log password change
+        await create_log_entry(
+            username,
+            "Changed password.",
+            "Password updated successfully",
+            client_ip
+        )
+        
+        return {
+            "success": True,
+            "message": "Password changed successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error changing password: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
 
 @app.post("/logout")
 async def logout(request: Request, token: str = Depends(oauth2_scheme)):
@@ -621,6 +692,7 @@ async def create_account(account: AccountCreate, request: Request, token: str = 
         account_dict.update({
             "password_hash": password_hash,
             "status": True,
+            "first_login": True,  # NEW: Set first login to True for new accounts
             "account_creation": datetime.utcnow().strftime("%m/%d/%Y"),
             "last_login": "Never",
             "created_at": datetime.utcnow(),
