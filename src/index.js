@@ -13,7 +13,7 @@ import LogsPage from './LogsPage';
 import ManageAccountsPage from './ManageAccountsPage';
 import SettingsPage from './SettingsPage';
 import AdminLogin from './AdminLogin';
-import AdministratorPage from './AdministratorPage';
+import StaffLayout from './StaffLayout'; 
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAuth = false, requireAdmin = false }) => {
@@ -35,7 +35,7 @@ const ProtectedRoute = ({ children, requireAuth = false, requireAdmin = false })
 };
 
 function AppRoutes() {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, isStaff, loading } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>; // Or your loading component
@@ -48,34 +48,40 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin-login" element={<AdminLogin />} />
 
-      {/* Protected Routes using MainLayout */}
-      <Route element={
-        <ProtectedRoute requireAuth={true}>
-          <MainLayout />
-        </ProtectedRoute>
-      }>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/supplies" element={<SuppliesPage />} />
-        <Route path="/equipment" element={<EquipmentPage />} />
-        <Route path="/logs" element={<LogsPage />} />
-        <Route path="/manage-accounts" element={<ManageAccountsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Route>
+      {/* Admin Protected Routes using MainLayout */}
+      {isAdmin && (
+        <Route element={
+          <ProtectedRoute requireAdmin={true}>
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/supplies" element={<SuppliesPage />} />
+          <Route path="/equipment" element={<EquipmentPage />} />
+          <Route path="/logs" element={<LogsPage />} />
+          <Route path="/manage-accounts" element={<ManageAccountsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      )}
 
-      {/* Admin Protected Routes */}
-      <Route element={
-        <ProtectedRoute requireAdmin={true}>
-          <MainLayout />
-        </ProtectedRoute>
-      }>
-        <Route path="/administrator" element={<AdministratorPage />} />
-      </Route>
+      {/* Staff Protected Routes using StaffLayout */}
+      {isStaff && (
+        <Route element={
+          <ProtectedRoute requireAuth={true}>
+            <StaffLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/supplies" element={<SuppliesPage />} />
+          <Route path="/equipment" element={<EquipmentPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      )}
 
       {/* Default Route */}
       <Route
         path="/"
         element={
-          isAdmin ? <Navigate to="/administrator" replace /> :
           isAuthenticated ? <Navigate to="/dashboard" replace /> : 
           <Navigate to="/login" replace />
         }
@@ -83,7 +89,6 @@ function AppRoutes() {
       
       {/* Fallback for any unmatched routes */}
       <Route path="*" element={
-        isAdmin ? <Navigate to="/administrator" replace /> :
         isAuthenticated ? <Navigate to="/dashboard" replace /> : 
         <Navigate to="/login" replace />
       } />
