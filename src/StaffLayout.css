@@ -1,0 +1,260 @@
+/* StaffLayout.css */
+@import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #2a2a2a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  overflow: hidden; /* Prevent body scrolling if content fits */
+}
+
+.staff-layout-container {
+  display: flex;
+  height: 100vh;
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+/* Staff Sidebar Styles */
+.staff-sidebar {
+  width: 250px;
+  background: #1a1a1a;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid #333333;
+  flex-shrink: 0; /* Prevent sidebar from shrinking */
+}
+
+.staff-sidebar .logo {
+  margin-bottom: 30px;
+}
+
+.staff-sidebar .logo-text {
+  font-family: 'Koulen', cursive;
+  font-size: 32px;
+  color: #ffffff;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.staff-info {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.staff-avatar {
+  width: 80px;
+  height: 80px;
+  background: #333333;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  border: 2px solid #555555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #cccccc;
+}
+
+.nav-menu {
+  width: 100%;
+  flex-grow: 1; /* Allows nav to take available vertical space */
+}
+
+.nav-menu ul {
+  list-style: none;
+  padding: 0;
+}
+
+.nav-menu li {
+  margin-bottom: 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: 10px;
+  color: #cccccc;
+  text-decoration: none;
+  font-size: 16px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-item svg {
+  margin-right: 12px;
+  color: #888888;
+  transition: color 0.2s ease;
+}
+
+.nav-item:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+.nav-item:hover svg {
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background: #4a4a4a; /* A slightly different background for active */
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-item.active svg {
+  color: #ffffff;
+}
+
+.sign-out {
+  width: 100%;
+  margin-top: auto; /* Pushes it to the bottom */
+  padding-top: 20px;
+  border-top: 1px solid #333333;
+}
+
+.sign-out-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: 10px;
+  color: #cccccc;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sign-out-btn svg {
+  margin-right: 12px;
+  color: #888888;
+  transition: color 0.2s ease;
+}
+
+.sign-out-btn:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+.sign-out-btn:hover svg {
+  color: #ffffff;
+}
+
+/* Main Content Styles */
+.main-content {
+  flex-grow: 1;
+  background: #2a2a2a;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Allows scrolling for content within this area */
+}
+
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #333333;
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.main-header h1 {
+  font-family: 'Koulen', cursive;
+  font-size: 36px;
+  color: #ffffff;
+  font-weight: 400;
+}
+
+/* Staff Menu Dropdown Styles */
+.staff-menu-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.staff-menu-toggle {
+  background: none;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-menu-toggle:hover {
+  color: #ffffff;
+  background: #333333;
+}
+
+.staff-menu-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.staff-dropdown-content {
+  position: absolute;
+  background-color: #1a1a1a;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+  z-index: 1;
+  right: 0;
+  top: 100%; /* Position below the toggle button */
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px; /* Space between button and dropdown */
+}
+
+.staff-dropdown-content a {
+  color: #cccccc;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  font-size: 14px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.staff-dropdown-content a:hover {
+  background-color: #333333;
+  color: #ffffff;
+}
+
+.staff-dropdown-content a:first-child {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.staff-dropdown-content a:last-child {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* Specific styles for page content rendered by Outlet */
+/* Ensure child components stretch to fill the main-content area if needed */
+.main-content > div { /* Targeting the direct children of main-content (DashboardPage, SuppliesPage etc.) */
+  flex-grow: 1;
+  display: flex; /* Often children might need to be flex containers themselves */
+  flex-direction: column;
+}
