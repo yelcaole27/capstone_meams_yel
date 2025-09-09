@@ -1,4 +1,4 @@
-// AuthContext.js - Updated with first login support
+// AuthContext.js - Updated with role-based authentication
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -13,56 +13,62 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState(null);
-  const [adminToken, setAdminToken] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing tokens on app start
+    // Check for existing token on app start
     const savedAuthToken = localStorage.getItem('authToken');
-    const savedAdminToken = localStorage.getItem('adminToken');
     
-    // Validate tokens (you can add more sophisticated validation here)
     if (savedAuthToken && savedAuthToken.trim().length > 0) {
-      setAuthToken(savedAuthToken);
-    } else {
-      localStorage.removeItem('authToken');
-    }
-    
-    if (savedAdminToken && savedAdminToken.trim().length > 0) {
-      setAdminToken(savedAdminToken);
-    } else {
-      localStorage.removeItem('adminToken');
+      try {
+        // Decode the JWT token to get user role
+        const payload = JSON.parse(atob(savedAuthToken.split('.')[1]));
+        const role = payload.role;
+        
+        setAuthToken(savedAuthToken);
+        setUserRole(role);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        localStorage.removeItem('authToken');
+      }
     }
     
     setLoading(false);
   }, []);
 
   const login = (token) => {
-    setAuthToken(token);
-    localStorage.setItem('authToken', token);
-  };
-
-  const adminLogin = (token) => {
-    setAdminToken(token);
-    setAuthToken(token); // Admin token is also stored as auth token
-    localStorage.setItem('adminToken', token);
-    localStorage.setItem('authToken', token);
+    try {
+      // Decode the JWT token to get user role
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const role = payload.role;
+      
+      setAuthToken(token);
+      setUserRole(role);
+      localStorage.setItem('authToken', token);
+      
+      // For backward compatibility, also set adminToken if user is admin
+      if (role === 'admin') {
+        localStorage.setItem('adminToken', token);
+      }
+    } catch (error) {
+      console.error('Error decoding token during login:', error);
+    }
   };
 
   const logout = () => {
     setAuthToken(null);
-    setAdminToken(null);
+    setUserRole(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('adminToken');
   };
 
   // Helper function to get current user info from token
   const getCurrentUser = () => {
-    const token = authToken || adminToken;
-    if (!token) return null;
+    if (!authToken) return null;
     
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(authToken.split('.')[1]));
       return {
         username: payload.sub,
         role: payload.role
@@ -75,13 +81,13 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     authToken,
-    adminToken,
+    userRole,
     login,
-    adminLogin,
     logout,
     getCurrentUser,
     isAuthenticated: !!authToken,
-    isAdmin: !!adminToken,
+    isAdmin: userRole === 'admin',
+    isStaff: userRole === 'staff',
     loading
   };
 
