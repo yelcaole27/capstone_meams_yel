@@ -11,6 +11,12 @@ function DashboardPage() {
   const [error, setError] = useState(null);
   const [activeSupplyIndex, setActiveSupplyIndex] = useState(null);
   const [activeEquipmentIndex, setActiveEquipmentIndex] = useState(null);
+  
+  // New state for modal visibility
+  const [showRequisitionModal, setShowRequisitionModal] = useState(false);
+  const [showRepairModal, setShowRepairModal] = useState(false);
+  const [showOfficeSupplyForm, setShowOfficeSupplyForm] = useState(false);
+  const [showOtherSupplyForm, setShowOtherSupplyForm] = useState(false);
 
   // Get actual understock supplies from API data
   const getUnderstockData = () => {
@@ -84,6 +90,86 @@ function DashboardPage() {
 
     fetchData();
   }, []);
+
+  // Handle button clicks
+  const handleGenerateRequisition = () => {
+    setShowRequisitionModal(true);
+  };
+
+  const handleGenerateRepair = () => {
+    setShowRepairModal(true);
+  };
+
+  const handleRequisitionChoice = (choice) => {
+  console.log(`Selected requisition type: ${choice}`);
+  setShowRequisitionModal(false);
+  
+  if (choice === 'OFFICE SUPPLIES') {
+    setShowOfficeSupplyForm(true);
+    setShowOtherSupplyForm(false);
+  } else if (choice === 'OTHER SUPPLIES') {
+    setShowOfficeSupplyForm(false);
+    setShowOtherSupplyForm(true);
+  }
+};
+
+  const getOtherRequisitionData = () => {
+  const officeSupplyCategories = ['office', 'stationery', 'paper', 'supplies', 'administrative'];
+  
+  // Filters understock items to find those NOT in the office supply categories
+  const otherUnderstockItems = understockData.filter(item => {
+    const category = (item.category || '').toLowerCase();
+    return !officeSupplyCategories.some(cat => category.includes(cat));
+  });
+
+  // Map the filtered items to the requisition form's data structure
+  return otherUnderstockItems.map(item => ({
+    qty: calculateRequiredQuantity(item),
+    unit: item.unit || 'pcs',
+    description: item.name || item.itemName || 'N/A',
+    remarks: '' 
+  }));
+};
+
+  // Prepare requisition data from understock items
+  const getRequisitionData = () => {
+    const officeSupplyCategories = ['office', 'stationery', 'paper', 'supplies', 'administrative'];
+    
+    const officeUnderstockItems = understockData.filter(item => {
+      const category = (item.category || '').toLowerCase();
+      return officeSupplyCategories.some(cat => category.includes(cat));
+    });
+
+    return officeUnderstockItems.map(item => ({
+      qty: calculateRequiredQuantity(item),
+      unit: item.unit || 'pcs',
+      description: item.name || item.itemName || 'N/A',
+      remarks: '' // Keep remarks blank but editable
+    }));
+  };
+
+  // Calculate suggested quantity based on current stock and reorder levels
+  const calculateRequiredQuantity = (item) => {
+    const currentStock = parseInt(item.quantity) || 0;
+    const minStock = parseInt(item.minStock) || 10;
+    const maxStock = parseInt(item.maxStock) || 50;
+    
+    // Suggest restocking to maximum level
+    return Math.max(maxStock - currentStock, minStock);
+  };
+
+  const handleRepairChoice = (choice) => {
+    console.log(`Selected repair type: ${choice}`);
+    // Add your logic here for handling the choice
+    setShowRepairModal(false);
+    // You can add navigation or other logic here
+  };
+
+  const closeModal = () => {
+    setShowRequisitionModal(false);
+    setShowRepairModal(false);
+    setShowOfficeSupplyForm(false);
+  };
 
   // Process supplies data for pie chart
   const getSupplyStatusData = () => {
@@ -340,7 +426,13 @@ function DashboardPage() {
                 )}
               </tbody>
             </table>
-            <button className="generate-button">Generate Requisition Form</button>
+            <button 
+              className="generate-button" 
+              onClick={handleGenerateRequisition}
+              style={{ cursor: 'pointer' }}
+            >
+              Generate Requisition Form
+            </button>
           </div>
 
           <div className="table-card equipment-life-table">
@@ -373,13 +465,880 @@ function DashboardPage() {
                 )}
               </tbody>
             </table>
-            <button className="generate-button">Generate Repair Form</button>
+            <button 
+              className="generate-button" 
+              onClick={handleGenerateRepair}
+              style={{ cursor: 'pointer' }}
+            >
+              Generate Repair Form
+            </button>
           </div>
         </div>
 
       </div>
+
+      {/* Requisition Modal */}
+      {showRequisitionModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#f0f0f0',
+            padding: '30px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            minWidth: '300px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+          }}>
+            <h3 style={{ marginBottom: '20px', color: '#333' }}>
+              SELECT REQUISITION FORM TO GENERATE
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={() => handleRequisitionChoice('OFFICE SUPPLIES')}
+                style={{
+                  backgroundColor: '#000',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                OFFICE SUPPLIES
+              </button>
+              <button
+                onClick={() => handleRequisitionChoice('OTHER SUPPLIES')}
+                style={{
+                  backgroundColor: '#000',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                OTHER SUPPLIES
+              </button>
+            </div>
+            <button
+              onClick={closeModal}
+              style={{
+                marginTop: '20px',
+                backgroundColor: 'transparent',
+                border: '1px solid #ccc',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                color: '#666'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Repair Modal */}
+      {showRepairModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#f0f0f0',
+            padding: '30px',
+            borderRadius: '8px',
+            textAlign: 'center',
+            minWidth: '300px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+          }}>
+            <h3 style={{ marginBottom: '20px', color: '#333' }}>
+              SELECT REPAIR FORM TO GENERATE
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={() => handleRepairChoice('MAINTENANCE REQUEST')}
+                style={{
+                  backgroundColor: '#000',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                MAINTENANCE REQUEST
+              </button>
+              <button
+                onClick={() => handleRepairChoice('REPAIR REQUEST')}
+                style={{
+                  backgroundColor: '#000',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                REPAIR REQUEST
+              </button>
+            </div>
+            <button
+              onClick={closeModal}
+              style={{
+                marginTop: '20px',
+                backgroundColor: 'transparent',
+                border: '1px solid #ccc',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                color: '#666'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Office Supply Requisition Form */}
+      {showOfficeSupplyForm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          overflow: 'auto',
+          padding: '20px'
+        }}>
+          <div className="requisition-form-modal" style={{
+            backgroundColor: 'white',
+            padding: '40px',
+            borderRadius: '8px',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            fontFamily: 'Arial, sans-serif'
+          }}>
+            <style>{`
+              .requisition-form-modal * {
+                color: black !important;
+              }
+              .requisition-form-modal input {
+                width: 100% !important;
+                border: none !important;
+                outline: none !important;
+                font-size: 12px !important;
+                color: black !important;
+                background-color: transparent !important;
+                font-family: Arial, sans-serif !important;
+              }
+              .requisition-form-modal input:focus {
+                color: black !important;
+              }
+              .requisition-form-modal .requisition-input-filled {
+                background-color: #f0f8ff !important;
+              }
+              .requisition-form-modal h2,
+              .requisition-form-modal h3,
+              .requisition-form-modal th,
+              .requisition-form-modal td,
+              .requisition-form-modal div,
+              .requisition-form-modal span,
+              .requisition-form-modal strong {
+                color: black !important;
+              }
+              
+              /* Print-specific styles */
+              @media print {
+                .print-hidden {
+                  display: none !important;
+                }
+                .requisition-form-modal {
+                  box-shadow: none !important;
+                  border-radius: 0 !important;
+                  padding: 20px !important;
+                  width: 100% !important;
+                  max-width: none !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                }
+                .requisition-form-modal .requisition-input-filled {
+                  background-color: transparent !important;
+                }
+                body {
+                  background: white !important;
+                }
+                .requisition-form-modal input {
+                  background-color: transparent !important;
+                }
+              }
+            `}</style>
+            {/* Form Header */}
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <h2 style={{ 
+                textDecoration: 'underline', 
+                margin: '0 0 20px 0',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                REQUISITION FORM
+              </h2>
+              
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                margin: '20px 0'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '15px',
+                    backgroundColor: 'black',
+                    display: 'inline-block',
+                    position: 'relative'
+                  }}>
+                    <span style={{
+                      color: 'white',
+                      fontSize: '12px',
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      fontWeight: 'bold'
+                    }}>✓</span>
+                  </div>
+                  <span style={{ fontSize: '14px' }}>Office Supplies</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '15px',
+                    border: '2px solid black',
+                    display: 'inline-block'
+                  }}></div>
+                  <span style={{ fontSize: '14px' }}>Other Supplies & Materials</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Department Header */}
+            <div style={{ 
+              textAlign: 'center', 
+              fontWeight: 'bold',
+              fontSize: '16px',
+              marginBottom: '20px',
+              textDecoration: 'underline'
+            }}>
+              MAINTENANCE and ENGINEERING DIVISION
+            </div>
+
+            {/* Table */}
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              border: '2px solid black',
+              marginBottom: '30px'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5' }}>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    width: '10%'
+                  }}>QTY</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    width: '15%'
+                  }}>UNIT</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    width: '50%'
+                  }}>DESCRIPTION</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    width: '25%'
+                  }}>REMARKS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const requisitionData = getRequisitionData();
+                  const totalRows = 15;
+                  
+                  return [...Array(totalRows)].map((_, index) => {
+                    const itemData = index < requisitionData.length ? requisitionData[index] : null;
+                    
+                    return (
+                      <tr key={index}>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '8px',
+                          height: '25px'
+                        }}>
+                          <input 
+                            type="text" 
+                            className={`${itemData ? 'requisition-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.qty : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '8px',
+                          height: '25px'
+                        }}>
+                          <input 
+                            type="text" 
+                            className={`${itemData ? 'requisition-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.unit : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '8px',
+                          height: '25px'
+                        }}>
+                          <input 
+                            type="text" 
+                            className={`${itemData ? 'requisition-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.description : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '8px',
+                          height: '25px'
+                        }}>
+                          <input 
+                            type="text" 
+                            className={`${itemData ? 'requisition-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.remarks : ''}
+                            placeholder=""
+                          />
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+
+            {/* Form Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ fontSize: '12px' }}>
+                <strong>Purpose:</strong>
+                <span style={{ marginLeft: '50px', fontSize: '11px', fontStyle: 'italic' }}>
+                  To certify: accomplish the necessary documents at the right time.
+                </span>
+              </div>
+            </div>
+
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '40px',
+              marginBottom: '30px'
+            }}>
+              <div>
+                <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+                  <strong>Requisitioner:</strong>
+                </div>
+                <div style={{ marginBottom: '10px', fontSize: '12px' }}>
+                  <strong>Engr. Jayson Valeroso</strong>
+                </div>
+                <div style={{ fontSize: '11px', marginBottom: '5px' }}>
+                  MED Chief
+                </div>
+                <div style={{ 
+                  borderBottom: '1px solid black',
+                  width: '150px',
+                  fontSize: '10px',
+                  paddingTop: '20px'
+                }}>
+                  (Date)
+                </div>
+                
+                <div style={{ marginTop: '20px', fontSize: '12px' }}>
+                  <strong>Receive:</strong>
+                </div>
+                <div style={{ 
+                  borderBottom: '1px solid black',
+                  width: '150px',
+                  marginTop: '30px'
+                }}>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+                  <strong>Approved by:</strong>
+                </div>
+                <div style={{ 
+                  borderBottom: '1px solid black',
+                  width: '200px',
+                  marginBottom: '5px',
+                  paddingTop: '20px'
+                }}>
+                </div>
+                <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
+                  Signature Over Printed Name/Date
+                </div>
+                <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
+                  Chief Head of Office
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="print-hidden" style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '20px'
+            }}>
+              <button
+                onClick={closeModal}
+                style={{
+                  backgroundColor: '#666',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Close
+              </button>
+              
+              <button
+                onClick={() => window.print()}
+                style={{
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                🖨️ Print Requisition
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Other Supply Requisition Form */}
+      {showOtherSupplyForm && (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    overflow: 'auto',
+    padding: '20px'
+  }}>
+    <div className="requisition-form-modal" style={{
+      backgroundColor: 'white',
+      padding: '40px',
+      borderRadius: '8px',
+      width: '90%',
+      maxWidth: '800px',
+      maxHeight: '90vh',
+      overflow: 'auto',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <style>{`
+        .requisition-form-modal * {
+          color: black !important;
+        }
+        .requisition-form-modal input {
+          width: 100% !important;
+          border: none !important;
+          outline: none !important;
+          font-size: 12px !important;
+          color: black !important;
+          background-color: transparent !important;
+          font-family: Arial, sans-serif !important;
+        }
+        .requisition-form-modal input:focus {
+          color: black !important;
+        }
+        .requisition-form-modal .requisition-input-filled {
+          background-color: #f0f8ff !important;
+        }
+        .requisition-form-modal h2,
+        .requisition-form-modal h3,
+        .requisition-form-modal th,
+        .requisition-form-modal td,
+        .requisition-form-modal div,
+        .requisition-form-modal span,
+        .requisition-form-modal strong {
+          color: black !important;
+        }
+        
+        /* Print-specific styles */
+        @media print {
+          .print-hidden {
+            display: none !important;
+          }
+          .requisition-form-modal {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 20px !important;
+            width: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          .requisition-form-modal .requisition-input-filled {
+            background-color: transparent !important;
+          }
+          body {
+            background: white !important;
+          }
+          .requisition-form-modal input {
+            background-color: transparent !important;
+          }
+        }
+      `}</style>
+      {/* Form Header */}
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h2 style={{ 
+          textDecoration: 'underline', 
+          margin: '0 0 20px 0',
+          fontSize: '18px',
+          fontWeight: 'bold'
+        }}>
+          REQUISITION FORM
+        </h2>
+        
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          margin: '20px 0'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '20px',
+              height: '15px',
+              border: '2px solid black',
+              display: 'inline-block'
+            }}></div>
+            <span style={{ fontSize: '14px' }}>Office Supplies</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '20px',
+              height: '15px',
+              backgroundColor: 'black',
+              display: 'inline-block',
+              position: 'relative'
+            }}>
+              <span style={{
+                color: 'white',
+                fontSize: '12px',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontWeight: 'bold'
+              }}>✓</span>
+            </div>
+            <span style={{ fontSize: '14px' }}>Other Supplies & Materials</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Department Header */}
+      <div style={{ 
+        textAlign: 'center', 
+        fontWeight: 'bold',
+        fontSize: '16px',
+        marginBottom: '20px',
+        textDecoration: 'underline'
+      }}>
+        MAINTENANCE and ENGINEERING DIVISION
+      </div>
+
+      {/* Table */}
+      <table style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        border: '2px solid black',
+        marginBottom: '30px'
+      }}>
+        <thead>
+          <tr style={{ backgroundColor: '#f5f5f5' }}>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '10%'
+            }}>QTY</th>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '15%'
+            }}>UNIT</th>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '50%'
+            }}>DESCRIPTION</th>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '25%'
+            }}>REMARKS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            const requisitionData = getOtherRequisitionData();
+            const totalRows = 15;
+            
+            return [...Array(totalRows)].map((_, index) => {
+              const itemData = index < requisitionData.length ? requisitionData[index] : null;
+              
+              return (
+                <tr key={index}>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input 
+                      type="text" 
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.qty : ''}
+                      placeholder=""
+                    />
+                  </td>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input 
+                      type="text" 
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.unit : ''}
+                      placeholder=""
+                    />
+                  </td>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input 
+                      type="text" 
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.description : ''}
+                      placeholder=""
+                    />
+                  </td>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input 
+                      type="text" 
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.remarks : ''}
+                      placeholder=""
+                    />
+                  </td>
+                </tr>
+              );
+            });
+          })()}
+        </tbody>
+      </table>
+
+      {/* Form Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ fontSize: '12px' }}>
+          <strong>Purpose:</strong>
+          <span style={{ marginLeft: '50px', fontSize: '11px', fontStyle: 'italic' }}>
+            To certify: accomplish the necessary documents at the right time.
+          </span>
+        </div>
+      </div>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr', 
+        gap: '40px',
+        marginBottom: '30px'
+      }}>
+        <div>
+          <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+            <strong>Requisitioner:</strong>
+          </div>
+          <div style={{ marginBottom: '10px', fontSize: '12px' }}>
+            <strong>Engr. Jayson Valeroso</strong>
+          </div>
+          <div style={{ fontSize: '11px', marginBottom: '5px' }}>
+            MED Chief
+          </div>
+          <div style={{ 
+            borderBottom: '1px solid black',
+            width: '150px',
+            fontSize: '10px',
+            paddingTop: '20px'
+          }}>
+            (Date)
+          </div>
+          
+          <div style={{ marginTop: '20px', fontSize: '12px' }}>
+            <strong>Receive:</strong>
+          </div>
+          <div style={{ 
+            borderBottom: '1px solid black',
+            width: '150px',
+            marginTop: '30px'
+          }}>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+            <strong>Approved by:</strong>
+          </div>
+          <div style={{ 
+            borderBottom: '1px solid black',
+            width: '200px',
+            marginBottom: '5px',
+            paddingTop: '20px'
+          }}>
+          </div>
+          <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
+            Signature Over Printed Name/Date
+          </div>
+          <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
+            Chief Head of Office
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="print-hidden" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: '20px'
+      }}>
+        <button
+  onClick={() => setShowOtherSupplyForm(false)}
+  style={{
+    backgroundColor: '#666',
+    color: 'white',
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px'
+  }}
+>
+  Close
+</button>
+        
+        <button
+          onClick={() => window.print()}
+          style={{
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            padding: '10px 20px',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          🖨️ Print Requisition
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+      
     </section>
   );
 }
 
 export default DashboardPage;
+

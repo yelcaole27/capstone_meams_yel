@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import './MainLayout.css';
+import { useAuth } from './AuthContext';
+import './StaffLayout.css';
 
-function MainLayout() {
+function StaffLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const { getCurrentUser } = useAuth();
+  const [showStaffMenu, setShowStaffMenu] = useState(false);
+
+  const currentUser = getCurrentUser();
 
   const getAuthToken = () => {
-    return localStorage.getItem('authToken') || localStorage.getItem('adminToken');
+    return localStorage.getItem('authToken');
   };
 
   const handleSignOut = async () => {
@@ -33,37 +37,32 @@ function MainLayout() {
       
       // Clear tokens and redirect
       localStorage.removeItem('authToken');
-      localStorage.removeItem('adminToken');
       navigate('/login');
       
     } catch (error) {
       console.error('Logout error:', error);
       // Force logout even if there's an error
       localStorage.removeItem('authToken');
-      localStorage.removeItem('adminToken');
       navigate('/login');
     }
   };
 
-  const toggleAdminMenu = () => {
-    setShowAdminMenu(!showAdminMenu);
+  const toggleStaffMenu = () => {
+    setShowStaffMenu(!showStaffMenu);
   };
 
   // Function to check if a nav item is active
   const isActive = (path) => location.pathname === path;
 
-  // Check if user has admin access
-  const hasAdminAccess = localStorage.getItem('adminToken');
-
   return (
-    <div className="main-layout-container">
-      <aside className="sidebar">
+    <div className="staff-layout-container">
+      <aside className="staff-sidebar">
         <div className="logo">
           <h1 className="logo-text">MEAMS</h1>
         </div>
-        <div className="admin-info">
-          <div className="admin-avatar"></div>
-          <p className="admin-name">Engr. Jayson Valeroso</p>
+        <div className="staff-info">
+          <div className="staff-avatar"></div>
+          <p className="staff-name">Staff User</p>
         </div>
         <nav className="nav-menu">
           <ul>
@@ -92,29 +91,6 @@ function MainLayout() {
               </Link>
             </li>
             <li>
-              <Link to="/logs" className={`nav-item ${isActive('/logs') ? 'active' : ''}`}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Logs
-              </Link>
-            </li>
-            <li>
-              <Link to="/manage-accounts" className={`nav-item ${isActive('/manage-accounts') ? 'active' : ''}`}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="8.5" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 8V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M23 11H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Manage Accounts
-              </Link>
-            </li>
-            <li>
               <Link to="/settings" className={`nav-item ${isActive('/settings') ? 'active' : ''}`}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
@@ -137,15 +113,15 @@ function MainLayout() {
 
       <main className="main-content">
         <header className="main-header">
-          <h1>Hi, Engr. Jayson Valeroso</h1>
-          <div className="admin-menu-dropdown">
-            <button className="admin-menu-toggle" onClick={toggleAdminMenu}>
+          <h1>Welcome, {currentUser ? currentUser.username : 'Staff'}</h1>
+          <div className="staff-menu-dropdown">
+            <button className="staff-menu-toggle" onClick={toggleStaffMenu}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
               </svg>
             </button>
-            {showAdminMenu && (
-              <div className="admin-dropdown-content">
+            {showStaffMenu && (
+              <div className="staff-dropdown-content">
                 <a href="#" onClick={(e) => e.preventDefault()}>Profile</a>
                 <a href="#" onClick={handleSignOut}>Sign out</a>
               </div>
@@ -159,4 +135,4 @@ function MainLayout() {
   );
 }
 
-export default MainLayout;
+export default StaffLayout;
