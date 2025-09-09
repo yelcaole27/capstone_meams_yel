@@ -123,19 +123,6 @@ function MainLayout() {
                 Settings
               </Link>
             </li>
-            {hasAdminAccess && (
-              <li>
-                <Link to="/administrator" className={`nav-item ${isActive('/administrator') ? 'active' : ''}`}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M23 21V19C23 17.9391 22.5786 16.9217 21.8284 16.1716C21.0783 15.4214 20.0609 15 19 15H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M16 7C16 6.06087 16.3687 5.15812 17.0251 4.47487C17.6815 3.79163 18.5717 3.41421 19.5 3.41421C20.4283 3.41421 21.3185 3.79163 21.9749 4.47487C22.6313 5.15812 23 6.06087 23 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Administrator
-                </Link>
-              </li>
-            )}
           </ul>
         </nav>
         <div className="sign-out">
