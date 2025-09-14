@@ -33,6 +33,7 @@
 - pip install pydantic[email]
 - pip install email-validator
 - pip install bcrypt
+- pip install pandas openpyxl xlrd
 Put the backend files on venv.
 
 Running the project:

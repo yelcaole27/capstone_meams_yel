@@ -36,7 +36,7 @@ function SuppliesPage() {
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
   
   // NEW: Define unit options
-  const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'set', 'roll', 'bag', 'meter', 'ream'];
+  const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'kilo', 'set', 'roll', 'bag', 'meter', 'ream','bar', 'pair', 'can', 'pail', 'tube', 'cart'];
   
   // NEW: Define status options
   const statusOptions = ['Understock', 'Normal', 'Overstock'];
@@ -1254,4 +1254,5 @@ const handleCloseStockCard = () => {
 }
 
 export default SuppliesPage;
+
 

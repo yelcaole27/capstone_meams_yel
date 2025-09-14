@@ -1,5 +1,3 @@
-// COMPLETE UPDATED ManageAccountsPage.js file:
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import './ManageAccountsPage.css';
@@ -62,12 +60,16 @@ function ManageAccountsPage() {
           setError('Authentication failed. Please log in again.');
           return;
         }
+        if (response.status === 403) {
+          setError('Access denied. Admin privileges required to manage accounts.');
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       if (data.success) {
-        setAccounts(data.data);
+        setAccounts(data.data || []);
         setError(''); // Clear any previous errors
       } else {
         setError('Failed to fetch accounts');
@@ -80,19 +82,18 @@ function ManageAccountsPage() {
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdown && !event.target.closest('.manage-dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
 
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (openDropdown && !event.target.closest('.manage-dropdown')) {
-      setOpenDropdown(null);
-    }
-  };
-
-  document.addEventListener('mousedown', handleClickOutside);
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-}, [openDropdown]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   // Load accounts on component mount
   useEffect(() => {
@@ -116,7 +117,8 @@ useEffect(() => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -129,7 +131,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error updating account status:', error);
-      setError('Failed to update account status');
+      setError(error.message || 'Failed to update account status');
     }
   };
 
@@ -166,7 +168,8 @@ useEffect(() => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -176,7 +179,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error deleting account:', error);
-      setError('Failed to delete account');
+      setError(error.message || 'Failed to delete account');
     } finally {
       setLoading(false);
     }
@@ -199,7 +202,8 @@ useEffect(() => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -208,7 +212,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      setError('Failed to reset password');
+      setError(error.message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }
@@ -367,7 +371,8 @@ useEffect(() => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -387,7 +392,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error updating account:', error);
-      setError('Failed to update account');
+      setError(error.message || 'Failed to update account');
     } finally {
       setLoading(false);
     }
@@ -854,8 +859,6 @@ useEffect(() => {
     </div>
   );
 }
-
-
 
 export default ManageAccountsPage;
 

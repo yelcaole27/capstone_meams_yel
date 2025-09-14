@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext'; // Import the auth context
 import './AdminLogin.css';
 
 function AdminLogin() {
@@ -7,6 +8,23 @@ function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { adminLogin } = useAuth(); // Use the auth context
+
+  // Helper function to create a fake but valid JWT token structure
+  const createFakeJWT = (username, role = 'admin') => {
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    
+    const payload = btoa(JSON.stringify({
+      sub: username,
+      role: role,
+      iat: Math.floor(Date.now() / 1000), // Issued at
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // Expires in 24 hours
+    }));
+    
+    const signature = "fake_signature_for_demo";
+    
+    return `${header}.${payload}.${signature}`;
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -14,7 +32,12 @@ function AdminLogin() {
 
     // Temporary admin credentials (replace with real authentication)
     if (username === 'admin' && password === 'admin123') {
-      localStorage.setItem('adminToken', 'temp_admin_token');
+      // Create a proper JWT-like token
+      const fakeToken = createFakeJWT(username, 'admin');
+      
+      // Use the auth context login method
+      adminLogin(fakeToken);
+      
       navigate('/administrator');
     } else {
       setError('Invalid username or password');
@@ -64,3 +87,4 @@ function AdminLogin() {
 }
 
 export default AdminLogin;
+
