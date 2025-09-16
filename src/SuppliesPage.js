@@ -529,6 +529,7 @@ const convertFileToBase64 = (file) => {
     }
   };
 
+<<<<<<< HEAD
 const handleRemoveImage = async (supplyId) => {
   if (!window.confirm('Are you sure you want to remove this image?')) return;
 
@@ -569,6 +570,8 @@ const handleRemoveImage = async (supplyId) => {
     setLoading(false);
   }
 };
+=======
+>>>>>>> d5ab1537869bc090020da3f56d779304cbf83c69
   // NEW: Edit Item Module Functions
   const handleOpenEditItem = () => {
     if (selectedItem) {

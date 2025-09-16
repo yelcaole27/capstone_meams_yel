@@ -410,4 +410,16 @@ html, body, #root {
 .admin-dropdown-content a:last-child {
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
+<<<<<<< HEAD
 }
+=======
+}
+
+/* Specific styles for page content rendered by Outlet */
+/* Ensure child components stretch to fill the main-content area if needed */
+.main-content > div { /* Targeting the direct children of main-content (DashboardPage, SuppliesPage etc.) */
+  flex-grow: 1;
+  display: flex; /* Often children might need to be flex containers themselves */
+  flex-direction: column;
+}
+>>>>>>> d5ab1537869bc090020da3f56d779304cbf83c69
