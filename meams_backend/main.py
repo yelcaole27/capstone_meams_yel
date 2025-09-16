@@ -27,6 +27,9 @@ import mimetypes
 from typing import Optional
 from pydantic import BaseModel
 import bcrypt
+import pandas as pd
+
+from processing import bootstrap_missing_months, generate_arima_forecast
 
 # Load environment variables
 load_dotenv()
@@ -58,7 +61,7 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "your-app-password")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <your-email@gmail.com>")
 
 # MongoDB connection
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://admin:MEAMSDS42@cluster0.xl6k426.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://etil:MEAMSDS42@cluster0.xl6k426.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 
 try:
@@ -75,6 +78,10 @@ equipment_collection = db.equipment
 accounts_collection = db.accounts
 logs_collection = db.logs
 
+# Add these lines with your other collection definitions
+historical_supplies_forecast_collection = db["historical_supplies_forecast"]  
+historical_equipment_forecast_collection = db["historical_equipment_forecast"]
+# ===============================================
 # ===============================================
 # LOGGING UTILITIES
 # ===============================================
@@ -1506,6 +1513,64 @@ async def delete_equipment(equipment_id: str, request: Request, token: str = Dep
     
     return {"success": True, "message": "Equipment deleted successfully"}
 
+# --- Historical Supplies Data Endpoint ---
+@app.get("/api/historical-supplies", response_model=dict)
+async def get_historical_supplies(token: str = Depends(oauth2_scheme)):
+    verify_token(token)
+    raw_data = list(historical_supplies_forecast_collection.find({}, {"_id": 0}))
+    if not raw_data:
+        return {"success": True, "message": "No historical supplies data found.", "data": []}
+    df = pd.DataFrame(raw_data)
+    if 'date' not in df.columns or 'quantity' not in df.columns:
+        raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in supplies data")
+    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
+    bootstrapped_df['date'] = bootstrapped_df['date'].dt.strftime('%Y-%m-%d')
+    return {"success": True, "data": bootstrapped_df.to_dict(orient='records')}
+
+# --- Supplies Forecast Endpoint ---
+@app.get("/api/forecast-supplies", response_model=dict)
+async def get_forecast_supplies(token: str = Depends(oauth2_scheme), n_periods: int = 12):
+    verify_token(token)
+    raw_data = list(historical_supplies_forecast_collection.find({}, {"_id": 0}))
+    if not raw_data:
+        return {"success": True, "message": "No historical supplies data for forecasting.", "data": []}
+    df = pd.DataFrame(raw_data)
+    if 'date' not in df.columns or 'quantity' not in df.columns:
+        raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in supplies data")
+    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
+    forecast_df = generate_arima_forecast(bootstrapped_df, date_col='date', value_col='quantity', n_periods=n_periods)
+    forecast_df['date'] = forecast_df['date'].dt.strftime('%Y-%m-%d')
+    return {"success": True, "data": forecast_df.to_dict(orient='records')}
+
+# --- Historical Equipment Data Endpoint ---
+@app.get("/api/historical-equipment", response_model=dict)
+async def get_historical_equipment(token: str = Depends(oauth2_scheme)):
+    verify_token(token)
+    raw_data = list(historical_equipment_forecast_collection.find({}, {"_id": 0}))
+    if not raw_data:
+        return {"success": True, "message": "No historical equipment data found.", "data": []}
+    df = pd.DataFrame(raw_data)
+    if 'date' not in df.columns or 'quantity' not in df.columns:
+        raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in equipment data")
+    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
+    bootstrapped_df['date'] = bootstrapped_df['date'].dt.strftime('%Y-%m-%d')
+    return {"success": True, "data": bootstrapped_df.to_dict(orient='records')}
+
+# --- Equipment Forecast Endpoint ---
+@app.get("/api/forecast-equipment", response_model=dict)
+async def get_forecast_equipment(token: str = Depends(oauth2_scheme), n_periods: int = 12):
+    verify_token(token)
+    raw_data = list(historical_equipment_forecast_collection.find({}, {"_id": 0}))
+    if not raw_data:
+        return {"success": True, "message": "No historical equipment data for forecasting.", "data": []}
+    df = pd.DataFrame(raw_data)
+    if 'date' not in df.columns or 'quantity' not in df.columns:
+        raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in equipment data")
+    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
+    forecast_df = generate_arima_forecast(bootstrapped_df, date_col='date', value_col='quantity', n_periods=n_periods)
+    forecast_df['date'] = forecast_df['date'].dt.strftime('%Y-%m-%d')
+    return {"success": True, "data": forecast_df.to_dict(orient='records')}
+
 # Logs routes
 @app.get("/api/logs")
 async def get_logs(
@@ -2393,6 +2458,79 @@ async def health_check():
         return {"status": "healthy", "database": "connected", "timestamp": datetime.utcnow()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+
+# Add this debug endpoint to your main.py to see exactly what's happening
+@app.get("/debug/historical-supplies")
+async def debug_historical_supplies(token: str = Depends(oauth2_scheme)):
+    """Debug version to see what's going wrong with historical supplies data"""
+    verify_token(token)
+    
+    try:
+        # Step 1: Check raw data from MongoDB
+        raw_data = list(historical_supplies_forecast_collection.find({}, {"_id": 0}))
+        print(f"Raw data count: {len(raw_data)}")
+        print(f"First raw record: {raw_data[0] if raw_data else 'No data'}")
+        
+        if not raw_data:
+            return {"error": "No raw data found in historical_supplies_forecast collection"}
+        
+        # Step 2: Convert to DataFrame
+        df = pd.DataFrame(raw_data)
+        print(f"DataFrame columns: {df.columns.tolist()}")
+        print(f"DataFrame shape: {df.shape}")
+        print(f"DataFrame head:\n{df.head()}")
+        
+        # Step 3: Check for required columns
+        if 'date' not in df.columns or 'quantity' not in df.columns:
+            return {
+                "error": "Missing required columns", 
+                "available_columns": df.columns.tolist(),
+                "sample_data": df.head(2).to_dict() if not df.empty else {}
+            }
+        
+        # Step 4: Check data types
+        print(f"Date column dtype: {df['date'].dtype}")
+        print(f"Quantity column dtype: {df['quantity'].dtype}")
+        print(f"First 3 dates: {df['date'].head(3).tolist()}")
+        print(f"First 3 quantities: {df['quantity'].head(3).tolist()}")
+        
+        # Step 5: Try bootstrap function
+        try:
+            bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
+            print(f"Bootstrap successful! Shape: {bootstrapped_df.shape}")
+            
+            # Step 6: Try to format dates
+            try:
+                bootstrapped_df['date'] = bootstrapped_df['date'].dt.strftime('%Y-%m-%d')
+                return {
+                    "success": True,
+                    "message": "Debug successful",
+                    "raw_count": len(raw_data),
+                    "processed_count": len(bootstrapped_df),
+                    "sample_processed": bootstrapped_df.head(3).to_dict('records')
+                }
+            except Exception as date_format_error:
+                return {
+                    "error": "Date formatting failed",
+                    "details": str(date_format_error),
+                    "bootstrap_successful": True,
+                    "bootstrap_shape": bootstrapped_df.shape
+                }
+                
+        except Exception as bootstrap_error:
+            return {
+                "error": "Bootstrap function failed",
+                "details": str(bootstrap_error),
+                "raw_data_sample": df.head(2).to_dict('records')
+            }
+            
+    except Exception as e:
+        import traceback
+        return {
+            "error": "Debug failed",
+            "details": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 if __name__ == "__main__":
     import uvicorn

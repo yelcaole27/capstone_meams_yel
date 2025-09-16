@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Sector } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Sector, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts'; // NEW: Added LineChart, Line, XAxis, YAxis, CartesianGrid
 import SuppliesAPI from './suppliesApi';
 import EquipmentAPI from './EquipmentApi';
 import './DashboardPage.css';
+import { useAuth } from './AuthContext'; // NEW: Import useAuth
 
 function DashboardPage() {
+  const { authToken, isAuthenticated, loading: authLoading } = useAuth(); // NEW: Get authToken and auth status
   const [suppliesData, setSuppliesData] = useState([]);
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeSupplyIndex, setActiveSupplyIndex] = useState(null);
   const [activeEquipmentIndex, setActiveEquipmentIndex] = useState(null);
-  
+
+  // NEW STATE FOR FORECAST DATA
+  const [suppliesForecastData, setSuppliesForecastData] = useState([]);
+  const [equipmentForecastData, setEquipmentForecastData] = useState([]);
+  // END NEW STATE
+
   // New state for modal visibility
   const [showRequisitionModal, setShowRequisitionModal] = useState(false);
   const [showRepairModal, setShowRepairModal] = useState(false);
@@ -39,32 +46,37 @@ function DashboardPage() {
   const equipmentLifeData = getEquipmentBeyondLifeData();
 
   // Clean, professional color palette
-  const supplyColors = ['#4CAF50', '#F44336', '#FF9800']; 
-  const equipmentColors = ['#4CAF50', '#FF9800', '#F44336']; 
+  const supplyColors = ['#4CAF50', '#F44336', '#FF9800'];
+  const equipmentColors = ['#4CAF50', '#FF9800', '#F44336'];
 
   // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
+      if (authLoading) return; // Wait for auth context to load
+
       try {
         setLoading(true);
-        
-        if (!SuppliesAPI.isAuthenticated() || !EquipmentAPI.isAuthenticated()) {
+
+        if (!isAuthenticated) { // Use isAuthenticated from AuthContext
           console.warn('User not authenticated, using empty data for charts');
           setSuppliesData([]);
           setEquipmentData([]);
+          setSuppliesForecastData([]); // Clear forecast data too
+          setEquipmentForecastData([]); // Clear forecast data too
           setLoading(false);
           return;
         }
-        
+
+        // Fetch main supplies and equipment data
         const [supplies, equipment] = await Promise.all([
-          SuppliesAPI.getAllSupplies().catch(err => {
+          SuppliesAPI.getAllSupplies(authToken).catch(err => { // Pass authToken
             console.warn('Failed to fetch supplies:', err);
             if (err.message.includes('Authentication failed')) {
               setError('Please log in to view dashboard data');
             }
             return [];
           }),
-          EquipmentAPI.getAllEquipment().catch(err => {
+          EquipmentAPI.getAllEquipment(authToken).catch(err => { // Pass authToken
             console.warn('Failed to fetch equipment:', err);
             if (err.message.includes('Authentication failed')) {
               setError('Please log in to view dashboard data');
@@ -75,7 +87,36 @@ function DashboardPage() {
 
         setSuppliesData(supplies || []);
         setEquipmentData(equipment || []);
-        
+
+        // NEW: Fetch forecast data
+        const [suppliesForecastRes, equipmentForecastRes] = await Promise.all([
+          fetch('http://localhost:8000/api/forecast-supplies', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }).then(res => res.json()),
+          fetch('http://localhost:8000/api/forecast-equipment', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }).then(res => res.json())
+        ]);
+
+        if (suppliesForecastRes.success) {
+          setSuppliesForecastData(suppliesForecastRes.data);
+        } else {
+          console.error('Failed to fetch supplies forecast:', suppliesForecastRes.message);
+          setSuppliesForecastData([]);
+        }
+
+        if (equipmentForecastRes.success) {
+          setEquipmentForecastData(equipmentForecastRes.data);
+        } else {
+          console.error('Failed to fetch equipment forecast:', equipmentForecastRes.message);
+          setEquipmentForecastData([]);
+        }
+        // END NEW: Fetch forecast data
+
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         if (err.message.includes('Authentication failed')) {
@@ -89,7 +130,7 @@ function DashboardPage() {
     };
 
     fetchData();
-  }, []);
+  }, [authToken, isAuthenticated, authLoading]); // Re-run when authToken or auth status changes
 
   // Handle button clicks
   const handleGenerateRequisition = () => {
@@ -103,7 +144,7 @@ function DashboardPage() {
   const handleRequisitionChoice = (choice) => {
   console.log(`Selected requisition type: ${choice}`);
   setShowRequisitionModal(false);
-  
+
   if (choice === 'OFFICE SUPPLIES') {
     setShowOfficeSupplyForm(true);
     setShowOtherSupplyForm(false);
@@ -115,7 +156,7 @@ function DashboardPage() {
 
   const getOtherRequisitionData = () => {
   const officeSupplyCategories = ['office', 'stationery', 'paper', 'supplies', 'administrative'];
-  
+
   // Filters understock items to find those NOT in the office supply categories
   const otherUnderstockItems = understockData.filter(item => {
     const category = (item.category || '').toLowerCase();
@@ -127,14 +168,14 @@ function DashboardPage() {
     qty: calculateRequiredQuantity(item),
     unit: item.unit || 'pcs',
     description: item.name || item.itemName || 'N/A',
-    remarks: '' 
+    remarks: ''
   }));
 };
 
   // Prepare requisition data from understock items
   const getRequisitionData = () => {
     const officeSupplyCategories = ['office', 'stationery', 'paper', 'supplies', 'administrative'];
-    
+
     const officeUnderstockItems = understockData.filter(item => {
       const category = (item.category || '').toLowerCase();
       return officeSupplyCategories.some(cat => category.includes(cat));
@@ -153,7 +194,7 @@ function DashboardPage() {
     const currentStock = parseInt(item.quantity) || 0;
     const minStock = parseInt(item.minStock) || 10;
     const maxStock = parseInt(item.maxStock) || 50;
-    
+
     // Suggest restocking to maximum level
     return Math.max(maxStock - currentStock, minStock);
   };
@@ -169,6 +210,7 @@ function DashboardPage() {
     setShowRequisitionModal(false);
     setShowRepairModal(false);
     setShowOfficeSupplyForm(false);
+    setShowOtherSupplyForm(false); // NEW: Close other supply form too
   };
 
   // Process supplies data for pie chart
@@ -183,7 +225,7 @@ function DashboardPage() {
 
     const statusCounts = suppliesData.reduce((acc, supply) => {
       const status = supply.status || 'Normal';
-      
+
       if (status.toLowerCase().includes('understock') || status.toLowerCase().includes('low')) {
         acc.Understock += 1;
       } else if (status.toLowerCase().includes('overstock') || status.toLowerCase().includes('excess')) {
@@ -191,7 +233,7 @@ function DashboardPage() {
       } else {
         acc.Normal += 1;
       }
-      
+
       return acc;
     }, { Normal: 0, Understock: 0, Overstock: 0 });
 
@@ -214,16 +256,16 @@ function DashboardPage() {
 
     const statusCounts = equipmentData.reduce((acc, equipment) => {
       const status = equipment.status || 'Within-Useful-Life';
-      
+
       if (status.toLowerCase().includes('maintenance') || status.toLowerCase().includes('repair')) {
         acc.Maintenance += 1;
-      } else if (status.toLowerCase().includes('beyond') || status.toLowerCase().includes('end') || 
+      } else if (status.toLowerCase().includes('beyond') || status.toLowerCase().includes('end') ||
                  status.toLowerCase().includes('obsolete') || status.toLowerCase().includes('retired')) {
         acc['Beyond-Useful-Life'] += 1;
       } else {
         acc['Within-Useful-Life'] += 1;
       }
-      
+
       return acc;
     }, { 'Within-Useful-Life': 0, 'Maintenance': 0, 'Beyond-Useful-Life': 0 });
 
@@ -234,21 +276,21 @@ function DashboardPage() {
     ].filter(item => item.value > 0);
   };
 
-  // Minimalist label function
+  // Minimalist label function for Pie Charts
   const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent < 0.05) return null;
-    
+
     const RADIAN = Math.PI / 180;
     const radius = (innerRadius + outerRadius) / 2;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="#ffffff" 
-        textAnchor="middle" 
+      <text
+        x={x}
+        y={y}
+        fill="#ffffff"
+        textAnchor="middle"
         dominantBaseline="central"
         fontSize="12"
         fontWeight="600"
@@ -258,7 +300,7 @@ function DashboardPage() {
     );
   };
 
-  // Clean tooltip
+  // Clean tooltip for Pie Charts
   const renderTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
@@ -280,7 +322,7 @@ function DashboardPage() {
     return null;
   };
 
-  // Simple hover effect
+  // Simple hover effect for Pie Charts
   const onPieEnter = (data, index, setActiveIndex) => {
     setActiveIndex(index);
   };
@@ -292,17 +334,131 @@ function DashboardPage() {
   const supplyChartData = getSupplyStatusData();
   const equipmentChartData = getEquipmentStatusData();
 
+  // NEW: Custom Tooltip for Line Charts
+  const renderLineTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{
+          backgroundColor: '#333',
+          padding: '10px',
+          border: 'none',
+          borderRadius: '4px',
+          color: 'white',
+          fontSize: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+        }}>
+          <p className="label">{`Date: ${label}`}</p>
+          {payload.map((entry, index) => (
+            <p key={`item-${index}`} style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value.toFixed(2)}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+  // END NEW: Custom Tooltip for Line Charts
+
   return (
     <section className="dashboard-content-area">
       <div className="dashboard-grid">
         {/* Top Row: Line Graphs */}
         <div className="graph-card line-graph-1">
-          <h3>Supply Consumption Trend</h3>
-          <div className="graph-placeholder">Line Graph 1 Data</div>
+          <h3>Supplies Forecast (Next 12 Months)</h3> {/* Updated title */}
+          <div style={{ width: '100%', height: '280px' }}>
+            {loading ? (
+              <div className="graph-placeholder">Loading supplies forecast...</div>
+            ) : error ? (
+              <div className="graph-placeholder">Error loading data</div>
+            ) : suppliesForecastData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={suppliesForecastData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
+                  <XAxis dataKey="date" stroke="#888888" tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
+                  <YAxis stroke="#888888" />
+                  <Tooltip content={renderLineTooltip} />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="quantity"
+                    stroke="#82ca9d"
+                    activeDot={{ r: 8 }}
+                    name="Forecasted Quantity"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="lower_bound"
+                    stroke="#8884d8"
+                    strokeDasharray="5 5"
+                    name="Lower Bound"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="upper_bound"
+                    stroke="#ffc658"
+                    strokeDasharray="5 5"
+                    name="Upper Bound"
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="graph-placeholder">No supplies forecast data available.</div>
+            )}
+          </div>
         </div>
         <div className="graph-card line-graph-2">
-          <h3>Equipment Maintenance Costs</h3>
-          <div className="graph-placeholder">Line Graph 2 Data</div>
+          <h3>Equipment Forecast (Next 12 Months)</h3> {/* Updated title */}
+          <div style={{ width: '100%', height: '280px' }}>
+            {loading ? (
+              <div className="graph-placeholder">Loading equipment forecast...</div>
+            ) : error ? (
+              <div className="graph-placeholder">Error loading data</div>
+            ) : equipmentForecastData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={equipmentForecastData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
+                  <XAxis dataKey="date" stroke="#888888" tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
+                  <YAxis stroke="#888888" />
+                  <Tooltip content={renderLineTooltip} />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="quantity"
+                    stroke="#82ca9d"
+                    activeDot={{ r: 8 }}
+                    name="Forecasted Quantity"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="lower_bound"
+                    stroke="#8884d8"
+                    strokeDasharray="5 5"
+                    name="Lower Bound"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="upper_bound"
+                    stroke="#ffc658"
+                    strokeDasharray="5 5"
+                    name="Upper Bound"
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="graph-placeholder">No equipment forecast data available.</div>
+            )}
+          </div>
         </div>
 
         {/* Middle Row: Simple Pie Charts */}
@@ -330,8 +486,8 @@ function DashboardPage() {
                     onMouseLeave={() => onPieLeave(setActiveSupplyIndex)}
                   >
                     {supplyChartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
+                      <Cell
+                        key={`cell-${index}`}
                         fill={entry.color}
                         stroke={activeSupplyIndex === index ? '#fff' : 'none'}
                         strokeWidth={activeSupplyIndex === index ? 2 : 0}
@@ -349,7 +505,7 @@ function DashboardPage() {
             )}
           </div>
         </div>
-        
+
         <div className="graph-card pie-graph-2">
           <h3>Equipment Status Distribution</h3>
           <div style={{ width: '100%', height: '280px' }}>
@@ -374,8 +530,8 @@ function DashboardPage() {
                     onMouseLeave={() => onPieLeave(setActiveEquipmentIndex)}
                   >
                     {equipmentChartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
+                      <Cell
+                        key={`cell-${index}`}
                         fill={entry.color}
                         stroke={activeEquipmentIndex === index ? '#fff' : 'none'}
                         strokeWidth={activeEquipmentIndex === index ? 2 : 0}
@@ -426,8 +582,8 @@ function DashboardPage() {
                 )}
               </tbody>
             </table>
-            <button 
-              className="generate-button" 
+            <button
+              className="generate-button"
               onClick={handleGenerateRequisition}
               style={{ cursor: 'pointer' }}
             >
@@ -465,8 +621,8 @@ function DashboardPage() {
                 )}
               </tbody>
             </table>
-            <button 
-              className="generate-button" 
+            <button
+              className="generate-button"
               onClick={handleGenerateRepair}
               style={{ cursor: 'pointer' }}
             >
@@ -682,7 +838,7 @@ function DashboardPage() {
               .requisition-form-modal strong {
                 color: black !important;
               }
-              
+
               /* Print-specific styles */
               @media print {
                 .print-hidden {
@@ -710,18 +866,18 @@ function DashboardPage() {
             `}</style>
             {/* Form Header */}
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{ 
-                textDecoration: 'underline', 
+              <h2 style={{
+                textDecoration: 'underline',
                 margin: '0 0 20px 0',
                 fontSize: '18px',
                 fontWeight: 'bold'
               }}>
                 REQUISITION FORM
               </h2>
-              
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 margin: '20px 0'
               }}>
@@ -758,8 +914,8 @@ function DashboardPage() {
             </div>
 
             {/* Department Header */}
-            <div style={{ 
-              textAlign: 'center', 
+            <div style={{
+              textAlign: 'center',
               fontWeight: 'bold',
               fontSize: '16px',
               marginBottom: '20px',
@@ -811,10 +967,10 @@ function DashboardPage() {
                 {(() => {
                   const requisitionData = getRequisitionData();
                   const totalRows = 15;
-                  
+
                   return [...Array(totalRows)].map((_, index) => {
                     const itemData = index < requisitionData.length ? requisitionData[index] : null;
-                    
+
                     return (
                       <tr key={index}>
                         <td style={{
@@ -822,8 +978,8 @@ function DashboardPage() {
                           padding: '8px',
                           height: '25px'
                         }}>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             className={`${itemData ? 'requisition-input-filled' : ''}`}
                             defaultValue={itemData ? itemData.qty : ''}
                             placeholder=""
@@ -834,8 +990,8 @@ function DashboardPage() {
                           padding: '8px',
                           height: '25px'
                         }}>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             className={`${itemData ? 'requisition-input-filled' : ''}`}
                             defaultValue={itemData ? itemData.unit : ''}
                             placeholder=""
@@ -846,8 +1002,8 @@ function DashboardPage() {
                           padding: '8px',
                           height: '25px'
                         }}>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             className={`${itemData ? 'requisition-input-filled' : ''}`}
                             defaultValue={itemData ? itemData.description : ''}
                             placeholder=""
@@ -858,8 +1014,8 @@ function DashboardPage() {
                           padding: '8px',
                           height: '25px'
                         }}>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             className={`${itemData ? 'requisition-input-filled' : ''}`}
                             defaultValue={itemData ? itemData.remarks : ''}
                             placeholder=""
@@ -882,9 +1038,9 @@ function DashboardPage() {
               </div>
             </div>
 
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '1fr 1fr', 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
               gap: '40px',
               marginBottom: '30px'
             }}>
@@ -898,7 +1054,7 @@ function DashboardPage() {
                 <div style={{ fontSize: '11px', marginBottom: '5px' }}>
                   MED Chief
                 </div>
-                <div style={{ 
+                <div style={{
                   borderBottom: '1px solid black',
                   width: '150px',
                   fontSize: '10px',
@@ -906,11 +1062,11 @@ function DashboardPage() {
                 }}>
                   (Date)
                 </div>
-                
+
                 <div style={{ marginTop: '20px', fontSize: '12px' }}>
                   <strong>Receive:</strong>
                 </div>
-                <div style={{ 
+                <div style={{
                   borderBottom: '1px solid black',
                   width: '150px',
                   marginTop: '30px'
@@ -922,7 +1078,7 @@ function DashboardPage() {
                 <div style={{ marginBottom: '15px', fontSize: '12px' }}>
                   <strong>Approved by:</strong>
                 </div>
-                <div style={{ 
+                <div style={{
                   borderBottom: '1px solid black',
                   width: '200px',
                   marginBottom: '5px',
@@ -939,8 +1095,8 @@ function DashboardPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="print-hidden" style={{ 
-              display: 'flex', 
+            <div className="print-hidden" style={{
+              display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               marginTop: '20px'
@@ -959,7 +1115,7 @@ function DashboardPage() {
               >
                 Close
               </button>
-              
+
               <button
                 onClick={() => window.print()}
                 style={{
@@ -1037,7 +1193,7 @@ function DashboardPage() {
         .requisition-form-modal strong {
           color: black !important;
         }
-        
+
         /* Print-specific styles */
         @media print {
           .print-hidden {
@@ -1065,18 +1221,18 @@ function DashboardPage() {
       `}</style>
       {/* Form Header */}
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h2 style={{ 
-          textDecoration: 'underline', 
+        <h2 style={{
+          textDecoration: 'underline',
           margin: '0 0 20px 0',
           fontSize: '18px',
           fontWeight: 'bold'
         }}>
           REQUISITION FORM
         </h2>
-        
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           margin: '20px 0'
         }}>
@@ -1113,8 +1269,8 @@ function DashboardPage() {
       </div>
 
       {/* Department Header */}
-      <div style={{ 
-        textAlign: 'center', 
+      <div style={{
+        textAlign: 'center',
         fontWeight: 'bold',
         fontSize: '16px',
         marginBottom: '20px',
@@ -1166,10 +1322,10 @@ function DashboardPage() {
           {(() => {
             const requisitionData = getOtherRequisitionData();
             const totalRows = 15;
-            
+
             return [...Array(totalRows)].map((_, index) => {
               const itemData = index < requisitionData.length ? requisitionData[index] : null;
-              
+
               return (
                 <tr key={index}>
                   <td style={{
@@ -1177,8 +1333,8 @@ function DashboardPage() {
                     padding: '8px',
                     height: '25px'
                   }}>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className={`${itemData ? 'requisition-input-filled' : ''}`}
                       defaultValue={itemData ? itemData.qty : ''}
                       placeholder=""
@@ -1189,8 +1345,8 @@ function DashboardPage() {
                     padding: '8px',
                     height: '25px'
                   }}>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className={`${itemData ? 'requisition-input-filled' : ''}`}
                       defaultValue={itemData ? itemData.unit : ''}
                       placeholder=""
@@ -1201,8 +1357,8 @@ function DashboardPage() {
                     padding: '8px',
                     height: '25px'
                   }}>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className={`${itemData ? 'requisition-input-filled' : ''}`}
                       defaultValue={itemData ? itemData.description : ''}
                       placeholder=""
@@ -1213,8 +1369,8 @@ function DashboardPage() {
                     padding: '8px',
                     height: '25px'
                   }}>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className={`${itemData ? 'requisition-input-filled' : ''}`}
                       defaultValue={itemData ? itemData.remarks : ''}
                       placeholder=""
@@ -1236,9 +1392,9 @@ function DashboardPage() {
           </span>
         </div>
       </div>
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
         gap: '40px',
         marginBottom: '30px'
       }}>
@@ -1252,7 +1408,7 @@ function DashboardPage() {
           <div style={{ fontSize: '11px', marginBottom: '5px' }}>
             MED Chief
           </div>
-          <div style={{ 
+          <div style={{
             borderBottom: '1px solid black',
             width: '150px',
             fontSize: '10px',
@@ -1260,11 +1416,11 @@ function DashboardPage() {
           }}>
             (Date)
           </div>
-          
+
           <div style={{ marginTop: '20px', fontSize: '12px' }}>
             <strong>Receive:</strong>
           </div>
-          <div style={{ 
+          <div style={{
             borderBottom: '1px solid black',
             width: '150px',
             marginTop: '30px'
@@ -1276,7 +1432,7 @@ function DashboardPage() {
           <div style={{ marginBottom: '15px', fontSize: '12px' }}>
             <strong>Approved by:</strong>
           </div>
-          <div style={{ 
+          <div style={{
             borderBottom: '1px solid black',
             width: '200px',
             marginBottom: '5px',
@@ -1293,8 +1449,8 @@ function DashboardPage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="print-hidden" style={{ 
-        display: 'flex', 
+      <div className="print-hidden" style={{
+        display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginTop: '20px'
@@ -1313,7 +1469,7 @@ function DashboardPage() {
 >
   Close
 </button>
-        
+
         <button
           onClick={() => window.print()}
           style={{
@@ -1335,10 +1491,9 @@ function DashboardPage() {
     </div>
   </div>
 )}
-      
+
     </section>
   );
 }
 
 export default DashboardPage;
-
