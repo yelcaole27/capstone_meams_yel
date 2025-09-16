@@ -1,11 +1,167 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from './AuthContext'; // Import useAuth
+import ProfileModal from './ProfileModal';
 import './MainLayout.css';
 
 function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { getCurrentUser, authToken } = useAuth(); // Get auth functions
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userDisplayName, setUserDisplayName] = useState('User'); // State for display name
+  
+  // ✅ ONLY ADDED: Profile picture states
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Get current user info
+  const currentUser = getCurrentUser();
+
+  // ✅ ONLY ADDED: Helper function for base64 conversion
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  // Fetch user display name - MODIFIED to also get profile picture
+  useEffect(() => {
+    const fetchUserDisplayName = async () => {
+      if (authToken && currentUser) {
+        try {
+          // Try to get profile data from API
+          const response = await fetch('http://localhost:8000/profile', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const profileData = await response.json();
+            setUserDisplayName(profileData.fullName || currentUser.username || 'User');
+            
+            // ✅ ONLY ADDED: Set profile picture if exists
+            if (profileData.profilePicture) {
+              setProfilePicture(profileData.profilePicture);
+            }
+          } else {
+            // Fallback to username or default names
+            if (currentUser.username === 'admin') {
+              setUserDisplayName('Engr. Jayson Valeroso');
+            } else if (currentUser.username === 'staff') {
+              setUserDisplayName('Staff Member');
+            } else {
+              setUserDisplayName(currentUser.username || 'User');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          // Fallback to username or default names
+          if (currentUser.username === 'admin') {
+            setUserDisplayName('Engr. Jayson Valeroso');
+          } else if (currentUser.username === 'staff') {
+            setUserDisplayName('Staff Member');
+          } else {
+            setUserDisplayName(currentUser.username || 'User');
+          }
+        }
+      }
+    };
+
+    fetchUserDisplayName();
+  }, [authToken, currentUser]);
+
+  // ✅ ONLY ADDED: Profile picture upload functions
+  const handleAvatarClick = () => {
+    if (uploadingPicture) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image file too large. Please select an image smaller than 5MB');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      const imageBase64 = await convertFileToBase64(file);
+      setProfilePicture(imageBase64);
+
+      const response = await fetch('http://localhost:8000/profile/picture', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profilePicture: imageBase64 })
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Error uploading profile picture. Please try again.');
+      setProfilePicture(null);
+    } finally {
+      setUploadingPicture(false);
+      event.target.value = '';
+    }
+  };
+
+  // ✅ FIXED: Delete profile picture function
+  const handleDeleteProfilePicture = async (e) => {
+    // Prevent event bubbling to avatar click handler
+    e.stopPropagation();
+    
+    if (!profilePicture) return; // No picture to delete
+    
+    if (!window.confirm('Are you sure you want to delete your profile picture?')) {
+      return; // User cancelled
+    }
+
+    try {
+      setUploadingPicture(true);
+      
+      const response = await fetch('http://localhost:8000/profile/picture', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        setProfilePicture(null); // Remove from UI - this should trigger re-render
+        console.log('✅ Profile picture deleted successfully');
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('❌ Delete error:', error);
+      alert('Error deleting profile picture. Please try again.');
+    } finally {
+      setUploadingPicture(false);
+    }
+  };
 
   const getAuthToken = () => {
     return localStorage.getItem('authToken') || localStorage.getItem('adminToken');
@@ -49,6 +205,12 @@ function MainLayout() {
     setShowAdminMenu(!showAdminMenu);
   };
 
+  const handleProfileClick = (e) => {
+    e.preventDefault();
+    setShowProfileModal(true);
+    setShowAdminMenu(false); // Close the dropdown
+  };
+
   // Function to check if a nav item is active
   const isActive = (path) => location.pathname === path;
 
@@ -62,8 +224,69 @@ function MainLayout() {
           <h1 className="logo-text">MEAMS</h1>
         </div>
         <div className="admin-info">
-          <div className="admin-avatar"></div>
-          <p className="admin-name">Engr. Jayson Valeroso</p>
+          {/* ✅ FIXED: Simplified avatar with proper click handling */}
+          <div 
+            className={`admin-avatar ${uploadingPicture ? 'uploading' : ''}`}
+            title={profilePicture ? "Click to change profile picture" : "Click to upload profile picture"}
+            style={{ cursor: uploadingPicture ? 'not-allowed' : 'pointer' }}
+            onClick={handleAvatarClick}
+          >
+            {profilePicture ? (
+              <img 
+                src={profilePicture} 
+                alt="Profile" 
+                className="avatar-image"
+              />
+            ) : (
+              <div className="avatar-placeholder">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
+                </svg>
+              </div>
+            )}
+            
+            {/* ✅ CENTERED: Delete button */}
+            <div className="avatar-overlay">
+              {uploadingPicture ? (
+                <div className="upload-spinner"></div>
+              ) : profilePicture ? (
+                // Show delete button only when there's a picture - CENTERED
+                <button 
+                  className="avatar-action-btn delete-btn" 
+                  onClick={handleDeleteProfilePicture}
+                  title="Delete picture"
+                  style={{ 
+                    position: 'absolute', 
+                    top: '50%', 
+                    left: '50%', 
+                    transform: 'translate(-50%, -50%)' 
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              ) : (
+                // Show upload icon when no picture
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+          </div>
+          
+          {/* ✅ ONLY ADDED: Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
+          
+          {/* ✅ FIXED: Dynamic user name */}
+          <p className="admin-name">{userDisplayName}</p>
         </div>
         <nav className="nav-menu">
           <ul>
@@ -136,25 +359,34 @@ function MainLayout() {
       </aside>
 
       <main className="main-content">
-        <header className="main-header">
-          <h1>Hi, Engr. Jayson Valeroso</h1>
-          <div className="admin-menu-dropdown">
-            <button className="admin-menu-toggle" onClick={toggleAdminMenu}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
-              </svg>
-            </button>
-            {showAdminMenu && (
-              <div className="admin-dropdown-content">
-                <a href="#" onClick={(e) => e.preventDefault()}>Profile</a>
-                <a href="#" onClick={handleSignOut}>Sign out</a>
-              </div>
-            )}
-          </div>
-        </header>
-        {/* This is where the nested route content will be rendered */}
-        <Outlet />
-      </main>
+  <header className="main-header">
+    {/* ✅ FIXED: Dynamic greeting */}
+    <h1>Hi, {userDisplayName}</h1>
+    <div className="admin-menu-dropdown">
+      <button className="admin-menu-toggle" onClick={toggleAdminMenu}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
+        </svg>
+      </button>
+      {showAdminMenu && (
+        <div className="admin-dropdown-content">
+          <a href="#" onClick={handleProfileClick}>Profile</a>
+          <a href="#" onClick={handleSignOut}>Sign out</a>
+        </div>
+      )}
+    </div>
+  </header>
+  {/* ADDED: Wrap Outlet in scrollable container */}
+  <div className="main-content-scrollable">
+    <Outlet />
+  </div>
+</main>
+
+      {/* Profile Modal */}
+      <ProfileModal 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+      />
     </div>
   );
 }

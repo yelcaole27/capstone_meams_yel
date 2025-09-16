@@ -14,7 +14,7 @@ html, body, #root {
   padding: 0;
   background: #2a2a2a;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  overflow: hidden; /* Prevent body scrolling if content fits */
+  overflow: hidden;
 }
 
 .staff-layout-container {
@@ -24,7 +24,6 @@ html, body, #root {
   color: #ffffff;
 }
 
-/* Staff Sidebar Styles */
 .staff-sidebar {
   width: 250px;
   background: #1a1a1a;
@@ -33,7 +32,7 @@ html, body, #root {
   flex-direction: column;
   align-items: center;
   border-right: 1px solid #333333;
-  flex-shrink: 0; /* Prevent sidebar from shrinking */
+  flex-shrink: 0;
 }
 
 .staff-sidebar .logo {
@@ -52,6 +51,7 @@ html, body, #root {
 .staff-info {
   text-align: center;
   margin-bottom: 40px;
+  position: relative;
 }
 
 .staff-avatar {
@@ -64,6 +64,105 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.staff-avatar:hover {
+  border-color: #4ade80;
+  transform: scale(1.05);
+}
+
+.staff-avatar.uploading {
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  color: #888888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: color 0.3s ease;
+}
+
+.staff-avatar:hover .avatar-placeholder {
+  color: #4ade80;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: #4ade80;
+}
+
+.staff-avatar:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.staff-avatar.uploading .avatar-overlay {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.avatar-action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.avatar-action-btn.delete-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.avatar-action-btn.delete-btn:hover {
+  background: #dc2626;
+  color: white;
+  transform: scale(1.1);
+}
+
+.upload-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #333;
+  border-top: 2px solid #4ade80;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .staff-name {
@@ -72,14 +171,16 @@ html, body, #root {
   color: #cccccc;
 }
 
+/* Navigation Menu */
 .nav-menu {
   width: 100%;
-  flex-grow: 1; /* Allows nav to take available vertical space */
+  flex: 1;
 }
 
 .nav-menu ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .nav-menu li {
@@ -113,7 +214,7 @@ html, body, #root {
 }
 
 .nav-item.active {
-  background: #4a4a4a; /* A slightly different background for active */
+  background: #4a4a4a;
   color: #ffffff;
   font-weight: 600;
 }
@@ -122,9 +223,10 @@ html, body, #root {
   color: #ffffff;
 }
 
+/* Sign out button */
 .sign-out {
   width: 100%;
-  margin-top: auto; /* Pushes it to the bottom */
+  margin-top: auto;
   padding-top: 20px;
   border-top: 1px solid #333333;
 }
@@ -158,14 +260,14 @@ html, body, #root {
   color: #ffffff;
 }
 
-/* Main Content Styles */
+/* Main Content */
 .main-content {
   flex-grow: 1;
   background: #2a2a2a;
   padding: 30px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* Allows scrolling for content within this area */
+  overflow-y: auto;
 }
 
 .main-header {
@@ -175,17 +277,40 @@ html, body, #root {
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid #333333;
-  flex-shrink: 0; /* Prevent header from shrinking */
+  flex-shrink: 0;
 }
 
 .main-header h1 {
   font-family: 'Koulen', cursive;
-  font-size: 36px;
+  font-size: 25px;
   color: #ffffff;
   font-weight: 400;
 }
 
-/* Staff Menu Dropdown Styles */
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-header {
+  background: #333333;
+  padding: 20px 30px;
+  border-bottom: 1px solid #444444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Staff Menu Dropdown - Fixed to match MainLayout.css */
 .staff-menu-dropdown {
   position: relative;
   display: inline-block;
@@ -221,10 +346,10 @@ html, body, #root {
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
   z-index: 1;
   right: 0;
-  top: 100%; /* Position below the toggle button */
+  top: 100%;
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 10px; /* Space between button and dropdown */
+  margin-top: 10px;
 }
 
 .staff-dropdown-content a {
@@ -249,12 +374,4 @@ html, body, #root {
 .staff-dropdown-content a:last-child {
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
-}
-
-/* Specific styles for page content rendered by Outlet */
-/* Ensure child components stretch to fill the main-content area if needed */
-.main-content > div { /* Targeting the direct children of main-content (DashboardPage, SuppliesPage etc.) */
-  flex-grow: 1;
-  display: flex; /* Often children might need to be flex containers themselves */
-  flex-direction: column;
 }

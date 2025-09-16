@@ -34,6 +34,7 @@
 - pip install email-validator
 - pip install bcrypt
 - pip install pandas openpyxl xlrd
+- pip install numpy scipy statsmodels python-dateutil pandas
 Put the backend files on venv.
 
 Running the project:

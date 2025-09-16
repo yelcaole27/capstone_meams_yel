@@ -20,6 +20,13 @@ import pandas as pd
 import io
 from typing import Optional, Dict, Any
 import pandas as pd
+import base64
+from fastapi import UploadFile
+from fastapi.responses import Response
+import mimetypes
+from typing import Optional
+from pydantic import BaseModel
+import bcrypt
 
 # Load environment variables
 load_dotenv()
@@ -142,6 +149,27 @@ class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
 
+# Profile models
+class ProfileResponse(BaseModel):
+    username: str
+    email: str
+    fullName: str
+    role: str
+    department: str
+    phoneNumber: str = None
+    dateJoined: str
+    profilePicture: Optional[str] = None
+
+class ProfileUpdate(BaseModel):
+    email: str = None
+    fullName: str = None
+    department: str = None
+    phoneNumber: str = None
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
 class User(BaseModel):
     username: str
     password: str
@@ -156,6 +184,7 @@ class SupplyCreate(BaseModel):
     status: Optional[str] = "available"
     itemCode: Optional[str] = ""
     date: Optional[str] = ""
+    itemPicture: Optional[str] = None  # Base64 encoded image string
 
 class SupplyUpdate(BaseModel):
     name: Optional[str] = None
@@ -167,6 +196,9 @@ class SupplyUpdate(BaseModel):
     status: Optional[str] = None
     itemCode: Optional[str] = None
     date: Optional[str] = None
+    image_data: Optional[str] = None
+    image_filename: Optional[str] = None
+    image_content_type: Optional[str] = None
 
 class EquipmentCreate(BaseModel):
     name: str
@@ -267,6 +299,115 @@ def verify_token(token: str):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+# Helper function for getting current user (for profile endpoints)
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Get current user from token"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return {"sub": username, "role": payload.get("role")}
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+# Helper functions for profile management
+def get_user_by_username(username: str):
+    """Get user data from database by username"""
+    try:
+        # Check hardcoded users first
+        hardcoded_users = {
+            "admin": {"password": "password123", "role": "admin"},
+            "staff": {"password": "staff123", "role": "staff"},
+        }
+        
+        if username in hardcoded_users:
+            return {
+                "username": username,
+                "email": f"{username}@meams.com",
+                "full_name": username.title(),
+                "role": hardcoded_users[username]["role"],
+                "department": "IT" if username == "admin" else "Operations",
+                "phone_number": "",
+                "password": hardcoded_users[username]["password"],
+                "date_joined": "2024-01-01",
+                "profile_picture": None  # ✅ Added profile picture field
+            }
+        
+        # Check database users
+        user = accounts_collection.find_one({"username": username})
+        if user:
+            profile_picture = None
+            if user.get("profile_picture"):
+                profile_picture = f"data:{user.get('profile_picture_content_type', 'image/jpeg')};base64,{user['profile_picture']}"
+            
+            return {
+                "username": user.get("username", ""),
+                "email": user.get("email", ""),
+                "full_name": user.get("name", ""),
+                "role": user.get("role", "staff"),
+                "department": user.get("department", "Operations"),
+                "phone_number": user.get("phone_number", ""),
+                "password": user.get("password_hash", ""),
+                "date_joined": user.get("account_creation", datetime.utcnow().strftime("%m/%d/%Y")),
+                "profile_picture": profile_picture  # ✅ Added profile picture field
+            }
+        return None
+        
+    except Exception as e:
+        print(f"Database error: {e}")
+        return None
+
+def update_user_profile(username: str, update_fields: dict):
+    """Update user profile in database"""
+    try:
+        # Check if it's a hardcoded user
+        hardcoded_users = ["admin", "staff"]
+        if username in hardcoded_users:
+            # For hardcoded users, we can't update the database, so return True
+            # In a real application, you might want to handle this differently
+            return True
+        
+        # Update database user
+        result = accounts_collection.update_one(
+            {"username": username},
+            {"$set": {**update_fields, "updated_at": datetime.utcnow()}}
+        )
+        return result.matched_count > 0
+        
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False
+
+def update_user_password(username: str, hashed_password: str):
+    """Update user password in database"""
+    try:
+        # Check if it's a hardcoded user
+        hardcoded_users = ["admin", "staff"]
+        if username in hardcoded_users:
+            # For hardcoded users, we can't update the password in database
+            # In a real application, you might want to handle this differently
+            return True
+        
+        # Update database user password
+        result = accounts_collection.update_one(
+            {"username": username},
+            {"$set": {"password_hash": hashed_password, "updated_at": datetime.utcnow()}}
+        )
+        return result.matched_count > 0
+        
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False
+
 def supply_helper(supply) -> dict:
     return {
         "_id": str(supply["_id"]),
@@ -274,11 +415,15 @@ def supply_helper(supply) -> dict:
         "description": supply.get("description", ""),
         "category": supply["category"],
         "quantity": supply["quantity"],
-        "supplier": supply.get("supplier", ""),
+                "supplier": supply.get("supplier", ""),
         "location": supply.get("location", ""),
         "status": supply.get("status", "available"),
         "itemCode": supply.get("itemCode", ""),
         "date": supply.get("date", ""),
+        "has_image": supply.get("image_data") is not None and supply.get("image_data") != "",
+        "image_data": supply.get("image_data"),  # Important: include image_data here
+        "image_filename": supply.get("image_filename"),
+        "image_content_type": supply.get("image_content_type"),
         "created_at": supply.get("created_at", datetime.utcnow()),
         "updated_at": supply.get("updated_at", datetime.utcnow())
     }
@@ -439,6 +584,287 @@ def validate_and_transform_equipment(item_data: dict, index: int) -> tuple:
 async def root():
     return {"message": "MEAMS Asset Management API is running!", "status": "active"}
 
+# ===============================================
+# PROFILE ENDPOINTS
+# ===============================================
+
+@app.get("/profile")
+async def get_profile(current_user: dict = Depends(get_current_user)):
+    """Get current user's profile information"""
+    try:
+        # Get user from database based on current_user
+        user = get_user_by_username(current_user["sub"])
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Format the response - handle profile picture safely
+        profile_picture = user.get("profile_picture")
+        
+        profile_data = {
+            "username": user.get("username", ""),
+            "email": user.get("email", ""),
+            "fullName": user.get("full_name", ""),
+            "role": user.get("role", ""),
+            "department": user.get("department", ""),
+            "phoneNumber": user.get("phone_number", ""),
+            "dateJoined": user.get("date_joined", datetime.now().strftime("%Y-%m-%d")),
+            "profilePicture": profile_picture  # This can be None
+        }
+        
+        return profile_data  # Return dict instead of ProfileResponse model
+        
+    except Exception as e:
+        print(f"Profile error: {str(e)}")  # Debug print
+        raise HTTPException(status_code=500, detail=f"Error fetching profile: {str(e)}")
+
+@app.put("/profile")
+async def update_profile(profile_data: ProfileUpdate, current_user: dict = Depends(get_current_user)):
+    """Update current user's profile information"""
+    try:
+        username = current_user["sub"]
+        
+        # Build update query - only update provided fields
+        update_fields = {}
+        if profile_data.email is not None:
+            update_fields["email"] = profile_data.email
+        if profile_data.fullName is not None:
+            update_fields["name"] = profile_data.fullName  # Map to 'name' field in database
+        if profile_data.department is not None:
+            update_fields["department"] = profile_data.department
+        if profile_data.phoneNumber is not None:
+            update_fields["phone_number"] = profile_data.phoneNumber
+        
+        if not update_fields:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+        # Update user in database
+        success = update_user_profile(username, update_fields)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get updated user data
+        updated_user = get_user_by_username(username)
+        
+        profile_response = {
+            "username": updated_user.get("username", ""),
+            "email": updated_user.get("email", ""),
+            "fullName": updated_user.get("full_name", ""),
+            "role": updated_user.get("role", ""),
+            "department": updated_user.get("department", ""),
+            "phoneNumber": updated_user.get("phone_number", ""),
+            "dateJoined": updated_user.get("date_joined", datetime.now().strftime("%Y-%m-%d")),
+            "profilePicture": updated_user.get("profile_picture")  # Handle safely
+        }
+        
+        return profile_response  # Return dict instead of model
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Profile update error: {str(e)}")  # Debug print
+        raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
+
+@app.post("/change-password")
+async def change_password(password_data: PasswordChange, current_user: dict = Depends(get_current_user)):
+    """Change user's password"""
+    try:
+        username = current_user["sub"]
+        
+        # Get current user data
+        user = get_user_by_username(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if it's a hardcoded user
+        hardcoded_users = {
+            "admin": {"password": "password123", "role": "admin"},
+            "staff": {"password": "staff123", "role": "staff"},
+        }
+        
+        # Verify current password
+        if username in hardcoded_users:
+            # For hardcoded users, check against the hardcoded password
+            if password_data.current_password != hardcoded_users[username]["password"]:
+                raise HTTPException(status_code=400, detail="Current password is incorrect")
+        else:
+            # For database users, check against hashed password
+            if not verify_password(password_data.current_password, user["password"]):
+                raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Hash new password
+        hashed_new_password = hash_password(password_data.new_password)
+        
+        # Update password in database
+        success = update_user_password(username, hashed_new_password)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update password")
+        
+        return {"message": "Password changed successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error changing password: {str(e)}")
+
+# ✅ NEW: Profile Picture Upload Endpoints
+@app.post("/profile/picture")
+async def upload_profile_picture(
+    request: Request = None,
+    token: str = Depends(oauth2_scheme)
+):
+    """Upload profile picture - accepts JSON with base64 image"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+
+    try:
+        # Get JSON data from request body
+        body = await request.json()
+        profile_picture_base64 = body.get("profilePicture")
+        
+        if not profile_picture_base64:
+            raise HTTPException(status_code=400, detail="No profile picture provided")
+        
+        print(f"🔄 Uploading profile picture for user: {username}")
+        
+        # Validate base64 image format
+        if not profile_picture_base64.startswith('data:image/'):
+            raise HTTPException(status_code=400, detail="Invalid image format")
+        
+        # Extract content type and base64 data
+        header, base64_data = profile_picture_base64.split(',', 1)
+        content_type = header.split(':')[1].split(';')[0]
+        
+        # Validate file size (decode base64 to check size)
+        import base64
+        image_bytes = base64.b64decode(base64_data)
+        if len(image_bytes) > 5 * 1024 * 1024:  # 5MB
+            raise HTTPException(status_code=400, detail="Image file too large (max 5MB)")
+        
+        print(f"✅ Image validated, size: {len(image_bytes)} bytes")
+        
+        # Update user profile with picture
+        if username in ["admin", "staff"]:
+            print(f"👤 Hardcoded user detected: {username}")
+            # For hardcoded users, we'll just return success for now
+            success = True
+        else:
+            print(f"💾 Updating database user: {username}")
+            # Update database user
+            result = accounts_collection.update_one(
+                {"username": username},
+                {
+                    "$set": {
+                        "profile_picture": base64_data,  # Store just the base64 data
+                        "profile_picture_content_type": content_type,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            success = result.matched_count > 0
+            print(f"📝 Database update result: {success}")
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        await create_log_entry(
+            username,
+            "Updated profile picture.",
+            f"Uploaded new profile picture",
+            client_ip
+        )
+        
+        response_data = {
+            "success": True,
+            "message": "Profile picture updated successfully",
+            "profilePicture": profile_picture_base64  # Return the full data URL
+        }
+        
+        print(f"✅ Profile picture upload successful for {username}")
+        return response_data
+        
+    except HTTPException as he:
+        print(f"❌ HTTP Exception: {he.detail}")
+        raise he
+    except Exception as e:
+        print(f"❌ Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload profile picture: {str(e)}")
+
+
+@app.get("/profile/picture")
+async def get_profile_picture(token: str = Depends(oauth2_scheme)):
+    """Get user's profile picture"""
+    payload = verify_token(token)
+    username = payload["username"]
+    
+    try:
+        # Check hardcoded users first
+        if username in ["admin", "staff"]:
+            # Return default or stored picture for hardcoded users
+            # You might want to implement a separate storage for these
+            return {"profilePicture": None}
+        
+        # Check database users
+        user = accounts_collection.find_one({"username": username})
+        if user and user.get("profile_picture"):
+                        return {
+                "profilePicture": f"data:{user.get('profile_picture_content_type', 'image/jpeg')};base64,{user['profile_picture']}"
+            }
+        
+        return {"profilePicture": None}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get profile picture: {str(e)}")
+
+@app.delete("/profile/picture")
+async def delete_profile_picture(request: Request = None, token: str = Depends(oauth2_scheme)):
+    """Delete user's profile picture"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        if username in ["admin", "staff"]:
+            # Handle hardcoded users
+            success = True
+        else:
+            # Update database user
+            success = accounts_collection.update_one(
+                {"username": username},
+                {
+                    "$unset": {
+                        "profile_picture": "",
+                        "profile_picture_filename": "",
+                        "profile_picture_content_type": ""
+                    },
+                    "$set": {"updated_at": datetime.utcnow()}
+                }
+            ).matched_count > 0
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        await create_log_entry(
+            username,
+            "Deleted profile picture.",
+            "Removed profile picture",
+            client_ip
+        )
+        
+        return {"success": True, "message": "Profile picture deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete profile picture: {str(e)}")
+
+# ===============================================
+# EXISTING ROUTES (LOGIN, LOGOUT, ETC.)
+# ===============================================
+
 @app.post("/login")
 async def login(user: User, request: Request):
     """Login endpoint for authentication"""
@@ -484,8 +910,8 @@ async def login(user: User, request: Request):
     )
 
 @app.post("/api/change-password")
-async def change_password(password_change: PasswordChangeRequest, request: Request, token: str = Depends(oauth2_scheme)):
-    """Change password"""
+async def change_password_api(password_change: PasswordChangeRequest, request: Request, token: str = Depends(oauth2_scheme)):
+    """Change password (API endpoint)"""
     payload = verify_token(token)
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
@@ -511,7 +937,7 @@ async def change_password(password_change: PasswordChangeRequest, request: Reque
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
-
+    
 @app.post("/logout")
 async def logout(request: Request, token: str = Depends(oauth2_scheme)):
     """Logout endpoint"""
@@ -637,8 +1063,26 @@ async def add_supply(supply: SupplyCreate, request: Request, token: str = Depend
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     supply_dict = supply.dict()
+    
+    # Debug print (optional)
+    print(f"Received itemPicture length: {len(str(supply_dict.get('itemPicture', '')))}")
+    
     supply_dict["created_at"] = supply_dict["updated_at"] = datetime.utcnow()
     
+    # Store base64 image string if provided
+    if supply_dict.get("itemPicture"):
+        supply_dict["image_data"] = supply_dict["itemPicture"]
+        supply_dict["image_filename"] = "uploaded_image.jpg"
+        supply_dict["image_content_type"] = "image/jpeg"
+    else:
+        supply_dict["image_data"] = None
+        supply_dict["image_filename"] = None
+        supply_dict["image_content_type"] = None
+    
+    # Remove itemPicture before saving
+    supply_dict.pop("itemPicture", None)
+    
+    # Generate itemCode if missing
     if not supply_dict.get("itemCode"):
         category_prefix = supply_dict.get("category", "SUP")[:3].upper()
         random_num = str(abs(hash(str(datetime.utcnow()))))[:5]
@@ -649,7 +1093,7 @@ async def add_supply(supply: SupplyCreate, request: Request, token: str = Depend
     
     await create_log_entry(
         username,
-        "Added a supply.",
+        "Added a supply." + (" (with image)" if supply_dict.get("image_data") else ""),
         f"Added supply: {supply_dict.get('name', 'Unknown')} ({supply_dict.get('itemCode')})",
         client_ip
     )
@@ -727,6 +1171,235 @@ async def delete_supply(supply_id: str, request: Request, token: str = Depends(o
     )
     
     return {"success": True, "message": "Supply deleted successfully"}
+
+@app.post("/api/supplies/with-image")
+async def add_supply_with_image(
+    name: str = Form(...),
+    description: str = Form(""),
+    category: str = Form(...),
+    quantity: int = Form(...),
+    supplier: str = Form(""),
+    location: str = Form(""),
+    status: str = Form("available"),
+    itemCode: str = Form(""),
+    date: str = Form(""),
+    unit: str = Form("UNIT"),
+    unit_price: float = Form(0.0),
+    serialNo: str = Form(""),
+    image: Optional[UploadFile] = File(None),
+    request: Request = None,
+    token: str = Depends(oauth2_scheme)
+):
+    """Add supply with image file upload"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+
+    try:
+        # Validate required fields
+        if not name.strip():
+            raise HTTPException(status_code=400, detail="Supply name is required")
+        if not description.strip():
+            raise HTTPException(status_code=400, detail="Supply description is required")
+        if not category.strip():
+            raise HTTPException(status_code=400, detail="Supply category is required")
+        if quantity <= 0:
+            raise HTTPException(status_code=400, detail="Supply quantity must be greater than 0")
+        
+        # Create supply document
+        supply_dict = {
+            "name": name.strip(),
+            "description": description.strip(),
+            "category": category.strip(),
+            "quantity": quantity,
+            "supplier": supplier.strip(),
+            "location": location.strip(),
+            "status": status,
+            "itemCode": itemCode.strip(),
+            "date": date,
+            "unit": unit,
+            "unit_price": unit_price,
+            "serialNo": serialNo.strip(),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+
+        # Generate item code if not provided
+        if not supply_dict.get("itemCode"):
+            category_prefix = supply_dict.get("category", "SUP")[:3].upper()
+            random_num = str(abs(hash(str(datetime.utcnow()))))[:5]
+            supply_dict["itemCode"] = f"{category_prefix}-{random_num}"
+        
+        # Handle image upload
+        if image and image.filename:
+            # Validate image file
+            if not image.content_type.startswith('image/'):
+                raise HTTPException(status_code=400, detail="File must be an image")
+            
+            # Check file size (limit to 5MB)
+            contents = await image.read()
+            if len(contents) > 5 * 1024 * 1024:  # 5MB
+                raise HTTPException(status_code=400, detail="Image file too large (max 5MB)")
+            
+            # Store image as base64
+            image_base64 = base64.b64encode(contents).decode('utf-8')
+            supply_dict["image_data"] = image_base64
+            supply_dict["image_filename"] = image.filename
+            supply_dict["image_content_type"] = image.content_type
+        
+        # Insert supply
+        result = supplies_collection.insert_one(supply_dict)
+        created_supply = supplies_collection.find_one({"_id": result.inserted_id})
+        
+        await create_log_entry(
+            username,
+            "Added a supply with image." if image else "Added a supply.",
+            f"Added supply: {supply_dict.get('name')} ({supply_dict.get('itemCode')})",
+            client_ip
+        )
+        
+        return {"success": True, "message": "Supply added successfully", "data": supply_helper(created_supply)}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add supply: {str(e)}")
+    
+@app.post("/api/supplies/{supply_id}/image")
+async def upload_supply_image(
+    supply_id: str,
+    image: UploadFile = File(...),
+    request: Request = None,
+    token: str = Depends(oauth2_scheme)
+):
+    """Upload image for existing supply"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+
+    try:
+        if not ObjectId.is_valid(supply_id):
+            raise HTTPException(status_code=400, detail="Invalid supply ID format")
+        
+        # Check if supply exists
+        supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        if not supply:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        
+        # Validate image file
+        if not image.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Check file size (limit to 5MB)
+        contents = await image.read()
+        if len(contents) > 5 * 1024 * 1024:  # 5MB
+            raise HTTPException(status_code=400, detail="Image file too large (max 5MB)")
+        
+        # Store image as base64
+        image_base64 = base64.b64encode(contents).decode('utf-8')
+
+         # Update supply with image
+        supplies_collection.update_one(
+            {"_id": ObjectId(supply_id)},
+            {
+                "$set": {
+                    "image_data": image_base64,
+                    "image_filename": image.filename,
+                    "image_content_type": image.content_type,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+
+        updated_supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        
+        await create_log_entry(
+            username,
+            "Uploaded supply image.",
+            f"Uploaded image for supply: {supply.get('name')} ({supply.get('itemCode')})",
+            client_ip
+        )
+
+        return {"success": True, "message": "Image uploaded successfully", "data": supply_helper(updated_supply)}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+@app.get("/api/supplies/{supply_id}/image")
+async def get_supply_image(supply_id: str, token: str = Depends(oauth2_scheme)):
+    """Get supply image"""
+    verify_token(token)
+    
+    try:
+        if not ObjectId.is_valid(supply_id):
+            raise HTTPException(status_code=400, detail="Invalid supply ID format")
+        
+        supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        if not supply:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        
+        if not supply.get("image_data"):
+            raise HTTPException(status_code=404, detail="No image found for this supply")
+        
+        # Decode base64 image
+        image_data = base64.b64decode(supply["image_data"])
+        content_type = supply.get("image_content_type", "image/jpeg")
+        
+        return Response(content=image_data, media_type=content_type)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve image: {str(e)}")
+    
+@app.delete("/api/supplies/{supply_id}/image")
+async def delete_supply_image(
+    supply_id: str,
+    request: Request = None,
+    token: str = Depends(oauth2_scheme)
+):
+    """Delete supply image"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        if not ObjectId.is_valid(supply_id):
+            raise HTTPException(status_code=400, detail="Invalid supply ID format")
+        
+        supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        if not supply:
+            raise HTTPException(status_code=404, detail="Supply not found")
+        # Remove image fields
+        supplies_collection.update_one(
+            {"_id": ObjectId(supply_id)},
+            {
+                "$unset": {
+                    "image_data": "",
+                    "image_filename": "",
+                    "image_content_type": ""
+                },
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+        
+        updated_supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
+        
+        await create_log_entry(
+            username,
+            "Deleted supply image.",
+            f"Deleted image for supply: {supply.get('name')} ({supply.get('itemCode')})",
+            client_ip
+        )
+        
+        return {"success": True, "message": "Image deleted successfully", "data": supply_helper(updated_supply)}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete image: {str(e)}")
 
 # Equipment routes
 @app.get("/api/equipment")
@@ -1304,9 +1977,7 @@ async def reset_account_password(account_id: str, request: Request, token: str =
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
 
-
-# Add these updated export routes to your main.py file
-
+# Export routes
 @app.get("/api/export/supplies")
 async def export_supplies(token: str = Depends(oauth2_scheme)):
     """Export supplies data as CSV"""
@@ -1625,7 +2296,6 @@ async def export_all_data(token: str = Depends(oauth2_scheme)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export all data: {str(e)}")
 
-
 # Update the existing logs export route to fix the CSV formatting
 @app.get("/api/export/logs")
 async def export_logs_csv(
@@ -1716,7 +2386,6 @@ async def export_logs_csv(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export logs: {str(e)}")
 
-
 @app.get("/health")
 async def health_check():
     try:
@@ -1728,3 +2397,5 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    

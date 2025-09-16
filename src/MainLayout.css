@@ -9,17 +9,17 @@
 
 html, body, #root {
   width: 100%;
-  height: 100%;
+  height: 100vh; /* CHANGED: Use vh instead of min-height */
   margin: 0;
   padding: 0;
   background: #2a2a2a;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  overflow: hidden; /* Prevent body scrolling if content fits */
+  overflow: hidden; /* ADDED: Prevent body scroll */
 }
 
 .main-layout-container {
   display: flex;
-  height: 100vh;
+  height: 100vh; /* CHANGED: Use vh instead of min-height */
   background: #2a2a2a;
   color: #ffffff;
 }
@@ -34,6 +34,8 @@ html, body, #root {
   align-items: center;
   border-right: 1px solid #333333;
   flex-shrink: 0; /* Prevent sidebar from shrinking */
+  height: 100vh; /* ADDED: Full viewport height */
+  overflow-y: auto; /* ADDED: Allow sidebar to scroll if content overflows */
 }
 
 .sidebar .logo {
@@ -54,6 +56,7 @@ html, body, #root {
   margin-bottom: 40px;
 }
 
+/* ✅ ENHANCED: Avatar with Profile Picture Upload */
 .admin-avatar {
   width: 80px;
   height: 80px;
@@ -64,6 +67,130 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.admin-avatar:hover {
+  border-color: #4ade80;
+  transform: scale(1.05);
+}
+
+.admin-avatar.uploading {
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Avatar image when uploaded */
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Avatar placeholder (when no image) */
+.avatar-placeholder {
+  color: #888888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: color 0.3s ease;
+}
+
+.admin-avatar:hover .avatar-placeholder {
+  color: #4ade80;
+}
+
+/* ✅ ADD: Enhanced avatar overlay with actions */
+.avatar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.avatar-action-btn.change-btn {
+  background: #4ade80;
+}
+
+.avatar-action-btn.change-btn:hover {
+  background: #22c55e;
+  transform: scale(1.1);
+}
+
+.avatar-action-btn.delete-btn {
+  background: #ef4444;
+}
+
+.avatar-action-btn.delete-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* ✅ UPDATE: Better overlay positioning */
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: #4ade80;
+}
+
+.admin-avatar:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.admin-avatar.uploading .avatar-overlay {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Upload spinner */
+.upload-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #333;
+  border-top: 2px solid #4ade80;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Focus styles for accessibility */
+.admin-avatar:focus {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
 }
 
 .admin-name {
@@ -158,14 +285,14 @@ html, body, #root {
   color: #ffffff;
 }
 
-/* Main Content Styles - Moved/Adjusted from DashboardPage.css */
+/* FIXED: Main Content Styles - This is the key fix for scrolling */
 .main-content {
-  flex-grow: 1;
+  flex: 1;
   background: #2a2a2a;
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto; /* Allows scrolling for content within this area */
+  height: 100vh; /* ADDED: Full viewport height */
+  display: flex; /* ADDED: Make it a flex container */
+  flex-direction: column; /* ADDED: Stack children vertically */
+  overflow: hidden; /* ADDED: Prevent main content from scrolling itself */
 }
 
 .main-header {
@@ -173,16 +300,50 @@ html, body, #root {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  padding-bottom: 20px;
+  padding: 30px 30px 20px 30px; /* ADJUSTED: Add top and side padding here */
   border-bottom: 1px solid #333333;
   flex-shrink: 0; /* Prevent header from shrinking */
+  background: #2a2a2a; /* ADDED: Ensure header background */
 }
 
 .main-header h1 {
   font-family: 'Koulen', cursive;
-  font-size: 36px;
+  font-size: 25px;
   color: #ffffff;
   font-weight: 400;
+}
+
+/* ADDED: Scrollable content area */
+.main-content-scrollable {
+  flex: 1; /* Take remaining space */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: 0 30px 30px 30px; /* ADDED: Side and bottom padding */
+}
+
+/* Ensure child pages fill the scrollable area properly */
+.main-content-scrollable > * {
+  min-height: max-content; /* Allow content to determine height */
+}
+
+/* ADDED: Hide scrollbars while keeping scroll functionality */
+.main-content-scrollable {
+  /* For WebKit browsers (Chrome, Safari, Edge) */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.main-content-scrollable::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+.sidebar {
+  /* Hide sidebar scrollbar too */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none; /* WebKit */
 }
 
 /* Admin Menu Dropdown Styles - Moved from DashboardPage.css */
@@ -249,12 +410,4 @@ html, body, #root {
 .admin-dropdown-content a:last-child {
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
-}
-
-/* Specific styles for page content rendered by Outlet */
-/* Ensure child components stretch to fill the main-content area if needed */
-.main-content > div { /* Targeting the direct children of main-content (DashboardPage, SuppliesPage etc.) */
-  flex-grow: 1;
-  display: flex; /* Often children might need to be flex containers themselves */
-  flex-direction: column;
 }

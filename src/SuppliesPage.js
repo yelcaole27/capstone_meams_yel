@@ -33,10 +33,35 @@ function SuppliesPage() {
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
   const [qrCodeItem, setQrCodeItem] = useState(null);
 
+  // NEW: State for Update Quantity Modal
+  const [isUpdateQuantityModalOpen, setIsUpdateQuantityModalOpen] = useState(false);
+  const [quantityUpdateForm, setQuantityUpdateForm] = useState({
+    date: '',
+    receipt: '',
+    issue: '',
+    balance: ''
+  });
+
+  // NEW: State for Edit Item Modal
+  const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
+  const [editItemForm, setEditItemForm] = useState({
+    itemCode: '',
+    stockNo: '',
+    itemName: '',
+    quantity: '',
+    category: '',
+    description: '',
+    unit: '',
+    location: '',
+    status: '',
+    date: ''
+  });
+
+
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
   
   // NEW: Define unit options
-  const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'kilo', 'set', 'roll', 'bag', 'meter', 'ream','bar', 'pair', 'can', 'pail', 'tube', 'cart'];
+  const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'set', 'roll', 'bag', 'meter', 'ream'];
   
   // NEW: Define status options
   const statusOptions = ['Understock', 'Normal', 'Overstock'];
@@ -51,41 +76,38 @@ function SuppliesPage() {
   try {
     setLoading(true);
     const supplies = await SuppliesAPI.getAllSupplies();
-    // Transform database data to match your current structure
+
     const transformedSupplies = supplies.map(supply => {
-  // Generate a proper item code if one doesn't exist
-  let itemCode = supply.itemCode;
-  if (!itemCode) {
-    // Generate item code based on category and random number
-    const categoryPrefix = supply.category ? supply.category.substring(0, 3).toUpperCase() : 'SUP';
-    const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-    itemCode = `${categoryPrefix}-${randomNum}`;
-  }
-  
-  return {
-    _id: supply._id,
-    itemCode: itemCode, // Use generated or existing itemCode
-    stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
-    quantity: supply.quantity,
-    itemName: supply.name, // Keep the actual name here
-    category: supply.category,
-    description: supply.description || '',
-    unit: supply.unit || 'piece',
-    location: supply.location || '',
-    status: supply.status || 'Normal',
-    date: supply.date || ''  // NEW FIELD: Date field
-  };
-});
+      let itemCode = supply.itemCode;
+      if (!itemCode) {
+        const categoryPrefix = supply.category ? supply.category.substring(0, 3).toUpperCase() : 'SUP';
+        const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+        itemCode = `${categoryPrefix}-${randomNum}`;
+      }
+
+      return {
+        _id: supply._id,
+        itemCode: itemCode,
+        stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
+        quantity: supply.quantity,
+        itemName: supply.name,
+        category: supply.category,
+        description: supply.description || '',
+        unit: supply.unit || 'piece',
+        location: supply.location || '',
+        status: supply.status || 'Normal',
+        date: supply.date || '',
+        has_image: supply.image_data ? true : false,          // <-- Add this line
+        image_data: supply.image_data || null                 // <-- Add this line
+      };
+    });
+
     setSuppliesData(transformedSupplies);
     setError(null);
   } catch (err) {
     console.error('Failed to load supplies:', err);
     setError('Failed to load supplies. Please try again.');
-    // Keep existing sample data as fallback
-    setSuppliesData([
-      { itemCode: 'MED-2-12345', stockNo: '59', quantity: 10, itemName: 'Ethyl Alcohol', category: 'Sanitary', description: '500ml', unit: 'bottle', location: 'Storage Room A', status: 'Normal' },
-      { itemCode: 'MED-1-00001', stockNo: '11', quantity: 14, itemName: 'Ink', category: 'Office Supply', description: 'Black ink cartridge', unit: 'piece', location: 'Office Supply Cabinet', status: 'Normal' }
-    ]);
+    // fallback data...
   } finally {
     setLoading(false);
   }
@@ -311,6 +333,33 @@ const handleCloseStockCard = () => {
     }
   };
 
+  const handleImageUpload = async (supplyId, imageFile) => {
+  if (!imageFile) return;
+  
+  try {
+    setLoading(true);
+    await SuppliesAPI.uploadSupplyImage(supplyId, imageFile);
+    
+    // Update local state to show image
+    setSuppliesData(prevData =>
+      prevData.map(item =>
+        item._id === supplyId ? { ...item, has_image: true } : item
+      )
+    );
+    
+    if (selectedItem && selectedItem._id === supplyId) {
+      setSelectedItem(prev => ({ ...prev, has_image: true }));
+    }
+    
+    alert('Image uploaded successfully!');
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    alert(`Failed to upload image: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
   const generateItemCode = () => {
     const categoryPrefix = newItem.category ? newItem.category.substring(0, 3).toUpperCase() : 'GEN';
     const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
@@ -320,65 +369,76 @@ const handleCloseStockCard = () => {
 
   // Updated handleAddItem to save to database - UPDATED with new fields
   const handleAddItem = async () => {
-    // UPDATED validation to include new required fields
-    if (!newItem.itemName || !newItem.quantity || !newItem.category || !newItem.unit) {
-      alert('Please fill in all required fields (Item Name, Quantity, Category, Unit)');
-      return;
+  if (!newItem.itemName || !newItem.quantity || !newItem.category || !newItem.unit) {
+    alert('Please fill in all required fields (Item Name, Quantity, Category, Unit)');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    let imageBase64 = null;
+    if (newItem.itemPicture) {
+      imageBase64 = await convertFileToBase64(newItem.itemPicture);
+      console.log("Base64 image preview:", imageBase64.substring(0, 100));
     }
 
-    try {
-      // Prepare data for API (matching your backend structure) - UPDATED with new fields
-      const supplyData = {
-  name: newItem.itemName,
-  category: newItem.category,
-  description: newItem.description,
-  quantity: parseInt(newItem.quantity),
-  unit_price: 0, 
-  supplier: newItem.stockNo || '', 
-  location: newItem.location,
-  status: newItem.status,
-  unit: newItem.unit,
-  date: newItem.date  // NEW FIELD: Date field
+    const supplyData = {
+      name: newItem.itemName,
+      category: newItem.category,
+      description: newItem.description,
+      quantity: parseInt(newItem.quantity),
+      unit_price: 0,
+      supplier: newItem.stockNo || '',
+      location: newItem.location,
+      status: newItem.status,
+      unit: newItem.unit,
+      date: newItem.date,
+      itemPicture: imageBase64 // send base64 string here
+    };
+
+    const response = await SuppliesAPI.addSupply(supplyData);
+    const savedSupply = response; // your API returns saved supply in response.data
+
+    // Use savedSupply data to update local state
+    const newSupplyItem = {
+      _id: savedSupply._id,
+      itemCode: savedSupply.itemCode || newItem.itemCode || `GEN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+      stockNo: newItem.stockNo || Math.floor(Math.random() * 100).toString(),
+      quantity: parseInt(newItem.quantity),
+      itemName: newItem.itemName,
+      category: newItem.category,
+      description: newItem.description,
+      unit: newItem.unit,
+      location: newItem.location,
+      status: newItem.status,
+      date: newItem.date,
+      has_image: !!savedSupply.image_data,
+      image_data: savedSupply.image_data
+    };
+
+    setSuppliesData([...suppliesData, newSupplyItem]);
+    alert('Supply added successfully!');
+    handleOverlayToggle();
+
+  } catch (error) {
+    console.error('Error adding supply:', error);
+    alert(`Failed to add supply: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
 };
 
-      // Show loading state
-      setLoading(true);
-      
-      // Add to database
-      const savedSupply = await SuppliesAPI.addSupply(supplyData);
-      
-      // Transform the response to match your current data structure - UPDATED with new fields
-      const newSupplyItem = {
-        _id: savedSupply._id,
-        itemCode: newItem.itemCode || `GEN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-        stockNo: newItem.stockNo || Math.floor(Math.random() * 100).toString(),
-        quantity: parseInt(newItem.quantity),
-        itemName: newItem.itemName,
-        category: newItem.category,
-        description: newItem.description,
-        unit: newItem.unit, // NEW FIELD
-        location: newItem.location, // NEW FIELD
-        status: newItem.status, // NEW FIELD
-        date: newItem.date,
-        itemPicture: newItem.itemPicture
-      };
+// Add this helper function to convert file to base64
+const convertFileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+};
 
-      // Update local state
-      setSuppliesData([...suppliesData, newSupplyItem]);
-      
-      // Show success message
-      alert('Supply added successfully!');
-      
-      // Close overlay and reset form
-      handleOverlayToggle();
-      
-    } catch (error) {
-      console.error('Error adding supply:', error);
-      alert(`Failed to add supply: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleItemClick = (item) => {
     setSelectedItem(item);
@@ -395,6 +455,211 @@ const handleCloseStockCard = () => {
     setQrCodeDataURL('');
     setQrCodeItem(null);
   };
+
+  // NEW: Update Quantity Module Functions
+  const handleOpenUpdateQuantity = () => {
+    if (selectedItem) {
+      setQuantityUpdateForm({
+        date: new Date().toISOString().slice(0, 10), // Current date
+        receipt: '',
+        issue: '',
+        balance: selectedItem.quantity // Initial balance is current quantity
+      });
+      setIsUpdateQuantityModalOpen(true);
+    }
+  };
+
+  const handleCloseUpdateQuantity = () => {
+    setIsUpdateQuantityModalOpen(false);
+  };
+
+  const handleQuantityInputChange = (e) => {
+    const { name, value } = e.target;
+    setQuantityUpdateForm(prev => {
+      const updatedForm = { ...prev, [name]: value };
+      // Calculate balance dynamically
+      const currentQuantity = selectedItem ? selectedItem.quantity : 0;
+      const receipt = parseInt(updatedForm.receipt) || 0;
+      const issue = parseInt(updatedForm.issue) || 0;
+      updatedForm.balance = currentQuantity + receipt - issue;
+      return updatedForm;
+    });
+  };
+
+  const handleUpdateQuantity = async () => {
+    if (!selectedItem) return;
+
+    const { date, receipt, issue, balance } = quantityUpdateForm;
+
+    if (!date || (receipt === '' && issue === '')) {
+      alert('Please enter a date and either a receipt or an issue quantity.');
+      return;
+    }
+
+    const newQuantity = parseInt(balance);
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      alert('Invalid quantity. Balance cannot be negative.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Assuming an API call to update the supply quantity
+      // You might need to adjust this based on your actual API endpoint for updating
+      await SuppliesAPI.updateSupply(selectedItem._id, { 
+        quantity: newQuantity,
+        date: date // Update the date of the item as well
+      });
+
+      setSuppliesData(prevData => 
+        prevData.map(item => 
+          item._id === selectedItem._id 
+            ? { ...item, quantity: newQuantity, date: date } 
+            : item
+        )
+      );
+      setSelectedItem(prev => ({ ...prev, quantity: newQuantity, date: date })); // Update selected item in overview
+      alert('Quantity updated successfully!');
+      handleCloseUpdateQuantity();
+    } catch (err) {
+      console.error('Error updating quantity:', err);
+      alert('Failed to update quantity. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+const handleRemoveImage = async (supplyId) => {
+  if (!window.confirm('Are you sure you want to remove this image?')) return;
+
+  try {
+    setLoading(true);
+
+    // Update the supply to remove image data on backend
+    await SuppliesAPI.updateSupply(supplyId, { 
+      image_data: null,
+      image_filename: null,
+      image_content_type: null
+    });
+
+    // Update local state to reflect image removal
+    setSuppliesData(prevData =>
+      prevData.map(item =>
+        item._id === supplyId ? { 
+          ...item, 
+          has_image: false, 
+          image_data: null 
+        } : item
+      )
+    );
+
+    if (selectedItem && selectedItem._id === supplyId) {
+      setSelectedItem(prev => ({ 
+        ...prev, 
+        has_image: false, 
+        image_data: null 
+      }));
+    }
+
+    alert('Image removed successfully!');
+  } catch (error) {
+    console.error('Error removing image:', error);
+    alert(`Failed to remove image: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+  // NEW: Edit Item Module Functions
+  const handleOpenEditItem = () => {
+    if (selectedItem) {
+      setEditItemForm({
+        itemCode: selectedItem.itemCode || '',
+        stockNo: selectedItem.stockNo || '',
+        itemName: selectedItem.itemName || '',
+        quantity: selectedItem.quantity || '',
+        category: selectedItem.category || '',
+        description: selectedItem.description || '',
+        unit: selectedItem.unit || '',
+        location: selectedItem.location || '',
+        status: selectedItem.status || 'Normal',
+        date: selectedItem.date || ''
+      });
+      setIsEditItemModalOpen(true);
+    }
+  };
+
+  const handleCloseEditItem = () => {
+    setIsEditItemModalOpen(false);
+  };
+
+  const handleEditItemInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditItemForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateItem = async () => {
+    if (!selectedItem) return;
+
+    try {
+      setLoading(true);
+      // Prepare data for API (only send fields that might have changed)
+      const updatedData = {
+        name: editItemForm.itemName,
+        category: editItemForm.category,
+        description: editItemForm.description,
+        quantity: parseInt(editItemForm.quantity),
+        supplier: editItemForm.stockNo,
+        location: editItemForm.location,
+        status: editItemForm.status,
+        unit: editItemForm.unit,
+        date: editItemForm.date,
+        itemCode: editItemForm.itemCode // Include itemCode if it can be updated
+      };
+
+      await SuppliesAPI.updateSupply(selectedItem._id, updatedData);
+
+      setSuppliesData(prevData =>
+        prevData.map(item =>
+          item._id === selectedItem._id
+            ? {
+                ...item,
+                itemCode: editItemForm.itemCode,
+                stockNo: editItemForm.stockNo,
+                itemName: editItemForm.itemName,
+                quantity: parseInt(editItemForm.quantity),
+                category: editItemForm.category,
+                description: editItemForm.description,
+                unit: editItemForm.unit,
+                location: editItemForm.location,
+                status: editItemForm.status,
+                date: editItemForm.date
+              }
+            : item
+        )
+      );
+      setSelectedItem(prev => ({
+        ...prev,
+        itemCode: editItemForm.itemCode,
+        stockNo: editItemForm.stockNo,
+        itemName: editItemForm.itemName,
+        quantity: parseInt(editItemForm.quantity),
+        category: editItemForm.category,
+        description: editItemForm.description,
+        unit: editItemForm.unit,
+        location: editItemForm.location,
+        status: editItemForm.status,
+        date: editItemForm.date
+      })); // Update selected item in overview
+      alert('Item updated successfully!');
+      handleCloseEditItem();
+    } catch (err) {
+      console.error('Error updating item:', err);
+      alert('Failed to update item. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   // Show loading state
   if (loading && suppliesData.length === 0) {
@@ -754,9 +1019,28 @@ const handleCloseStockCard = () => {
             <h3>Item Overview</h3>
             
             <div className="item-overview-layout">
-              <div className="item-image-placeholder">
-                <div className="placeholder-box">No Image</div>
-              </div>
+              <div className="item-image-section">
+  {selectedItem.has_image && selectedItem.image_data ? (
+  <div className="item-image-container">
+    <img 
+      src={selectedItem.image_data.startsWith('data:') ? selectedItem.image_data : `data:image/jpeg;base64,${selectedItem.image_data}`}
+      alt={selectedItem.itemName}
+      className="item-image"
+      onError={(e) => {
+        e.target.style.display = 'none';
+        e.target.nextSibling.style.display = 'block';
+      }}
+    />
+    <div className="image-error-fallback" style={{display: 'none'}}>
+      <div className="placeholder-box">Image Error</div>
+    </div>
+  </div>
+) : (
+  <div className="no-image-container">
+    <div className="placeholder-box">No Image</div>
+  </div>
+)}
+  </div>
               
               <div className="item-details">
                 <div className="detail-row">
@@ -809,16 +1093,16 @@ const handleCloseStockCard = () => {
               <button 
                 className="action-btn view-stock-btn"
                 onClick={() => handleViewStockCard(selectedItem)}
->
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-  View Stock Card ▦
-</button>
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                View Stock Card ▦
+              </button>
               
               <button className="action-btn view-docs-btn">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -844,6 +1128,28 @@ const handleCloseStockCard = () => {
                 </svg>
                 Generate QR-code ⚏
               </button>
+
+              {/* NEW: Update Quantity Button */}
+              <button 
+                className="action-btn update-quantity-btn"
+                onClick={handleOpenUpdateQuantity}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Update Quantity
+              </button>
+
+              {/* NEW: Edit Item Button */}
+              <button 
+                className="action-btn edit-item-btn"
+                onClick={handleOpenEditItem}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Edit Item
+              </button>
               
               {/* NEW: Delete Supply Button */}
               <button 
@@ -865,6 +1171,211 @@ const handleCloseStockCard = () => {
             <button className="close-overview-btn" onClick={handleCloseItemOverview}>
               ×
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Update Quantity Modal */}
+      {isUpdateQuantityModalOpen && selectedItem && (
+        <div className="overlay" onClick={handleCloseUpdateQuantity}>
+          <div className="small-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="small-modal-close-btn" onClick={handleCloseUpdateQuantity}>×</button>
+            <h4>Update Quantity for {selectedItem.itemName}</h4>
+            <div className="form-section">
+              <div className="form-group">
+                <label>Date:</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={quantityUpdateForm.date}
+                  onChange={handleQuantityInputChange}
+                  className="date-input"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Receipt (Add):</label>
+                <input
+                  type="number"
+                  name="receipt"
+                  value={quantityUpdateForm.receipt}
+                  onChange={handleQuantityInputChange}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+              <div className="form-group">
+                <label>Issue (Subtract):</label>
+                <input
+                  type="number"
+                  name="issue"
+                  value={quantityUpdateForm.issue}
+                  onChange={handleQuantityInputChange}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+              <div className="form-group">
+                <label>Balance:</label>
+                <input
+                  type="number"
+                  name="balance"
+                  value={quantityUpdateForm.balance}
+                  readOnly
+                  className="item-code-input" // Reusing style for disabled input
+                />
+              </div>
+            </div>
+            <div className="small-modal-actions">
+              <button className="action-btn cancel-btn" onClick={handleCloseUpdateQuantity}>
+                Cancel
+              </button>
+              <button className="action-btn update-btn" onClick={handleUpdateQuantity}>
+                Update
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Edit Item Modal */}
+      {isEditItemModalOpen && selectedItem && (
+        <div className="overlay" onClick={handleCloseEditItem}>
+          <div className="overlay-content" onClick={(e) => e.stopPropagation()}> {/* Reusing overlay-content for consistency */}
+            <button className="close-overview-btn" onClick={handleCloseEditItem}>×</button>
+            <h3>Edit Item: {selectedItem.itemName}</h3>
+            <div className="form-section">
+              <div className="form-group">
+                <label>ITEM CODE:</label>
+                <input
+                  type="text"
+                  name="itemCode"
+                  value={editItemForm.itemCode}
+                  onChange={handleEditItemInputChange}
+                  placeholder="Item Code"
+                />
+              </div>
+              <div className="form-group">
+                <label>STOCK NO.:</label>
+                <input
+                  type="text"
+                  name="stockNo"
+                  value={editItemForm.stockNo}
+                  onChange={handleEditItemInputChange}
+                  placeholder="Stock No."
+                />
+              </div>
+              <div className="form-group">
+                <label>ITEM NAME:</label>
+                <input
+                  type="text"
+                  name="itemName"
+                  value={editItemForm.itemName}
+                  onChange={handleEditItemInputChange}
+                  placeholder="Item Name"
+                />
+              </div>
+              <div className="form-group">
+                <label>QUANTITY:</label>
+                <input
+                  type="number"
+                  name="quantity"
+                  value={editItemForm.quantity}
+                  onChange={handleEditItemInputChange}
+                  placeholder="Quantity"
+                  min="0"
+                />
+              </div>
+              <div className="form-group">
+                <label>UNIT:</label>
+                <div className="category-dropdown">
+                  <select
+                    name="unit"
+                    value={editItemForm.unit}
+                    onChange={handleEditItemInputChange}
+                  >
+                    <option value="">Select Unit</option>
+                    {unitOptions.map(unit => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label>CATEGORY:</label>
+                <div className="category-dropdown">
+                  <select
+                    name="category"
+                    value={editItemForm.category}
+                    onChange={handleEditItemInputChange}
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label>DESCRIPTION:</label>
+                <textarea
+                  name="description"
+                  value={editItemForm.description}
+                  onChange={handleEditItemInputChange}
+                  placeholder="Description"
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+              <div className="form-group">
+                <label>LOCATION:</label>
+                <input
+                  type="text"
+                  name="location"
+                  value={editItemForm.location}
+                  onChange={handleEditItemInputChange}
+                  placeholder="Location"
+                />
+              </div>
+              <div className="form-group">
+                <label>STATUS:</label>
+                <div className="category-dropdown">
+                  <select
+                    name="status"
+                    value={editItemForm.status}
+                    onChange={handleEditItemInputChange}
+                  >
+                    {statusOptions.map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label>DATE:</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={editItemForm.date}
+                  onChange={handleEditItemInputChange}
+                  className="date-input"
+                />
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="action-btn cancel-btn" onClick={handleCloseEditItem}>
+                Cancel
+              </button>
+              <button className="action-btn update-btn" onClick={handleUpdateItem}>
+                Update Item
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1240,7 +1751,7 @@ const handleCloseStockCard = () => {
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.21071 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Print Stock Card
@@ -1254,5 +1765,3 @@ const handleCloseStockCard = () => {
 }
 
 export default SuppliesPage;
-
-
