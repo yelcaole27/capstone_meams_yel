@@ -5,18 +5,25 @@
 (IMPORTANT: DELETE THE EXISTING "VENV" FOLDER) (BEFORE DOING ALL BELOW)
 >>>>>>> 2bf08a3d702eb383f69ba6226a4861b540fc7d28
 
-
+1. Important: Delete the existing venv folder before doing all the steps below.
 2. Extensions view or Ctrl+Shift+X
 3. Search for "Python" and install the extension by Microsoft.
 4. Open the project folder.
 5. Run terminal, Ctrl+Shift+`
 6. Create virtual environment: python -m venv venv
 7. Run this in terminal: .\venv\Scripts\activate
+
 8. Select the Python Interpreter in VS Code:
 - Press Ctrl+Shift+P to open the Command Palette.
 - Type Python: Select Interpreter and select it.
 - In the list of interpreters, choose the one that points to the venv folder (it will look like ./venv/Scripts/python.exe on Windows.
+
 9. Run this in terminal (installing necessary libraries);
+- dazz- for faster process of installing necessary libraries
+  - make sure to have the new file: pythonrequirements.txt
+  - for react libararies: open terminal, just run "npm install"
+  - for python libararies: open another terminal, run "pip install -r pythonrequirements.txt"
+
 - npm install react react-dom
 - npm install axios
 - npm install react-router-dom
@@ -35,7 +42,10 @@
 - pip install bcrypt
 - pip install pandas openpyxl xlrd
 - pip install numpy scipy statsmodels python-dateutil pandas
-Put the backend files on venv.
+
+10. Put the backend files on venv.
+
+DATABASE CONNECTION: @etil @yel - palagay tutorial ty
 
 Running the project:
 1. Backend (main.py under venv)
