@@ -174,7 +174,7 @@ function LoginPage() {
     setPasswordChangeMessage('');
   };
 
-  // Forgot password handler
+  // UPDATED: Forgot password handler with actual API call
   const handleForgotPassword = async (e) => {
     e.preventDefault();
 
@@ -201,9 +201,19 @@ function LoginPage() {
       });
 
       const data = await response.json();
-      setMessage(data.message);
+      
+      if (response.ok) {
+        setMessage(data.message || 'Reset link sent successfully!');
+        // Close the modal after a delay
+        setTimeout(() => {
+          closeForgotPassword();
+        }, 3000);
+      } else {
+        setMessage(data.detail || 'Failed to send reset link. Please try again.');
+      }
     } catch (error) {
-      setMessage('Error: ' + error.message);
+      setMessage('Connection error. Please try again.');
+      console.error('Forgot password error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -341,41 +351,43 @@ function LoginPage() {
               Enter your email address and we'll send you a link to reset your password.
             </p>
 
-            <div className="input-group">
-              <div className="input-wrapper">
-                <svg className="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  className="login-input"
-                  disabled={isLoading}
-                />
+            <form onSubmit={handleForgotPassword}>
+              <div className="input-group">
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="22,6 12,13 2,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="login-input"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-            </div>
 
-            {message && showForgotPassword && (
-              <div className={`message ${message.includes('sent') ? 'success' : 'error'}`}>
-                {message}
-              </div>
-            )}
+              {message && showForgotPassword && (
+                <div className={`message ${message.includes('sent') || message.includes('success') ? 'success' : 'error'}`}>
+                  {message}
+                </div>
+              )}
 
-            <button
-              onClick={handleForgotPassword}
-              className="reset-button"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
-            </button>
+              <button
+                type="submit"
+                className="reset-button"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Password Change Modal - FIXED VERSION */}
+      {/* Password Change Modal */}
       {showPasswordChange && (
         <div 
           className="overlay"

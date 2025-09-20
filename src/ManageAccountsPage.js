@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 import './ManageAccountsPage.css';
 
 function ManageAccountsPage() {
-  const { authToken, adminToken } = useAuth();
+  const { authToken, adminToken, currentUser } = useAuth();
   
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -30,12 +30,67 @@ function ManageAccountsPage() {
 
   // State for accounts from API
   const [accounts, setAccounts] = useState([]);
+  // NEW: State for storing profile pictures
+  const [profilePictures, setProfilePictures] = useState({});
 
   // Get auth token - FIXED VERSION
   const getAuthToken = () => {
     // Check for admin token first, then regular auth token
     return adminToken || authToken || localStorage.getItem('adminToken') || localStorage.getItem('authToken') || '';
   };
+
+  // NEW: Function to fetch profile picture for current user only (for hardcoded users)
+  const fetchCurrentUserProfilePicture = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return null;
+
+      const response = await fetch('http://localhost:8000/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const profileData = await response.json();
+        return profileData.profilePicture || null;
+      }
+    } catch (error) {
+      console.error('Error fetching current user profile picture:', error);
+    }
+    return null;
+  };
+
+  // NEW: Function to process all profile pictures from account data
+  const processProfilePictures = async () => {
+  const pictures = {};
+  console.log('Processing profile pictures for accounts:', accounts.length);
+
+  let currentUserPicture = null;
+  if (currentUser && (currentUser.username === 'admin' || currentUser.username === 'staff')) {
+    currentUserPicture = await fetchCurrentUserProfilePicture();
+    console.log(`Current user (${currentUser.username}) picture:`, !!currentUserPicture);
+  }
+
+  for (const account of accounts) {
+    try {
+      if (account.username === 'admin' || account.username === 'staff') {
+        if (currentUser && account.username === currentUser.username && currentUserPicture) {
+          pictures[account.username] = currentUserPicture;
+        }
+      } else if (account.profile_picture) {
+        pictures[account.username] =
+          `data:${account.profile_picture_content_type || 'image/jpeg'};base64,${account.profile_picture}`;
+      }
+    } catch (error) {
+      console.error(`Error processing profile picture for ${account.username}:`, error);
+    }
+  }
+
+  setProfilePictures(pictures);
+};
+
 
   // Fetch accounts from API
   const fetchAccounts = async () => {
@@ -69,6 +124,7 @@ function ManageAccountsPage() {
 
       const data = await response.json();
       if (data.success) {
+        console.log('Accounts data received:', data.data); // Debug log
         setAccounts(data.data || []);
         setError(''); // Clear any previous errors
       } else {
@@ -82,6 +138,18 @@ function ManageAccountsPage() {
     }
   };
 
+  // Load accounts on component mount
+  useEffect(() => {
+    fetchAccounts();
+  }, [authToken, adminToken]); // Re-fetch when tokens change
+
+  // NEW: Process profile pictures when accounts change
+  useEffect(() => {
+    if (accounts.length > 0) {
+      processProfilePictures();
+    }
+  }, [accounts]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openDropdown && !event.target.closest('.manage-dropdown')) {
@@ -94,11 +162,6 @@ function ManageAccountsPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openDropdown]);
-
-  // Load accounts on component mount
-  useEffect(() => {
-    fetchAccounts();
-  }, [authToken, adminToken]); // Re-fetch when tokens change
 
   const handleStatusToggle = async (accountId) => {
     try {
@@ -439,12 +502,21 @@ function ManageAccountsPage() {
             className={`account-card ${!account.status ? 'inactive' : ''}`}
           >
             <div className="account-avatar">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              {/* UPDATED: Display profile picture if available, otherwise show default icon */}
+              {profilePictures[account.username] ? (
+                <img 
+                  src={profilePictures[account.username]} 
+                  alt={`${account.name}'s profile`}
+                  className="account-avatar-image"
+                />
+              ) : (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
             </div>
-            <div className="account-name">{account.role}</div>
+            <div className="account-name">{account.name}</div>
           </div>
         ))}
       </div>
@@ -668,7 +740,7 @@ function ManageAccountsPage() {
               </div>
 
               <div className="password-notice">
-                <p><strong>📧 Password Notification:</strong> A secure password will be automatically generated and sent to the provided email address.</p>
+                <p><strong>?? Password Notification:</strong> A secure password will be automatically generated and sent to the provided email address.</p>
               </div>
 
               <div className="modal-actions">
@@ -703,10 +775,19 @@ function ManageAccountsPage() {
             <div className="edit-modal-content">
               <div className="edit-image-section">
                 <div className="edit-image-placeholder">
-                  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  {/* UPDATED: Show profile picture in edit modal if available */}
+                  {profilePictures[selectedAccount.username] ? (
+                    <img 
+                      src={profilePictures[selectedAccount.username]} 
+                      alt={`${selectedAccount.name}'s profile`}
+                      className="edit-profile-image"
+                    />
+                  ) : (
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </div>
               </div>
 
@@ -784,18 +865,29 @@ function ManageAccountsPage() {
                 className="close-button"
                 onClick={handleCloseAccountOverview}
               >
-                ×
+                 
               </button>
             </div>
             
             <div className="account-overview-content">
               <div className="account-image-section">
                 <div className="account-image-placeholder">
-                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div className="no-image-text">No Image</div>
+                  {/* UPDATED: Show profile picture in overview modal if available */}
+                  {profilePictures[selectedAccount.username] ? (
+                    <img 
+                      src={profilePictures[selectedAccount.username]} 
+                      alt={`${selectedAccount.name}'s profile`}
+                      className="overview-profile-image"
+                    />
+                  ) : (
+                    <>
+                      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <div className="no-image-text">No Image</div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -861,4 +953,3 @@ function ManageAccountsPage() {
 }
 
 export default ManageAccountsPage;
-

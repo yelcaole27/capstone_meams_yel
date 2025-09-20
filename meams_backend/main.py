@@ -27,9 +27,10 @@ import mimetypes
 from typing import Optional
 from pydantic import BaseModel
 import bcrypt
+from fastapi import FastAPI, HTTPException, Depends, Body
 import pandas as pd
 
-from processing import bootstrap_missing_months, generate_arima_forecast
+from processing import bootstrap_years, generate_sarima_forecast
 
 # Load environment variables
 load_dotenv()
@@ -68,9 +69,9 @@ try:
     client = MongoClient(MONGODB_URL)
     db = client[DATABASE_NAME]
     client.admin.command('ping')
-    print(f"✅ Connected to MongoDB: {DATABASE_NAME}")
+    print(f"? Connected to MongoDB: {DATABASE_NAME}")
 except Exception as e:
-    print(f"❌ Failed to connect to MongoDB: {e}")
+    print(f"? Failed to connect to MongoDB: {e}")
 
 # Collections
 supplies_collection = db.supplies
@@ -98,9 +99,9 @@ async def create_log_entry(username: str, action: str, details: str = "", ip_add
             "formatted_timestamp": datetime.utcnow().strftime("%m/%d/%Y - %H:%M:%S")
         }
         logs_collection.insert_one(log_entry)
-        print(f"📝 Log created: {username} - {action}")
+        print(f"?? Log created: {username} - {action}")
     except Exception as e:
-        print(f"❌ Failed to create log entry: {str(e)}")
+        print(f"? Failed to create log entry: {str(e)}")
 
 def log_helper(log) -> dict:
     """Helper function to format log data"""
@@ -130,7 +131,10 @@ def account_helper(account) -> dict:
         "last_login": account.get("last_login", "Never"),
         "first_login": account.get("first_login", True),
         "created_at": account.get("created_at", datetime.utcnow()),
-        "updated_at": account.get("updated_at", datetime.utcnow())
+        "updated_at": account.get("updated_at", datetime.utcnow()),
+        "profile_picture": account.get("profile_picture"),
+        "profile_picture_content_type": account.get("profile_picture_content_type"),
+        "profile_picture_filename": account.get("profile_picture_filename")
     }
 
 # ===============================================
@@ -156,6 +160,11 @@ class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
 
+class BugReport(BaseModel):
+    message: str
+    username: str = "unknown_user"
+    role: str = "unknown_role"
+    
 # Profile models
 class ProfileResponse(BaseModel):
     username: str
@@ -192,6 +201,8 @@ class SupplyCreate(BaseModel):
     itemCode: Optional[str] = ""
     date: Optional[str] = ""
     itemPicture: Optional[str] = None  # Base64 encoded image string
+    image_filename: Optional[str] = None
+    image_content_type: Optional[str] = None
 
 class SupplyUpdate(BaseModel):
     name: Optional[str] = None
@@ -220,6 +231,9 @@ class EquipmentCreate(BaseModel):
     unit_price: Optional[float] = 0.0
     supplier: Optional[str] = ""
     date: Optional[str] = ""
+    image_data: Optional[str] = None  # base64 string
+    image_filename: Optional[str] = None
+    image_content_type: Optional[str] = None
 
 class EquipmentUpdate(BaseModel):
     name: Optional[str] = None
@@ -244,6 +258,13 @@ class AccountUpdate(BaseModel):
     position: Optional[str] = None
     phone_number: Optional[str] = None
     status: Optional[bool] = None
+    
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 # ===============================================
 # HELPER FUNCTIONS
@@ -275,10 +296,10 @@ async def send_email(to_email: str, subject: str, body: str) -> bool:
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.sendmail(EMAIL_FROM, to_email, msg.as_string())
         
-        print(f"✅ Email sent successfully to {to_email}")
+        print(f"? Email sent successfully to {to_email}")
         return True
     except Exception as e:
-        print(f"❌ Failed to send email to {to_email}: {str(e)}")
+        print(f"? Failed to send email to {to_email}: {str(e)}")
         return False
 
 def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
@@ -346,7 +367,7 @@ def get_user_by_username(username: str):
                 "phone_number": "",
                 "password": hardcoded_users[username]["password"],
                 "date_joined": "2024-01-01",
-                "profile_picture": None  # ✅ Added profile picture field
+                "profile_picture": None  # ? Added profile picture field
             }
         
         # Check database users
@@ -365,7 +386,7 @@ def get_user_by_username(username: str):
                 "phone_number": user.get("phone_number", ""),
                 "password": user.get("password_hash", ""),
                 "date_joined": user.get("account_creation", datetime.utcnow().strftime("%m/%d/%Y")),
-                "profile_picture": profile_picture  # ✅ Added profile picture field
+                "profile_picture": profile_picture  # ? Added profile picture field
             }
         return None
         
@@ -450,6 +471,9 @@ def equipment_helper(equipment) -> dict:
         "unit_price": equipment.get("unit_price", 0.0),
         "supplier": equipment.get("supplier", ""),
         "date": equipment.get("date", ""),
+        "image_data": equipment.get("image_data"),
+        "image_filename": equipment.get("image_filename"),
+        "image_content_type": equipment.get("image_content_type"),
         "created_at": equipment.get("created_at", datetime.utcnow()),
         "updated_at": equipment.get("updated_at", datetime.utcnow())
     }
@@ -716,7 +740,7 @@ async def change_password(password_data: PasswordChange, current_user: dict = De
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error changing password: {str(e)}")
 
-# ✅ NEW: Profile Picture Upload Endpoints
+# ? NEW: Profile Picture Upload Endpoints
 @app.post("/profile/picture")
 async def upload_profile_picture(
     request: Request = None,
@@ -735,7 +759,7 @@ async def upload_profile_picture(
         if not profile_picture_base64:
             raise HTTPException(status_code=400, detail="No profile picture provided")
         
-        print(f"🔄 Uploading profile picture for user: {username}")
+        print(f"?? Uploading profile picture for user: {username}")
         
         # Validate base64 image format
         if not profile_picture_base64.startswith('data:image/'):
@@ -751,15 +775,15 @@ async def upload_profile_picture(
         if len(image_bytes) > 5 * 1024 * 1024:  # 5MB
             raise HTTPException(status_code=400, detail="Image file too large (max 5MB)")
         
-        print(f"✅ Image validated, size: {len(image_bytes)} bytes")
+        print(f"? Image validated, size: {len(image_bytes)} bytes")
         
         # Update user profile with picture
         if username in ["admin", "staff"]:
-            print(f"👤 Hardcoded user detected: {username}")
+            print(f"?? Hardcoded user detected: {username}")
             # For hardcoded users, we'll just return success for now
             success = True
         else:
-            print(f"💾 Updating database user: {username}")
+            print(f"?? Updating database user: {username}")
             # Update database user
             result = accounts_collection.update_one(
                 {"username": username},
@@ -772,7 +796,7 @@ async def upload_profile_picture(
                 }
             )
             success = result.matched_count > 0
-            print(f"📝 Database update result: {success}")
+            print(f"?? Database update result: {success}")
         
         if not success:
             raise HTTPException(status_code=404, detail="User not found")
@@ -790,14 +814,14 @@ async def upload_profile_picture(
             "profilePicture": profile_picture_base64  # Return the full data URL
         }
         
-        print(f"✅ Profile picture upload successful for {username}")
+        print(f"? Profile picture upload successful for {username}")
         return response_data
         
     except HTTPException as he:
-        print(f"❌ HTTP Exception: {he.detail}")
+        print(f"? HTTP Exception: {he.detail}")
         raise he
     except Exception as e:
-        print(f"❌ Unexpected error: {str(e)}")
+        print(f"? Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to upload profile picture: {str(e)}")
 
 
@@ -1069,7 +1093,7 @@ async def add_supply(supply: SupplyCreate, request: Request, token: str = Depend
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
-    supply_dict = supply.dict()
+    supply_dict = supply.dict(exclude_none=False)
     
     # Debug print (optional)
     print(f"Received itemPicture length: {len(str(supply_dict.get('itemPicture', '')))}")
@@ -1078,13 +1102,19 @@ async def add_supply(supply: SupplyCreate, request: Request, token: str = Depend
     
     # Store base64 image string if provided
     if supply_dict.get("itemPicture"):
-        supply_dict["image_data"] = supply_dict["itemPicture"]
-        supply_dict["image_filename"] = "uploaded_image.jpg"
-        supply_dict["image_content_type"] = "image/jpeg"
+       print(f"DEBUG: Received image_filename = {supply_dict.get('image_filename')}")
+       supply_dict["image_data"] = supply_dict["itemPicture"]
+    # Use actual filename if present, else fallback
+       filename = supply_dict.get("image_filename")
+       if filename is None or filename.strip() == "":
+        filename = "unknown_filename"
+       supply_dict["image_filename"] = filename
+       supply_dict["image_content_type"] = supply_dict.get("image_content_type") or "image/jpeg"
     else:
-        supply_dict["image_data"] = None
-        supply_dict["image_filename"] = None
-        supply_dict["image_content_type"] = None
+       supply_dict["image_data"] = None
+       supply_dict["image_filename"] = None
+       supply_dict["image_content_type"] = None
+
     
     # Remove itemPicture before saving
     supply_dict.pop("itemPicture", None)
@@ -1416,30 +1446,105 @@ async def get_all_equipment(token: str = Depends(oauth2_scheme)):
     return {"success": True, "message": f"Found {len(equipment_list)} equipment items", "data": equipment_list}
 
 @app.post("/api/equipment")
-async def add_equipment(equipment: EquipmentCreate, request: Request, token: str = Depends(oauth2_scheme)):
+async def add_equipment(
+    equipment: EquipmentCreate = Body(...),
+    request: Request = None,
+    token: str = Depends(oauth2_scheme)
+):
     payload = verify_token(token)
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    try:
+        # Validate required fields
+        if not equipment.name.strip():
+            raise HTTPException(status_code=400, detail="Equipment name is required")
+        if not equipment.description.strip():
+            raise HTTPException(status_code=400, detail="Equipment description is required")
+        if not equipment.category.strip():
+            raise HTTPException(status_code=400, detail="Equipment category is required")
+        if equipment.quantity <= 0:
+            raise HTTPException(status_code=400, detail="Equipment quantity must be greater than 0")
+        
+        equip_dict = equipment.dict()
+
+        if not equip_dict.get("image_data"):
+         equip_dict["image_data"] = None
+        if not equip_dict.get("image_filename"):
+         equip_dict["image_filename"] = None
+        if not equip_dict.get("image_content_type"):
+         equip_dict["image_content_type"] = None
+       # Generate itemCode if not provided
+        if not equip_dict.get("itemCode"):
+         category_prefix = equip_dict.get("category", "EQP")[:3].upper()
+         random_num = str(abs(hash(f"{equip_dict['name']}{datetime.utcnow()}")))[:5]
+         equip_dict["itemCode"] = f"{category_prefix}-E-{random_num}"
+         equip_dict["created_at"] = equip_dict["updated_at"] = datetime.utcnow()
+         print(f"Adding equipment with image data length: {len(equip_dict['image_data']) if equip_dict['image_data'] else 0}")
+         
+        result = equipment_collection.insert_one(equip_dict)
+        created_equipment = equipment_collection.find_one({"_id": result.inserted_id})
+
+        await create_log_entry(
+            username,
+            "Added equipment.",
+            f"Added equipment: {equip_dict.get('name')} ({equip_dict.get('itemCode')})",
+            client_ip
+        )
+        
+        return {"success": True, "message": "Equipment added successfully", "data": equipment_helper(created_equipment)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add equipment: {str(e)}")
+
+@app.post("/api/equipment/{equipment_id}/image")
+async def upload_equipment_image(
+    equipment_id: str,
+    image: UploadFile = File(...),
+    request: Request = None,
+    token: str = Depends(oauth2_scheme)
+):
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    if not ObjectId.is_valid(equipment_id):
+        raise HTTPException(status_code=400, detail="Invalid equipment ID format")
     
-    equipment_dict = equipment.dict()
-    equipment_dict["created_at"] = equipment_dict["updated_at"] = datetime.utcnow()
+    equipment = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
     
-    if not equipment_dict.get("itemCode"):
-        category_prefix = equipment_dict.get("category", "EQP")[:3].upper()
-        random_num = str(abs(hash(str(datetime.utcnow()))))[:5]
-        equipment_dict["itemCode"] = f"{category_prefix}-E-{random_num}"
+    if not image.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
     
-    result = equipment_collection.insert_one(equipment_dict)
-    created_equipment = equipment_collection.find_one({"_id": result.inserted_id})
+    contents = await image.read()
+    if len(contents) > 5 * 1024 * 1024:  # 5MB limit
+        raise HTTPException(status_code=400, detail="Image file too large (max 5MB)")
+    
+    image_base64 = base64.b64encode(contents).decode('utf-8')
+    
+    equipment_collection.update_one(
+        {"_id": ObjectId(equipment_id)},
+        {
+            "$set": {
+                "image_data": image_base64,
+                "image_filename": image.filename,
+                "image_content_type": image.content_type,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    updated_equipment = equipment_collection.find_one({"_id": ObjectId(equipment_id)})
     
     await create_log_entry(
         username,
-        "Added equipment.",
-        f"Added equipment: {equipment_dict.get('name', 'Unknown')} ({equipment_dict.get('itemCode')})",
+        "Uploaded equipment image.",
+        f"Uploaded image for equipment: {equipment.get('name')} ({equipment.get('itemCode')})",
         client_ip
     )
     
-    return {"success": True, "message": "Equipment added successfully", "data": equipment_helper(created_equipment)}
+    return {"success": True, "message": "Image uploaded successfully", "data": equipment_helper(updated_equipment)}
 
 @app.get("/api/equipment/{equipment_id}")
 async def get_equipment(equipment_id: str, token: str = Depends(oauth2_scheme)):
@@ -1513,20 +1618,6 @@ async def delete_equipment(equipment_id: str, request: Request, token: str = Dep
     
     return {"success": True, "message": "Equipment deleted successfully"}
 
-# --- Historical Supplies Data Endpoint ---
-@app.get("/api/historical-supplies", response_model=dict)
-async def get_historical_supplies(token: str = Depends(oauth2_scheme)):
-    verify_token(token)
-    raw_data = list(historical_supplies_forecast_collection.find({}, {"_id": 0}))
-    if not raw_data:
-        return {"success": True, "message": "No historical supplies data found.", "data": []}
-    df = pd.DataFrame(raw_data)
-    if 'date' not in df.columns or 'quantity' not in df.columns:
-        raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in supplies data")
-    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
-    bootstrapped_df['date'] = bootstrapped_df['date'].dt.strftime('%Y-%m-%d')
-    return {"success": True, "data": bootstrapped_df.to_dict(orient='records')}
-
 # --- Supplies Forecast Endpoint ---
 @app.get("/api/forecast-supplies", response_model=dict)
 async def get_forecast_supplies(token: str = Depends(oauth2_scheme), n_periods: int = 12):
@@ -1534,27 +1625,20 @@ async def get_forecast_supplies(token: str = Depends(oauth2_scheme), n_periods: 
     raw_data = list(historical_supplies_forecast_collection.find({}, {"_id": 0}))
     if not raw_data:
         return {"success": True, "message": "No historical supplies data for forecasting.", "data": []}
+
     df = pd.DataFrame(raw_data)
     if 'date' not in df.columns or 'quantity' not in df.columns:
         raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in supplies data")
-    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
-    forecast_df = generate_arima_forecast(bootstrapped_df, date_col='date', value_col='quantity', n_periods=n_periods)
+
+    # Bootstrap synthetic years 2021–2024
+    boot_df = bootstrap_years(df, date_col='date', value_col='quantity', start_year=2021, end_year=2024)
+
+    # Run SARIMA forecast for 2025
+    forecast_df = generate_sarima_forecast(boot_df, date_col='date', value_col='quantity', n_periods=n_periods, seasonal_period=12)
+
     forecast_df['date'] = forecast_df['date'].dt.strftime('%Y-%m-%d')
     return {"success": True, "data": forecast_df.to_dict(orient='records')}
 
-# --- Historical Equipment Data Endpoint ---
-@app.get("/api/historical-equipment", response_model=dict)
-async def get_historical_equipment(token: str = Depends(oauth2_scheme)):
-    verify_token(token)
-    raw_data = list(historical_equipment_forecast_collection.find({}, {"_id": 0}))
-    if not raw_data:
-        return {"success": True, "message": "No historical equipment data found.", "data": []}
-    df = pd.DataFrame(raw_data)
-    if 'date' not in df.columns or 'quantity' not in df.columns:
-        raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in equipment data")
-    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
-    bootstrapped_df['date'] = bootstrapped_df['date'].dt.strftime('%Y-%m-%d')
-    return {"success": True, "data": bootstrapped_df.to_dict(orient='records')}
 
 # --- Equipment Forecast Endpoint ---
 @app.get("/api/forecast-equipment", response_model=dict)
@@ -1563,11 +1647,17 @@ async def get_forecast_equipment(token: str = Depends(oauth2_scheme), n_periods:
     raw_data = list(historical_equipment_forecast_collection.find({}, {"_id": 0}))
     if not raw_data:
         return {"success": True, "message": "No historical equipment data for forecasting.", "data": []}
+
     df = pd.DataFrame(raw_data)
     if 'date' not in df.columns or 'quantity' not in df.columns:
         raise HTTPException(status_code=400, detail="Missing 'date' or 'quantity' in equipment data")
-    bootstrapped_df = bootstrap_missing_months(df, date_col='date', value_col='quantity')
-    forecast_df = generate_arima_forecast(bootstrapped_df, date_col='date', value_col='quantity', n_periods=n_periods)
+
+    # Bootstrap synthetic years 2021–2024
+    boot_df = bootstrap_years(df, date_col='date', value_col='quantity', start_year=2021, end_year=2024)
+
+    # Run SARIMA forecast for 2025
+    forecast_df = generate_sarima_forecast(boot_df, date_col='date', value_col='quantity', n_periods=n_periods, seasonal_period=12)
+
     forecast_df['date'] = forecast_df['date'].dt.strftime('%Y-%m-%d')
     return {"success": True, "data": forecast_df.to_dict(orient='records')}
 
@@ -2451,6 +2541,122 @@ async def export_logs_csv(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export logs: {str(e)}")
 
+@app.post("/api/report-bug")
+async def report_bug(report: BugReport, request: Request, token: str = Depends(oauth2_scheme)):
+    """Submit a bug report or question"""
+    try:
+        payload = verify_token(token)
+        username = payload.get("username", "unknown_user")
+        client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+        
+        # Validate the bug report message
+        if not report.message or not report.message.strip():
+            raise HTTPException(status_code=400, detail="Bug report message cannot be empty")
+
+        # Prepare email content
+        subject = f"Bug Report from {report.username} ({report.role})"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom: 10px;">
+                    Bug Report / Question
+                </h2>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p><strong>User:</strong> {report.username}</p>
+                    <p><strong>Role:</strong> {report.role}</p>
+                    <p><strong>Submitted:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+                    <p><strong>IP Address:</strong> {client_ip}</p>
+                </div>
+                
+                <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                    <h3 style="color: #2c3e50; margin-top: 0;">Message:</h3>
+                    <div style="white-space: pre-wrap; background-color: #f8f9fa; padding: 15px; border-radius: 3px; border-left: 4px solid #3498db;">
+{report.message}
+                    </div>
+                </div>
+                
+                <footer style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
+                    <p>This is an automated message from your MEAMS Inventory Management System</p>
+                </footer>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Send email to meamsds42@gmail.com
+        success = await send_email("meamsds42@gmail.com", subject, body)
+
+        if not success:
+            # Log the failure but still create log entry
+            print(f"Failed to send bug report email for user {report.username}")
+            
+            # Still try to create log entry
+            try:
+                await create_log_entry(username, "Submitted bug report (email failed)", report.message[:100] + "..." if len(report.message) > 100 else report.message, client_ip)
+            except Exception as log_error:
+                print(f"Failed to create log entry: {log_error}")
+            
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to send bug report email. Please try again or contact support directly."
+            )
+
+        # Create log entry for successful submission
+        try:
+            await create_log_entry(username, "Submitted bug report", report.message[:100] + "..." if len(report.message) > 100 else report.message, client_ip)
+        except Exception as log_error:
+            print(f"Failed to create log entry: {log_error}")
+            # Don't fail the entire request if logging fails
+
+        print(f"Bug report from {report.username} sent successfully to meamsds42@gmail.com")
+        
+        return {
+            "success": True, 
+            "message": "Bug report sent successfully",
+            "email_sent": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error in report_bug endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.get("/api/test-email")
+async def test_email_config():
+    """Test endpoint to check if email configuration is working"""
+    try:
+        test_subject = "Test Email from MEAMS Inventory System"
+        test_body = f"""
+        <html>
+        <body>
+            <h2>Test Email</h2>
+            <p>This is a test email to verify the email configuration is working properly.</p>
+            <p>Sent at: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+        </body>
+        </html>
+        """
+        
+        success = await send_email("meamsds42@gmail.com", test_subject, test_body)
+        
+        return {
+            "success": success,
+            "message": "Test email sent successfully" if success else "Failed to send test email",
+            "email_configured": bool(EMAIL_PASSWORD),
+            "smtp_server": EMAIL_HOST
+        }
+    except Exception as e:
+        print(f"Error in test_email_config: {e}")
+        return {
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "email_configured": bool(EMAIL_PASSWORD),
+            "smtp_server": EMAIL_HOST
+        }
+
 @app.get("/health")
 async def health_check():
     try:
@@ -2458,6 +2664,305 @@ async def health_check():
         return {"status": "healthy", "database": "connected", "timestamp": datetime.utcnow()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+    
+@app.post("/api/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, http_request: Request):
+    """Send password reset email"""
+    client_ip = http_request.client.host if hasattr(http_request, 'client') else "unknown"
+    
+    try:
+        # Check if email exists in database
+        user = accounts_collection.find_one({"email": request.email})
+        
+        if not user:
+            # Don't reveal if email doesn't exist for security
+            return {
+                "success": True, 
+                "message": "If an account with that email exists, we've sent a password reset link."
+            }
+        
+        # Generate secure reset token
+        reset_token = secrets.token_urlsafe(32)
+        reset_expires = datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+        
+        # Store reset token in database
+        accounts_collection.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "password_reset_token": reset_token,
+                    "password_reset_expires": reset_expires,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Create reset link - using your frontend URL
+        reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
+        
+        # Send email using your configured settings
+        email_subject = "MEAMS - Password Reset Request"
+        email_body = f"""
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MEAMS Password Reset</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; font-family: 'Koulen', cursive; font-size: 36px; margin: 0; letter-spacing: 2px;">MEAMS</h1>
+                    <p style="color: #cccccc; margin: 10px 0 0 0; font-size: 14px;">Asset Management System</p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                    <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px;">Password Reset Request</h2>
+                    <p style="margin: 0 0 20px 0; font-size: 16px;">Hello <strong>{user.get('name', 'User')}</strong>,</p>
+                    <p style="margin: 0 0 25px 0; font-size: 16px;">We received a request to reset your password for your MEAMS account.</p>
+                    
+                    <!-- CTA Button -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_link}" 
+                           style="display: inline-block; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; 
+                                  padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: 600; 
+                                  font-size: 16px; box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3); transition: all 0.3s ease;">
+                            Reset My Password
+                        </a>
+                    </div>
+                    
+                    <!-- Security Information -->
+                    <div style="background-color: #f8f9fa; border-left: 4px solid #ffc107; padding: 20px; margin: 25px 0; border-radius: 5px;">
+                        <h3 style="color: #856404; margin: 0 0 15px 0; font-size: 18px;">Security Information</h3>
+                        <ul style="margin: 0; padding-left: 20px; color: #856404;">
+                            <li>This link will expire in <strong>1 hour</strong></li>
+                            <li>If you didn't request this reset, please ignore this email</li>
+                            <li>Never share this link with anyone</li>
+                            <li>For security, this link only works once</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Alternative Link -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                        <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">If the button doesn't work, copy and paste this link:</p>
+                        <div style="background-color: #f1f1f1; padding: 15px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 12px;">
+                            {reset_link}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee;">
+                    <p style="margin: 0; font-size: 14px; color: #666;">
+                        Best regards,<br>
+                        <strong>MEAMS System</strong><br>
+                        <em>This is an automated message, please do not reply.</em>
+                    </p>
+                    <p style="margin: 15px 0 0 0; font-size: 12px; color: #999;">
+                        Sent on {datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')}
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        email_sent = await send_email(request.email, email_subject, email_body)
+        
+        # Log the attempt
+        await create_log_entry(
+            user.get('username', 'Unknown'),
+            "Password reset requested.",
+            f"Reset link sent to: {request.email}",
+            client_ip
+        )
+        
+        if email_sent:
+            return {
+                "success": True, 
+                "message": "If an account with that email exists, we've sent a password reset link."
+            }
+        else:
+            # Log email failure but don't reveal to user
+            await create_log_entry(
+                user.get('username', 'Unknown'),
+                "Password reset email failed.",
+                f"Failed to send reset email to: {request.email}",
+                client_ip
+            )
+            return {
+                "success": True, 
+                "message": "If an account with that email exists, we've sent a password reset link."
+            }
+        
+    except Exception as e:
+        print(f"Password reset error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/auth/validate-reset-token/{token}")
+async def validate_reset_token(token: str):
+    """Validate password reset token"""
+    try:
+        user = accounts_collection.find_one({
+            "password_reset_token": token,
+            "password_reset_expires": {"$gt": datetime.utcnow()}
+        })
+        
+        if user:
+            return {
+                "success": True,
+                "valid": True,
+                "message": "Token is valid"
+            }
+        else:
+            return {
+                "success": True,
+                "valid": False,
+                "message": "Invalid or expired token"
+            }
+            
+    except Exception as e:
+        print(f"Token validation error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/auth/reset-password")
+async def reset_password(request: ResetPasswordRequest, http_request: Request):
+    """Reset password using token"""
+    client_ip = http_request.client.host if hasattr(http_request, 'client') else "unknown"
+    
+    try:
+        # Validate token and check expiration
+        user = accounts_collection.find_one({
+            "password_reset_token": request.token,
+            "password_reset_expires": {"$gt": datetime.utcnow()}
+        })
+        
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        
+        # Validate new password
+        if len(request.new_password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+        
+        # Hash new password
+        new_password_hash = hash_password(request.new_password)
+        
+        # Update user password and clear reset token
+        accounts_collection.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "password_hash": new_password_hash,
+                    "updated_at": datetime.utcnow(),
+                    "first_login": False  # Reset first_login flag if it was set
+                },
+                "$unset": {
+                    "password_reset_token": "",
+                    "password_reset_expires": ""
+                }
+            }
+        )
+        
+        # Log successful password reset
+        await create_log_entry(
+            user.get('username', 'Unknown'),
+            "Password reset completed.",
+            "Password successfully reset using email link",
+            client_ip
+        )
+        
+        # Send confirmation email
+        confirmation_subject = "MEAMS - Password Reset Successful"
+        confirmation_body = f"""
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MEAMS Password Reset Confirmation</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; font-family: 'Koulen', cursive; font-size: 36px; margin: 0; letter-spacing: 2px;">MEAMS</h1>
+                    <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">Password Reset Successful</p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                            <span style="color: white; font-size: 24px;">?</span>
+                        </div>
+                    </div>
+                    
+                    <h2 style="color: #28a745; margin: 0 0 20px 0; font-size: 24px; text-align: center;">Password Reset Successful!</h2>
+                    <p style="margin: 0 0 20px 0; font-size: 16px;">Hello <strong>{user.get('name', 'User')}</strong>,</p>
+                    <p style="margin: 0 0 25px 0; font-size: 16px;">Your password has been successfully reset for your MEAMS account.</p>
+                    
+                    <!-- Success Info -->
+                    <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                        <p style="margin: 0; color: #155724; font-size: 16px;">
+                            <strong>Reset completed on:</strong><br>
+                            {datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')}
+                        </p>
+                    </div>
+                    
+                    <p style="margin: 25px 0; font-size: 16px;">You can now log in to your account using your new password.</p>
+                    
+                    <!-- Login Button -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="http://localhost:3000/login" 
+                           style="display: inline-block; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; 
+                                  padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: 600; 
+                                  font-size: 16px; box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);">
+                            Go to Login
+                        </a>
+                    </div>
+                    
+                    <!-- Security Tips -->
+                    <div style="background-color: #f8f9fa; border-left: 4px solid #17a2b8; padding: 20px; margin: 25px 0; border-radius: 5px;">
+                        <h3 style="color: #0c5460; margin: 0 0 15px 0; font-size: 18px;">Security Tips</h3>
+                        <ul style="margin: 0; padding-left: 20px; color: #0c5460;">
+                            <li>Keep your password secure and don't share it with anyone</li>
+                            <li>If you didn't make this change, contact support immediately</li>
+                            <li>Consider using a password manager for better security</li>
+                            <li>Log out of all devices and log back in with your new password</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee;">
+                    <p style="margin: 0; font-size: 14px; color: #666;">
+                        Best regards,<br>
+                        <strong>MEAMS System</strong><br>
+                        <em>This is an automated message, please do not reply.</em>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send confirmation email (don't fail if email fails)
+        try:
+            await send_email(user.get("email", ""), confirmation_subject, confirmation_body)
+        except Exception as e:
+            print(f"Failed to send confirmation email: {str(e)}")
+        
+        return {
+            "success": True,
+            "message": "Password reset successfully. You can now log in with your new password."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Password reset error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Add this debug endpoint to your main.py to see exactly what's happening
 @app.get("/debug/historical-supplies")

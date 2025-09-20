@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import './ProfileModal.css';
 
-function ProfileModal({ isOpen, onClose }) {
+function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
   const { getCurrentUser, authToken } = useAuth();
   const currentUser = getCurrentUser();
   
@@ -15,7 +15,8 @@ function ProfileModal({ isOpen, onClose }) {
     role: '',
     department: '',
     phoneNumber: '',
-    dateJoined: ''
+    dateJoined: '',
+    profilePicture: null
   });
   const [editData, setEditData] = useState({});
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -27,12 +28,26 @@ function ProfileModal({ isOpen, onClose }) {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
+  // Profile picture specific states
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Helper function for base64 conversion
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   // Fetch profile data when modal opens
   useEffect(() => {
     if (isOpen && authToken) {
       fetchProfileData();
     }
-  }, [isOpen, authToken]); // Removed currentUser from dependencies
+  }, [isOpen, authToken]);
 
   const fetchProfileData = async () => {
     try {
@@ -46,7 +61,6 @@ function ProfileModal({ isOpen, onClose }) {
 
       if (response.ok) {
         const data = await response.json();
-        // Set both profile data and edit data at the same time
         setProfileData(data);
         setEditData(data);
       } else {
@@ -58,7 +72,8 @@ function ProfileModal({ isOpen, onClose }) {
           role: currentUser?.role || 'admin',
           department: currentUser?.department || 'Engineering Department',
           phoneNumber: currentUser?.phoneNumber || '+63 912 345 6789',
-          dateJoined: currentUser?.dateJoined || '2023-01-15'
+          dateJoined: currentUser?.dateJoined || '2023-01-15',
+          profilePicture: null
         };
         setProfileData(fallbackData);
         setEditData(fallbackData);
@@ -73,12 +88,127 @@ function ProfileModal({ isOpen, onClose }) {
         role: currentUser?.role || 'admin',
         department: 'Engineering Department',
         phoneNumber: '+63 912 345 6789',
-        dateJoined: '2023-01-15'
+        dateJoined: '2023-01-15',
+        profilePicture: null
       };
       setProfileData(fallbackData);
       setEditData(fallbackData);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle profile picture upload
+  const handleAvatarClick = () => {
+    if (uploadingPicture) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage('Please select an image file');
+      setMessageType('error');
+      setTimeout(() => setMessage(''), 3000);
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage('Image file too large. Please select an image smaller than 5MB');
+      setMessageType('error');
+      setTimeout(() => setMessage(''), 3000);
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      const imageBase64 = await convertFileToBase64(file);
+      
+      // Update local state immediately for instant UI feedback
+      setProfileData(prev => ({ ...prev, profilePicture: imageBase64 }));
+      setEditData(prev => ({ ...prev, profilePicture: imageBase64 }));
+
+      const response = await fetch('http://localhost:8000/profile/picture', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profilePicture: imageBase64 })
+      });
+
+      if (response.ok) {
+        // Notify parent component to update sidebar
+        if (onProfilePictureUpdate) {
+          onProfilePictureUpdate(imageBase64);
+        }
+        setMessage('Profile picture updated successfully!');
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setMessage('Error uploading profile picture. Please try again.');
+      setMessageType('error');
+      setTimeout(() => setMessage(''), 3000);
+      // Revert local state on error
+      setProfileData(prev => ({ ...prev, profilePicture: null }));
+      setEditData(prev => ({ ...prev, profilePicture: null }));
+    } finally {
+      setUploadingPicture(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDeleteProfilePicture = async (e) => {
+    e.stopPropagation();
+    
+    if (!profileData.profilePicture) return;
+    
+    if (!window.confirm('Are you sure you want to delete your profile picture?')) {
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      
+      const response = await fetch('http://localhost:8000/profile/picture', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Update local state
+        setProfileData(prev => ({ ...prev, profilePicture: null }));
+        setEditData(prev => ({ ...prev, profilePicture: null }));
+        
+        // Notify parent component to update sidebar
+        if (onProfilePictureUpdate) {
+          onProfilePictureUpdate(null);
+        }
+        
+        setMessage('Profile picture deleted successfully!');
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      setMessage('Error deleting profile picture. Please try again.');
+      setMessageType('error');
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setUploadingPicture(false);
     }
   };
 
@@ -245,11 +375,90 @@ function ProfileModal({ isOpen, onClose }) {
           ) : (
             <>
               <div className="profile-avatar-section">
-                <div className="profile-avatar-large">
-                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
-                  </svg>
+                {/* Updated profile picture section */}
+                <div 
+                  className={`profile-avatar-large ${uploadingPicture ? 'uploading' : ''}`}
+                  onClick={handleAvatarClick}
+                  style={{ 
+                    cursor: uploadingPicture ? 'not-allowed' : 'pointer',
+                    position: 'relative'
+                  }}
+                  title={profileData.profilePicture ? "Click to change profile picture" : "Click to upload profile picture"}
+                >
+                  {profileData.profilePicture ? (
+                    <img 
+                      src={profileData.profilePicture} 
+                      alt="Profile" 
+                      style={{ 
+                        width: '100px', 
+                        height: '100px', 
+                        borderRadius: '50%', 
+                        objectFit: 'cover',
+                        border: '3px solid #4ade80'
+                      }}
+                    />
+                  ) : (
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
+                    </svg>
+                  )}
+                  
+                  {/* Profile picture overlay */}
+                  <div className="avatar-overlay" style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.target.style.opacity = 1}
+                  onMouseLeave={(e) => e.target.style.opacity = 0}>
+                    {uploadingPicture ? (
+                      <div className="upload-spinner" style={{ color: 'white' }}>Uploading...</div>
+                    ) : profileData.profilePicture ? (
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM16 13H13V16C13 16.55 12.55 17 12 17C11.45 17 11 16.55 11 16V13H8C7.45 13 7 12.55 7 12C7 11.45 7.45 11 8 11H11V8C11 7.45 11.45 7 12 7C12.55 7 13 7.45 13 8V11H16C16.55 11 17 11.45 17 12C17 12.55 16.55 13 16 13Z"/>
+                        </svg>
+                        <button 
+                          onClick={handleDeleteProfilePicture}
+                          style={{ 
+                            background: 'none', 
+                            border: 'none', 
+                            color: 'white', 
+                            cursor: 'pointer',
+                            padding: 0
+                          }}
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19V7H6V19ZM19 4H15.5L14.5 3H9.5L8.5 4H5V6H19V4Z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
                 </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+
                 <div className="profile-user-info">
                   <h3>{profileData.fullName}</h3>
                   <p className="profile-role">{profileData.role}</p>
@@ -381,7 +590,7 @@ function ProfileModal({ isOpen, onClose }) {
                     />
                   </div>
                   <div className="password-actions">
-                                        <button 
+                    <button 
                       className="btn-secondary" 
                       onClick={() => setShowChangePassword(false)}
                       disabled={loading}
@@ -444,5 +653,4 @@ function ProfileModal({ isOpen, onClose }) {
   );
 }
 
-export default ProfileModal; 
-                
+export default ProfileModal;
