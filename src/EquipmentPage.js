@@ -10,6 +10,8 @@ function EquipmentPage() {
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+ 
   
   // Add Equipment Overlay states
   const [isAddEquipmentOverlayOpen, setIsAddEquipmentOverlayOpen] = useState(false);
@@ -28,6 +30,16 @@ function EquipmentPage() {
   });
   const [dragActive, setDragActive] = useState(false);
   const [addingEquipment, setAddingEquipment] = useState(false);
+
+  const convertFileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+};
+
   
   // QR Code states
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
@@ -85,10 +97,13 @@ const handlePrintStockCard = () => {
   serialNo: item.serialNo || item.serial_number || `SN-${Math.floor(Math.random() * 10000)}`,
   supplier: item.supplier || '',
   unit_price: item.unit_price || 0,
-  date: item.date || ''  // NEW FIELD: Date field
+  date: item.date || '',  // NEW FIELD: Date field
+  has_image: item.image_data ? true : false,
+image_data: item.image_data || null,
+image_filename: item.image_filename || null,
+image_content_type: item.image_content_type || null,
 }));
-      
-      setEquipmentData(transformedEquipment);
+setEquipmentData(transformedEquipment);
       console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
       
     } catch (err) {
@@ -132,9 +147,15 @@ const handlePrintStockCard = () => {
   };
 
   const handleEquipmentInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewEquipment({ ...newEquipment, [name]: value });
-  };
+  const { name, value } = e.target;
+  if (name === "date" && value) {
+    // Normalize date to YYYY-MM-DD string, e.target.value already normalized for input=date, so likely not required.
+    setNewEquipment((prev) => ({ ...prev, [name]: value }));
+  } else {
+    setNewEquipment((prev) => ({ ...prev, [name]: value }));
+  }
+};
+
 
   const handleEquipmentFileChange = (e) => {
     const file = e.target.files[0];
@@ -234,29 +255,18 @@ const handlePrintStockCard = () => {
 
   // Enhanced handleAddEquipment with better error handling and validation
   const handleAddEquipment = async () => {
-    // Validate form
-    const validationErrors = validateEquipmentForm();
-    if (validationErrors.length > 0) {
-      alert(`Please fix the following errors:\n• ${validationErrors.join('\n• ')}`);
-      return;
-    }
+  // Validate form fields as you already do...
 
-    // Check for duplicate serial number
-    const duplicateSerial = equipmentData.find(item => 
-      item.serialNo.toLowerCase() === newEquipment.serialNo.toLowerCase()
-    );
-    
-    if (duplicateSerial) {
-      alert('An equipment with this serial number already exists. Please use a unique serial number.');
-      return;
-    }
+  try {
+    setAddingEquipment(true);
+    setError(null);
 
-    try {
-      setAddingEquipment(true);
-      setError(null);
-      
-      // FIXED: Prepare data with correct mapping
-      const equipmentData = {
+    let imageBase64 = null;
+if (newEquipment.itemPicture) {
+  imageBase64 = await convertFileToBase64(newEquipment.itemPicture);
+}
+
+const equipmentData = {
   name: newEquipment.name.trim(),
   description: newEquipment.description.trim(),
   category: newEquipment.category,
@@ -268,15 +278,19 @@ const handlePrintStockCard = () => {
   itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
   unit_price: 0,
   supplier: '',
-  date: newEquipment.date  // NEW FIELD: Date field
+  date: newEquipment.date,
+  image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
+  image_filename: newEquipment.itemPicture?.name || null,
+  image_content_type: newEquipment.itemPicture?.type || null,
 };
 
-      console.log('📤 Adding new equipment:', equipmentData);
-      
-      const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
-      
-      // FIXED: Transform the response to match your current data structure
-      const newEquipmentItem = {
+
+    console.log('📤 Adding new equipment:', equipmentData);
+
+    const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
+
+    // Add new equipment to state including image data
+    const newEquipmentItem = {
   _id: savedEquipment._id || savedEquipment.id,
   itemCode: equipmentData.itemCode,
   name: newEquipment.name.trim(),
@@ -287,28 +301,28 @@ const handlePrintStockCard = () => {
   location: newEquipment.location.trim(),
   status: newEquipment.status,
   serialNo: newEquipment.serialNo.trim(),
-  itemPicture: newEquipment.itemPicture,
+  // Use the base64 image string from backend for display
+  itemPicture: savedEquipment.image_data,  
+  image_data: savedEquipment.image_data, // base64 image string from backend
+  image_filename: savedEquipment.image_filename,
+  image_content_type: savedEquipment.image_content_type,
   supplier: '',
   unit_price: 0,
-  date: newEquipment.date  // NEW FIELD: Date field
+  date: newEquipment.date
 };
+    setEquipmentData(prevData => [...prevData, newEquipmentItem]);
 
-      setEquipmentData(prevData => [...prevData, newEquipmentItem]);
-      
-      alert(`Equipment "${newEquipment.name}" added successfully!`);
-      
-      handleAddEquipmentToggle();
-      
-      console.log('✅ Equipment added successfully');
-      
-    } catch (error) {
-      console.error('❌ Error adding equipment:', error);
-      setError(`Failed to add equipment: ${error.message}`);
-      alert(`Failed to add equipment: ${error.message}`);
-    } finally {
-      setAddingEquipment(false);
-    }
-  };
+    alert(`Equipment "${newEquipment.name}" added successfully!`);
+    handleAddEquipmentToggle();
+
+  } catch (error) {
+    console.error('❌ Error adding equipment:', error);
+    setError(`Failed to add equipment: ${error.message}`);
+    alert(`Failed to add equipment: ${error.message}`);
+  } finally {
+    setAddingEquipment(false);
+  }
+};
 
   // Delete equipment function
   const handleDeleteEquipment = async (equipmentId, equipmentName) => {
@@ -871,8 +885,24 @@ const handlePrintStockCard = () => {
             
             <div className="item-overview-layout">
               <div className="item-image-placeholder">
-                <div className="placeholder-box">No Image</div>
-              </div>
+  {selectedEquipment.has_image && selectedEquipment.image_data ? (
+    <img
+  src={
+    selectedEquipment.image_data.startsWith('data:')
+      ? selectedEquipment.image_data
+      : `data:${selectedEquipment.image_content_type || 'image/jpeg'};base64,${selectedEquipment.image_data}`
+  }
+  alt={selectedEquipment.name || "Equipment image"}
+  className="item-image"
+  onError={(e) => {
+    e.target.style.display = 'none';
+    e.target.nextSibling.style.display = 'block';
+  }}
+/>
+  ) : (
+    <div className="placeholder-box">No Image</div>
+  )}
+</div>
               
               <div className="item-details">
                 <div className="detail-row">

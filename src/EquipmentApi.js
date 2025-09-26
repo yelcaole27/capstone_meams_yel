@@ -113,7 +113,7 @@ const EquipmentAPI = {
   // Add new equipment - ENHANCED WITH DEBUG LOGGING
   async addEquipment(equipmentData) {
   try {
-    // Enhanced validation - check for both name and description
+    // Validation
     if (!equipmentData.name?.trim()) {
       throw new Error('Equipment name is required');
     }
@@ -127,60 +127,73 @@ const EquipmentAPI = {
       throw new Error('Equipment quantity must be greater than 0');
     }
 
-    // 🔍 DEBUG: Log the incoming data
-    console.log('🔍 DEBUG - Raw incoming equipmentData:', equipmentData);
-    console.log('🔍 DEBUG - Date field:', equipmentData.date);
-    console.log('🔍 DEBUG - Date field type:', typeof equipmentData.date);
-    console.log('🔍 DEBUG - Date field value:', JSON.stringify(equipmentData.date));
-
-    // FIXED: Process and clean data with correct field mapping
+    // Prepare data to send, including image fields
     const processedData = {
-      name: equipmentData.name.trim(),
-      description: equipmentData.description.trim(),
-      category: equipmentData.category.trim(),
-      quantity: parseInt(equipmentData.quantity) || 0,
-      unit: equipmentData.unit || 'UNIT',
-      location: equipmentData.location?.trim() || '',
-      status: equipmentData.status || 'Operational',
-      serialNo: equipmentData.serialNo?.trim() || '',
-      itemCode: equipmentData.itemCode?.trim() || '',
-      unit_price: parseFloat(equipmentData.unit_price) || 0,
-      supplier: equipmentData.supplier?.trim() || '',
-      date: equipmentData.date || ''  // 🔥 EXPLICITLY INCLUDE DATE
-    };
+  name: equipmentData.name.trim(),
+  description: equipmentData.description.trim(),
+  category: equipmentData.category.trim(),
+  quantity: parseInt(equipmentData.quantity) || 0,
+  unit: equipmentData.unit || 'UNIT',
+  location: equipmentData.location?.trim() || '',
+  status: equipmentData.status || 'Operational',
+  serialNo: equipmentData.serialNo?.trim() || '',
+  itemCode: equipmentData.itemCode?.trim() || '',
+  unit_price: parseFloat(equipmentData.unit_price) || 0,
+  supplier: equipmentData.supplier?.trim() || '',
+  date: equipmentData.date || '',
+  image_data: equipmentData.image_data || null,
+  image_filename: equipmentData.image_filename || null,
+  image_content_type: equipmentData.image_content_type || null,
+};
 
-      // 🔍 DEBUG: Log the processed data that will be sent
-       console.log('🔍 DEBUG - Processed data being sent to backend:', processedData);
-    console.log('🔍 DEBUG - Processed date field:', processedData.date);
-    console.log('🔍 DEBUG - Processed date type:', typeof processedData.date);
 
-    // Don't remove empty string fields for date - we want to preserve it
-    const fieldsToSend = { ...processedData };
-    Object.keys(fieldsToSend).forEach(key => {
-      if (key !== 'date' && fieldsToSend[key] === '') {
-        delete fieldsToSend[key];
+    // Remove empty strings except for date and image_data fields
+    Object.keys(processedData).forEach(key => {
+      if (key !== 'date' && key !== 'image_data' && processedData[key] === '') {
+        delete processedData[key];
       }
     });
 
-      console.log('📤 Final data being sent to backend:', fieldsToSend);
-    console.log('📤 Final date field:', fieldsToSend.date);
-    
-    const response = await apiClient.post('/api/equipment', fieldsToSend);
-    const savedEquipment = response.data.data || response.data;
-    
-    // 🔍 DEBUG: Log what the backend returned
-    console.log('🔍 DEBUG - Backend response:', savedEquipment);
-    console.log('🔍 DEBUG - Backend returned date field:', savedEquipment.date);
-    console.log('🔍 DEBUG - Backend date type:', typeof savedEquipment.date);
-    
-    console.log('✅ Equipment added successfully:', savedEquipment);
-    return savedEquipment;
+    // Send POST request to backend
+    const response = await apiClient.post('/api/equipment', processedData);
+    return response.data.data || response.data;
+
   } catch (error) {
-    console.error('❌ Failed to add equipment:', error);
+    console.error('Failed to add equipment:', error);
     throw error;
   }
 },
 
+
+
+async uploadEquipmentImage(equipmentId, imageFile) {
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const token = getAuthToken();
+    if (!token) throw new Error('No authentication token found.');
+
+    const response = await fetch(`${API_BASE_URL}/api/equipment/${equipmentId}/image`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Failed to upload equipment image:', error);
+    throw error;
+  }
+},
   // Update equipment
   async updateEquipment(id, updateData) {
     try {

@@ -397,6 +397,15 @@
 
 .item-image-placeholder {
   flex: 0 0 200px;
+  width: 200px;
+  height: 200px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #f8f9fa; /* Add subtle background to match supplies modal */
 }
 
 .placeholder-box {
@@ -439,6 +448,7 @@
   font-size: 14px;
 }
 
+
 .item-overview-actions {
   display: flex;
   gap: 15px;
@@ -461,32 +471,51 @@
   font-weight: 600;
 }
 
+.action-btn {
+  background: #007bff; /* primary blue */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
 .action-btn:hover {
   background: #0056b3;
 }
-
+/* Specific colors for different buttons to match supplies */
 .view-stock-btn {
   background: #17a2b8;
 }
-
 .view-stock-btn:hover {
   background: #138496;
 }
-
 .view-docs-btn {
   background: #6c757d;
 }
-
 .view-docs-btn:hover {
   background: #5a6268;
 }
-
 .qr-code-btn {
   background: #fd7e14;
 }
-
 .qr-code-btn:hover {
   background: #e8680b;
+}
+
+.delete-btn {
+  background: #dc3545;
+  margin-left: auto;
+}
+.delete-btn:hover {
+  background: #c82333;
 }
 
 .close-overview-btn {
@@ -505,11 +534,11 @@
   justify-content: center;
   border-radius: 50%;
 }
-
 .close-overview-btn:hover {
   background: #ddd;
   color: #333;
 }
+
 
 /* QR Code Modal Styles - Copied from SuppliesPage.css */
 .qr-modal-content {
@@ -744,6 +773,14 @@
     flex: none;
     align-self: center;
   }
+}
+
+.item-image-placeholder img.item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
 }
 
 .date-input {
