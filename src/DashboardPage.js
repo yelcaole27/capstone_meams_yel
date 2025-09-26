@@ -461,92 +461,174 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* Middle Row: Simple Pie Charts */}
+        {/* Middle Row: Pie Charts with Status Tables */}
         <div className="graph-card pie-graph-1">
           <h3>Supply Status Distribution</h3>
-          <div style={{ width: '100%', height: '280px' }}>
-            {loading ? (
-              <div className="graph-placeholder">Loading supply data...</div>
-            ) : error ? (
-              <div className="graph-placeholder">Error loading data</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={supplyChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={renderLabel}
-                    outerRadius={80}
-                    innerRadius={0}
-                    fill="#8884d8"
-                    dataKey="value"
-                    onMouseEnter={(data, index) => onPieEnter(data, index, setActiveSupplyIndex)}
-                    onMouseLeave={() => onPieLeave(setActiveSupplyIndex)}
-                  >
-                    {supplyChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        stroke={activeSupplyIndex === index ? '#fff' : 'none'}
-                        strokeWidth={activeSupplyIndex === index ? 2 : 0}
-                        style={{
-                          filter: activeSupplyIndex === index ? 'brightness(1.1)' : 'none',
-                          cursor: 'pointer'
-                        }}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={renderTooltip} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+          <div style={{ display: 'flex', gap: '20px', height: '280px' }}>
+            {/* Pie Chart */}
+            <div style={{ flex: '1', minWidth: '300px' }}>
+              {loading ? (
+                <div className="graph-placeholder">Loading supply data...</div>
+              ) : error ? (
+                <div className="graph-placeholder">Error loading data</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={supplyChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={renderLabel}
+                      outerRadius={80}
+                      innerRadius={0}
+                      fill="#8884d8"
+                      dataKey="value"
+                      onMouseEnter={(data, index) => onPieEnter(data, index, setActiveSupplyIndex)}
+                      onMouseLeave={() => onPieLeave(setActiveSupplyIndex)}
+                    >
+                      {supplyChartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          stroke={activeSupplyIndex === index ? '#fff' : 'none'}
+                          strokeWidth={activeSupplyIndex === index ? 2 : 0}
+                          style={{
+                            filter: activeSupplyIndex === index ? 'brightness(1.1)' : 'none',
+                            cursor: 'pointer'
+                          }}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip content={renderTooltip} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            
+            {/* Status Table */}
+            <div style={{ flex: '0 0 250px' }}>
+              <div className="status-table-container">
+                <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>
+                  Supply Status Summary
+                </h4>
+                <table className="status-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Count</th>
+                      <th>%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const data = getSupplyStatusData();
+                      const total = data.reduce((sum, item) => sum + item.value, 0);
+                      return data.map((item, index) => (
+                        <tr key={index}>
+                          <td style={{ color: item.color, fontWeight: 'bold' }}>
+                            {item.name}
+                          </td>
+                          <td>{item.value}</td>
+                          <td>{total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                      ));
+                    })()}
+                    <tr className="total-row">
+                      <td><strong>Total</strong></td>
+                      <td><strong>{getSupplyStatusData().reduce((sum, item) => sum + item.value, 0)}</strong></td>
+                      <td><strong>100%</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="graph-card pie-graph-2">
           <h3>Equipment Status Distribution</h3>
-          <div style={{ width: '100%', height: '280px' }}>
-            {loading ? (
-              <div className="graph-placeholder">Loading equipment data...</div>
-            ) : error ? (
-              <div className="graph-placeholder">Error loading data</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={equipmentChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={renderLabel}
-                    outerRadius={80}
-                    innerRadius={0}
-                    fill="#8884d8"
-                    dataKey="value"
-                    onMouseEnter={(data, index) => onPieEnter(data, index, setActiveEquipmentIndex)}
-                    onMouseLeave={() => onPieLeave(setActiveEquipmentIndex)}
-                  >
-                    {equipmentChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        stroke={activeEquipmentIndex === index ? '#fff' : 'none'}
-                        strokeWidth={activeEquipmentIndex === index ? 2 : 0}
-                        style={{
-                          filter: activeEquipmentIndex === index ? 'brightness(1.1)' : 'none',
-                          cursor: 'pointer'
-                        }}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={renderTooltip} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+          <div style={{ display: 'flex', gap: '20px', height: '280px' }}>
+            {/* Pie Chart */}
+            <div style={{ flex: '1', minWidth: '300px' }}>
+              {loading ? (
+                <div className="graph-placeholder">Loading equipment data...</div>
+              ) : error ? (
+                <div className="graph-placeholder">Error loading data</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={equipmentChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={renderLabel}
+                      outerRadius={80}
+                      innerRadius={0}
+                      fill="#8884d8"
+                      dataKey="value"
+                      onMouseEnter={(data, index) => onPieEnter(data, index, setActiveEquipmentIndex)}
+                      onMouseLeave={() => onPieLeave(setActiveEquipmentIndex)}
+                    >
+                      {equipmentChartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          stroke={activeEquipmentIndex === index ? '#fff' : 'none'}
+                          strokeWidth={activeEquipmentIndex === index ? 2 : 0}
+                          style={{
+                            filter: activeEquipmentIndex === index ? 'brightness(1.1)' : 'none',
+                            cursor: 'pointer'
+                          }}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip content={renderTooltip} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            
+            {/* Status Table */}
+            <div style={{ flex: '0 0 250px' }}>
+              <div className="status-table-container">
+                <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>
+                  Equipment Status Summary
+                </h4>
+                <table className="status-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Count</th>
+                      <th>%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const data = getEquipmentStatusData();
+                      const total = data.reduce((sum, item) => sum + item.value, 0);
+                      return data.map((item, index) => (
+                        <tr key={index}>
+                          <td style={{ color: item.color, fontWeight: 'bold' }}>
+                            {item.name}
+                          </td>
+                          <td>{item.value}</td>
+                          <td>{total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                      ));
+                    })()}
+                    <tr className="total-row">
+                      <td><strong>Total</strong></td>
+                      <td><strong>{getEquipmentStatusData().reduce((sum, item) => sum + item.value, 0)}</strong></td>
+                      <td><strong>100%</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -661,6 +743,21 @@ function DashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
                 onClick={() => handleRequisitionChoice('OFFICE SUPPLIES')}
+                style={{
+                  backgroundColor: '#000',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+              >
+                OFFICE SUPPLIES
+              </button>
+              <button
+                onClick={() => handleRequisitionChoice('OTHER SUPPLIES')}
                 style={{
                   backgroundColor: '#000',
                   color: 'white',

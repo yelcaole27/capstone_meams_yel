@@ -644,7 +644,7 @@ input:checked + .slider:before {
   background: #333333;
 }
 
-/* Account Overview Modal Styles */
+/* Account Overview Modal Styles - FIXED CLOSE BUTTON */
 .account-overview-modal {
   background: #f0f0f0;
   border-radius: 12px;
@@ -662,6 +662,7 @@ input:checked + .slider:before {
   align-items: center;
   padding: 20px 30px;
   border-bottom: 1px solid #ddd;
+  position: relative;
 }
 
 .account-overview-title {
@@ -669,27 +670,50 @@ input:checked + .slider:before {
   font-weight: 700;
   color: #333333;
   margin: 0;
+  flex: 1;
 }
 
+/* FIXED CLOSE BUTTON STYLES */
 .close-button {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 28px;
+  font-size: 24px;
   color: #666666;
   cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
+  padding: 5px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s ease;
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  line-height: 1;
+  font-weight: normal;
 }
 
 .close-button:hover {
   background: #e0e0e0;
   color: #333333;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.close-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Ensure the X symbol is visible */
+.close-button::before {
+  content: '×';
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+  display: block;
 }
 
 .account-overview-content {
@@ -886,5 +910,15 @@ input:checked + .slider:before {
   .account-overview-modal {
     width: 95%;
     margin: 10px auto;
+  }
+  
+  .account-overview-content {
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .account-image-section {
+    align-self: center;
   }
 }
