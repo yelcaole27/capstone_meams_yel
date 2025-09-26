@@ -1,4 +1,4 @@
-/* ManageAccountsPage.css - FIXED VERSION WITH PROFILE PICTURE SUPPORT */
+/* ManageAccountsPage.css - FIXED VERSION WITH PROFILE PICTURE SUPPORT AND EXIT OPTIONS */
 
 .manage-accounts-page-container {
   flex-grow: 1;
@@ -343,11 +343,16 @@ input:checked + .slider:before {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .modal-header {
   padding: 24px 30px 0;
   border-bottom: none;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .modal-title {
@@ -356,6 +361,39 @@ input:checked + .slider:before {
   color: #333333;
   margin: 0;
   letter-spacing: 1px;
+  flex: 1;
+}
+
+/* NEW: Modal Close Button Styles */
+.modal-close-button {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #666666;
+  cursor: pointer;
+  padding: 5px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  line-height: 1;
+  font-weight: normal;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.modal-close-button:hover {
+  background: #e0e0e0;
+  color: #333333;
+  transform: scale(1.1);
+}
+
+.modal-close-button:active {
+  transform: scale(0.95);
 }
 
 .modal-content {
@@ -531,12 +569,17 @@ input:checked + .slider:before {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .edit-modal-header {
   text-align: center;
   padding: 20px 30px 0;
   border-bottom: none;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .edit-modal-title {
@@ -544,6 +587,7 @@ input:checked + .slider:before {
   font-weight: 700;
   color: #333333;
   margin: 0;
+  flex: 1;
 }
 
 .edit-modal-content {
@@ -625,6 +669,7 @@ input:checked + .slider:before {
 .edit-modal-actions {
   display: flex;
   justify-content: center;
+  gap: 15px;
 }
 
 .save-changes-button {

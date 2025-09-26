@@ -163,6 +163,53 @@ function ManageAccountsPage() {
     };
   }, [openDropdown]);
 
+  // NEW: Click outside handler for modals
+  useEffect(() => {
+    const handleModalClickOutside = (event) => {
+      // Check if click is on modal overlay (not on modal content)
+      if (event.target.classList.contains('modal-overlay')) {
+        if (showAddModal) {
+          handleCloseModal();
+        } else if (showEditModal) {
+          handleCloseEditModal();
+        } else if (showAccountOverview) {
+          handleCloseAccountOverview();
+        }
+      }
+    };
+
+    if (showAddModal || showEditModal || showAccountOverview) {
+      document.addEventListener('mousedown', handleModalClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleModalClickOutside);
+    };
+  }, [showAddModal, showEditModal, showAccountOverview]);
+
+  // NEW: Escape key handler for closing modals
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        if (showAddModal) {
+          handleCloseModal();
+        } else if (showEditModal) {
+          handleCloseEditModal();
+        } else if (showAccountOverview) {
+          handleCloseAccountOverview();
+        }
+      }
+    };
+
+    if (showAddModal || showEditModal || showAccountOverview) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [showAddModal, showEditModal, showAccountOverview]);
+
   const handleStatusToggle = async (accountId) => {
     try {
       const account = accounts.find(acc => acc._id === accountId);
@@ -603,6 +650,13 @@ function ManageAccountsPage() {
           <div className="modal-container">
             <div className="modal-header">
               <h3 className="modal-title">ADD ACCOUNT</h3>
+              <button 
+                className="modal-close-button"
+                onClick={handleCloseModal}
+                title="Close"
+              >
+                ×
+              </button>
             </div>
             
             <div className="modal-content">
@@ -740,7 +794,7 @@ function ManageAccountsPage() {
               </div>
 
               <div className="password-notice">
-                <p><strong>?? Password Notification:</strong> A secure password will be automatically generated and sent to the provided email address.</p>
+                <p><strong>? Password Notification:</strong> A secure password will be automatically generated and sent to the provided email address.</p>
               </div>
 
               <div className="modal-actions">
@@ -770,6 +824,13 @@ function ManageAccountsPage() {
           <div className="edit-account-modal">
             <div className="edit-modal-header">
               <h3 className="edit-modal-title">Edit Account</h3>
+              <button 
+                className="modal-close-button"
+                onClick={handleCloseEditModal}
+                title="Close"
+              >
+                ×
+              </button>
             </div>
             
             <div className="edit-modal-content">
@@ -817,20 +878,6 @@ function ManageAccountsPage() {
 
                   <div className="edit-form-group">
                     <label className="edit-form-label">ID:</label>
-                    <span className="edit-form-readonly">{selectedAccount._id}</span>
-                  </div>
-                </div>
-
-                <div className="edit-form-right">
-                  <div className="edit-form-group">
-                    <label className="edit-form-label">Status:</label>
-                    <span className="edit-form-readonly">
-                      {selectedAccount.status ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-
-                  <div className="edit-form-group">
-                    <label className="edit-form-label">Account Created:</label>
                     <span className="edit-form-readonly">{selectedAccount.account_creation}</span>
                   </div>
 
@@ -842,6 +889,13 @@ function ManageAccountsPage() {
               </div>
 
               <div className="edit-modal-actions">
+                <button 
+                  className="cancel-button"
+                  onClick={handleCloseEditModal}
+                  disabled={loading}
+                >
+                  CANCEL
+                </button>
                 <button 
                   className="save-changes-button"
                   onClick={handleSaveChanges}
