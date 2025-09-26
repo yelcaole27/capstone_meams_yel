@@ -314,37 +314,47 @@ function SettingsPage() {
     }
   };
 
-  const handleSendReport = async () => {
-    if (!bugReport.trim()) {
-      alert('Please enter your question or bug report.');
+const handleSendReport = async () => {
+  if (!bugReport.trim()) {
+    alert('Please enter your question or bug report.');
+    return;
+  }
+
+  try {
+    const token = getAuthToken();
+    const currentUser = getCurrentUser();
+
+    if (!token) {
+      alert('Authentication required. Please log in again.');
       return;
     }
 
-    try {
-      const token = getAuthToken();
-      const currentUser = getCurrentUser();
-      
-      if (!token) {
-        alert('Authentication required. Please log in again.');
-        return;
-      }
-
-      // Log the bug report (you can implement actual API endpoint later)
-      console.log('Bug report submitted:', {
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/report-bug`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
         message: bugReport,
-        timestamp: new Date().toISOString(),
-        user: currentUser?.username || 'unknown_user',
+        username: currentUser?.username || 'unknown_user',
         role: currentUser?.role || 'unknown_role'
-      });
+      })
+    });
 
-      alert('Bug report sent successfully! Our team will review it shortly.');
+    const result = await response.json();
+
+    if (result.success) {
+      alert('Bug report sent successfully to our team!');
       setBugReport('');
-    } catch (error) {
-      console.error('Bug report error:', error);
-      alert('Bug report sent successfully!');
-      setBugReport('');
+    } else {
+      throw new Error(result.detail || 'Failed to send bug report');
     }
-  };
+  } catch (error) {
+    console.error('Bug report error:', error);
+    alert('Failed to send bug report. Please try again later.');
+  }
+};
 
   // Get current user info for display
   const currentUser = getCurrentUser();
