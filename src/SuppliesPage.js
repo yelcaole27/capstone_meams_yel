@@ -57,10 +57,6 @@ function SuppliesPage() {
     date: ''
   });
 
-  // Pagination states
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-
 
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
   
@@ -151,22 +147,11 @@ function SuppliesPage() {
 
   // Filter supplies (now works with database data)
   const filteredSupplies = suppliesData.filter(item => {
-    const matchesSearch = item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'All Categories' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredSupplies.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedSupplies = filteredSupplies.slice(startIndex, endIndex);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory, itemsPerPage]);
 
   // QR Code generation function - UPDATED to include new fields
   const generateQRCode = async (item) => {
@@ -735,7 +720,7 @@ const handleRemoveImage = async (supplyId) => {
           </div>
 
           <div className="dropdown-container">
-            <button
+            <button 
               className="dropdown-toggle"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
@@ -744,11 +729,11 @@ const handleRemoveImage = async (supplyId) => {
                 <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-
+            
             {isDropdownOpen && (
               <div className="dropdown-menu">
                 {uniqueCategories.map(category => (
-                  <div
+                  <div 
                     key={category}
                     className="dropdown-item"
                     onClick={() => {
@@ -761,21 +746,6 @@ const handleRemoveImage = async (supplyId) => {
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="items-per-page-container">
-            <label htmlFor="itemsPerPage" className="items-per-page-label">Items per page:</label>
-            <select
-              id="itemsPerPage"
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-              className="items-per-page-select"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
           </div>
         </div>
       </div>
@@ -792,13 +762,13 @@ const handleRemoveImage = async (supplyId) => {
           </tr>
         </thead>
         <tbody>
-          {paginatedSupplies.map((supply, index) => (
+          {filteredSupplies.map((supply, index) => (
             <tr key={supply._id || index}>
               <td>{supply.itemCode}</td>
               <td>{supply.stockNo}</td>
               <td>{supply.quantity}</td>
               <td>
-                <span
+                <span 
                   className="item-name-clickable"
                   onClick={() => handleItemClick(supply)}
                 >
@@ -807,7 +777,7 @@ const handleRemoveImage = async (supplyId) => {
               </td>
               <td>{supply.category}</td>
               <td>
-                <button
+                <button 
                   className="view-icon-btn"
                   onClick={() => handleItemClick(supply)}
                   title="View item details"
@@ -822,39 +792,6 @@ const handleRemoveImage = async (supplyId) => {
           ))}
         </tbody>
       </table>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="pagination-container">
-          <button
-            className="pagination-btn"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-
-          <div className="pagination-pages">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button
-                key={page}
-                className={`pagination-page ${currentPage === page ? 'active' : ''}`}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-
-          <button
-            className="pagination-btn"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </div>
-      )}
 
       <button className="add-item-button" onClick={handleOverlayToggle}>
         {loading ? 'Loading...' : 'Add Item Supply'}
