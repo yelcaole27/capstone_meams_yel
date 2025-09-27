@@ -48,7 +48,7 @@ function EquipmentPage() {
 
   // Maintenance
  // Add this state to your existing useState declarations
-const [showRepairDocument, setShowRepairDocument] = useState(false);
+  const [showRepairDocument, setShowRepairDocument] = useState(false);
 
 // Add this function to handle the View Maintenance Log button click
 const handleViewMaintenanceLog = () => {
@@ -64,6 +64,10 @@ const closeRepairDocument = () => {
 const handlePrintStockCard = () => {
   window.print();
 };
+
+  // Pagination states
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Equipment categories and statuses
   const equipmentCategories = ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety'];
@@ -124,6 +128,17 @@ setEquipmentData(transformedEquipment);
     item.serialNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEquipment = filteredEquipment.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, itemsPerPage]);
 
   // Add Equipment Overlay handlers
   const handleAddEquipmentToggle = () => {
@@ -633,13 +648,13 @@ const equipmentData = {
             </tr>
           </thead>
           <tbody>
-            {filteredEquipment.map((equipment, index) => (
+            {paginatedEquipment.map((equipment, index) => (
               <tr key={equipment._id || index}>
                 <td>{equipment.itemCode}</td>
                 <td>{equipment.quantity}</td>
                 <td>{equipment.unit}</td>
                 <td>
-                  <span 
+                  <span
                     className="description-clickable"
                     onClick={() => handleEquipmentClick(equipment)}
                     title="Click to view details"
@@ -648,7 +663,7 @@ const equipmentData = {
                   </span>
                 </td>
                 <td>
-                  <button 
+                  <button
                     className="view-icon-btn"
                     onClick={() => handleEquipmentClick(equipment)}
                     title="View equipment details"
@@ -665,9 +680,65 @@ const equipmentData = {
         </table>
       )}
 
+      {/* Pagination Controls */}
+      {equipmentData.length > 0 && totalPages > 1 && (
+        <div className="pagination-container">
+          <button
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Previous
+          </button>
+
+          <div className="pagination-pages">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                className={`pagination-page ${page === currentPage ? 'active' : ''}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Items per page selector */}
       {equipmentData.length > 0 && (
-        <button 
-          className="add-equipment-button" 
+        <div className="items-per-page-container">
+          <span className="items-per-page-label">Items per page:</span>
+          <select
+            className="items-per-page-select"
+            value={itemsPerPage}
+            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
+      )}
+
+      {equipmentData.length > 0 && (
+        <button
+          className="add-equipment-button"
           onClick={handleAddEquipmentToggle}
           disabled={loading || addingEquipment}
         >
