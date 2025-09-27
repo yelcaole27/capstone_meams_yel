@@ -1082,10 +1082,23 @@ async def bulk_import(file: UploadFile = File(...), import_type: str = Form("sup
 
 # Supply routes
 @app.get("/api/supplies")
-async def get_all_supplies(token: str = Depends(oauth2_scheme)):
+async def get_all_supplies(token: str = Depends(oauth2_scheme), page: int = 1, limit: int = 50):
     verify_token(token)
-    supplies = [supply_helper(supply) for supply in supplies_collection.find()]
-    return {"success": True, "message": f"Found {len(supplies)} supplies", "data": supplies}
+    skip = (page - 1) * limit
+    supplies_cursor = supplies_collection.find().skip(skip).limit(limit)
+    supplies = [supply_helper(supply) for supply in supplies_cursor]
+    total = supplies_collection.count_documents({})
+    return {
+        "success": True,
+        "message": f"Found {len(supplies)} supplies (page {page}, limit {limit})",
+        "data": supplies,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": (total + limit - 1) // limit
+        }
+    }
 
 @app.post("/api/supplies")
 async def add_supply(supply: SupplyCreate, request: Request, token: str = Depends(oauth2_scheme)):
