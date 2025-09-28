@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import SuppliesAPI from './suppliesApi'; // Import the API service
+import supplyThresholdManager from './SupplyThresholdManager'; // Import threshold manager
 import './SuppliesPage.css';
 
 function SuppliesPage() {
@@ -61,12 +62,30 @@ function SuppliesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // NEW: Threshold management states
+  const [showThresholdModal, setShowThresholdModal] = useState(false);
+  const [thresholdForm, setThresholdForm] = useState({
+    type: 'category', // 'category' or 'item'
+    category: '',
+    itemId: '',
+    understock: '',
+    overstock: ''
+  });
+  const [statusStats, setStatusStats] = useState({
+    total: 0,
+    understock: 0,
+    normal: 0,
+    overstock: 0
+  });
+  const [recommendations, setRecommendations] = useState([]);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
   
   // NEW: Define unit options
   const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'set', 'roll', 'bag', 'meter', 'ream'];
   
-  // NEW: Define status options
+  // Status options (3 levels only)
   const statusOptions = ['Understock', 'Normal', 'Overstock'];
 
   // Load supplies from database when component mounts
@@ -79,7 +98,61 @@ function SuppliesPage() {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
 
-  // Load supplies from database
+  // ENHANCED: Listen for status change events with better notifications
+  useEffect(() => {
+    const handleStatusChange = (event) => {
+      const { item, oldStatus, newStatus, quantity, thresholds } = event.detail;
+      console.log('📊 Status changed:', event.detail);
+      
+      // Show enhanced notification with context
+      const urgency = supplyThresholdManager.calculateUrgency(item);
+      const urgencyEmoji = urgency === 'critical' ? '🚨' : urgency === 'high' ? '⚠️' : '📋';
+      
+      // Create a more informative notification
+      if (window.Notification && Notification.permission === 'granted') {
+        new Notification(`${urgencyEmoji} Stock Status Changed`, {
+          body: `${item.itemName}: ${oldStatus} → ${newStatus}\nCurrent: ${quantity} ${item.unit || 'units'}\nThresholds: ≤${thresholds.understock} | ≥${thresholds.overstock}`,
+          icon: '/favicon.ico'
+        });
+      }
+      
+      // Update recommendations in real-time
+      const updatedRecs = supplyThresholdManager.generateRecommendations(suppliesData);
+      setRecommendations(updatedRecs);
+    };
+
+    const handleBulkStatusChange = (event) => {
+      const { changedItems, totalItems } = event.detail;
+      console.log('📊 Bulk status change:', event.detail);
+      
+      // Show bulk change notification
+      if (window.Notification && Notification.permission === 'granted') {
+        new Notification('📊 Bulk Status Update', {
+          body: `${changedItems.length} out of ${totalItems} items had status changes`,
+          icon: '/favicon.ico'
+        });
+      }
+      
+      // Update recommendations after bulk changes
+      const updatedRecs = supplyThresholdManager.generateRecommendations(suppliesData);
+      setRecommendations(updatedRecs);
+    };
+
+    // Request notification permission on first load
+    if (window.Notification && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    window.addEventListener('statusChanged', handleStatusChange);
+    window.addEventListener('bulkStatusChanged', handleBulkStatusChange);
+
+    return () => {
+      window.removeEventListener('statusChanged', handleStatusChange);
+      window.removeEventListener('bulkStatusChanged', handleBulkStatusChange);
+    };
+  }, [suppliesData]);
+
+  // Load supplies from database with real-time status calculation
   const loadSupplies = async () => {
   try {
     setLoading(true);
@@ -110,12 +183,26 @@ function SuppliesPage() {
       };
     });
 
-    setSuppliesData(transformedSupplies);
+    // Apply real-time status calculation
+    const suppliesWithUpdatedStatus = supplyThresholdManager.updateMultipleItemsStatus(transformedSupplies);
+    
+    // Update statistics
+    const stats = supplyThresholdManager.getStatusStatistics(suppliesWithUpdatedStatus);
+    setStatusStats(stats);
+    
+    // Generate recommendations
+    const recs = supplyThresholdManager.generateRecommendations(suppliesWithUpdatedStatus);
+    setRecommendations(recs);
+
+    setSuppliesData(suppliesWithUpdatedStatus);
     setError(null);
+    
+    console.log('📊 Status Statistics:', stats);
+    console.log('💡 Recommendations:', recs.length);
+    
   } catch (err) {
     console.error('Failed to load supplies:', err);
     setError('Failed to load supplies. Please try again.');
-    // fallback data...
   } finally {
     setLoading(false);
   }
@@ -514,6 +601,16 @@ const handleCloseStockCard = () => {
       console.log("Base64 image preview:", imageBase64.substring(0, 100));
     }
 
+    // Create temporary item to calculate status
+    const tempItem = {
+      itemName: newItem.itemName,
+      category: newItem.category,
+      quantity: parseInt(newItem.quantity)
+    };
+    
+    // Calculate status based on thresholds
+    const calculatedStatus = supplyThresholdManager.calculateStatus(tempItem);
+
     const supplyData = {
       name: newItem.itemName,
       category: newItem.category,
@@ -522,14 +619,14 @@ const handleCloseStockCard = () => {
       unit_price: 0,
       supplier: newItem.stockNo || '',
       location: newItem.location,
-      status: newItem.status,
+      status: calculatedStatus, // Use calculated status instead of manual selection
       unit: newItem.unit,
       date: newItem.date,
-      itemPicture: imageBase64 // send base64 string here
+      itemPicture: imageBase64
     };
 
     const response = await SuppliesAPI.addSupply(supplyData);
-    const savedSupply = response; // your API returns saved supply in response.data
+    const savedSupply = response;
 
     // Use savedSupply data to update local state
     const newSupplyItem = {
@@ -542,14 +639,20 @@ const handleCloseStockCard = () => {
       description: newItem.description,
       unit: newItem.unit,
       location: newItem.location,
-      status: newItem.status,
+      status: calculatedStatus, // Use calculated status
       date: newItem.date,
       has_image: !!savedSupply.image_data,
       image_data: savedSupply.image_data
     };
 
     setSuppliesData([...suppliesData, newSupplyItem]);
-    alert('Supply added successfully!');
+    
+    // Update statistics
+    const updatedSupplies = [...suppliesData, newSupplyItem];
+    const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
+    setStatusStats(stats);
+    
+    alert(`Supply added successfully!\nStatus: ${calculatedStatus}`);
     handleOverlayToggle();
 
   } catch (error) {
@@ -569,6 +672,126 @@ const convertFileToBase64 = (file) => {
     reader.onerror = error => reject(error);
   });
 };
+
+  // NEW: Threshold management functions
+  const handleOpenThresholdModal = () => {
+    setThresholdForm({
+      type: 'category',
+      category: categories[0],
+      itemId: '',
+      understock: '',
+      overstock: ''
+    });
+    setShowThresholdModal(true);
+  };
+
+  const handleCloseThresholdModal = () => {
+    setShowThresholdModal(false);
+  };
+
+  const handleThresholdInputChange = (e) => {
+    const { name, value } = e.target;
+    setThresholdForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveThresholds = () => {
+    const { type, category, itemId, understock, overstock } = thresholdForm;
+    
+    if (!understock || !overstock) {
+      alert('Please enter both understock and overstock thresholds');
+      return;
+    }
+    
+    const thresholds = {
+      understock: parseInt(understock),
+      overstock: parseInt(overstock)
+    };
+    
+    const errors = supplyThresholdManager.validateThresholds(thresholds);
+    if (errors.length > 0) {
+      alert('Validation errors:\n' + errors.join('\n'));
+      return;
+    }
+    
+    if (type === 'category') {
+      supplyThresholdManager.setCategoryThresholds(category, thresholds);
+      alert(`Thresholds updated for category: ${category}`);
+    } else {
+      const item = suppliesData.find(item => item._id === itemId);
+      if (item) {
+        supplyThresholdManager.setItemThresholds(item, thresholds);
+        alert(`Thresholds updated for item: ${item.itemName}`);
+      }
+    }
+    
+    // Recalculate all statuses with new thresholds
+    const updatedSupplies = supplyThresholdManager.updateMultipleItemsStatus(suppliesData);
+    setSuppliesData(updatedSupplies);
+    
+    // Update statistics
+    const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
+    setStatusStats(stats);
+    
+    handleCloseThresholdModal();
+  };
+
+  const handleShowRecommendations = () => {
+    setShowRecommendations(true);
+  };
+
+  const handleCloseRecommendations = () => {
+    setShowRecommendations(false);
+  };
+
+  // Status color function (3 levels only)
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'understock': return '#ef4444'; // Red for understock
+      case 'normal': return '#10b981'; // Green for normal
+      case 'overstock': return '#f59e0b'; // Orange for overstock
+      default: return '#6b7280'; // Gray for unknown
+    }
+  };
+
+  // NEW: Get current thresholds for selected item
+  const getCurrentThresholds = (item) => {
+    if (!item) return null;
+    return supplyThresholdManager.getThresholds(item);
+  };
+
+  // NEW: Get detailed status information with trends and percentages
+  const getDetailedStatusInfo = (item) => {
+    if (!item) return null;
+    return supplyThresholdManager.calculateDetailedStatus(item);
+  };
+
+  // NEW: Get trend indicator icon
+  const getTrendIcon = (trend) => {
+    switch (trend) {
+      case 'increasing':
+        return <span style={{ color: '#10b981', fontSize: '12px' }}>📈 Increasing</span>;
+      case 'decreasing':
+        return <span style={{ color: '#ef4444', fontSize: '12px' }}>📉 Decreasing</span>;
+      case 'stable':
+      default:
+        return <span style={{ color: '#6b7280', fontSize: '12px' }}>➡️ Stable</span>;
+    }
+  };
+
+  // NEW: Get urgency indicator
+  const getUrgencyIndicator = (urgency) => {
+    switch (urgency) {
+      case 'critical':
+        return <span style={{ color: '#dc2626', fontSize: '10px', fontWeight: 'bold' }}>🚨 CRITICAL</span>;
+      case 'high':
+        return <span style={{ color: '#f59e0b', fontSize: '10px', fontWeight: 'bold' }}>⚠️ HIGH</span>;
+      case 'medium':
+        return <span style={{ color: '#8b5cf6', fontSize: '10px' }}>📋 MEDIUM</span>;
+      case 'low':
+      default:
+        return <span style={{ color: '#10b981', fontSize: '10px' }}>✅ LOW</span>;
+    }
+  };
 
   const handleItemClick = (item) => {
     setSelectedItem(item);
@@ -634,22 +857,53 @@ const convertFileToBase64 = (file) => {
 
     try {
       setLoading(true);
-      // Assuming an API call to update the supply quantity
-      // You might need to adjust this based on your actual API endpoint for updating
+      
+      // Create updated item with new quantity
+      const updatedItem = { ...selectedItem, quantity: newQuantity, date: date };
+      
+      // Calculate new status based on thresholds
+      const itemWithNewStatus = supplyThresholdManager.updateItemStatus(updatedItem);
+      
+      // Update API with new quantity and calculated status
       await SuppliesAPI.updateSupply(selectedItem._id, { 
         quantity: newQuantity,
-        date: date // Update the date of the item as well
+        date: date,
+        status: itemWithNewStatus.status // Update status based on threshold
       });
 
+      // Update local state with new quantity and status
       setSuppliesData(prevData => 
         prevData.map(item => 
           item._id === selectedItem._id 
-            ? { ...item, quantity: newQuantity, date: date } 
+            ? { ...item, quantity: newQuantity, date: date, status: itemWithNewStatus.status } 
             : item
         )
       );
-      setSelectedItem(prev => ({ ...prev, quantity: newQuantity, date: date })); // Update selected item in overview
+      
+      // Update selected item in overview
+      setSelectedItem(prev => ({ 
+        ...prev, 
+        quantity: newQuantity, 
+        date: date, 
+        status: itemWithNewStatus.status 
+      }));
+      
+      // Update statistics
+      const updatedSupplies = suppliesData.map(item => 
+        item._id === selectedItem._id 
+          ? { ...item, quantity: newQuantity, date: date, status: itemWithNewStatus.status } 
+          : item
+      );
+      const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
+      setStatusStats(stats);
+      
+      // Show status change notification if status changed
+      if (itemWithNewStatus.statusChanged) {
+        alert(`Quantity updated successfully!\nStatus changed to: ${itemWithNewStatus.status}`);
+      } else {
       alert('Quantity updated successfully!');
+      }
+      
       handleCloseUpdateQuantity();
     } catch (err) {
       console.error('Error updating quantity:', err);
@@ -733,43 +987,10 @@ const handleRemoveImage = async (supplyId) => {
 
     try {
       setLoading(true);
-      // Prepare data for API (only send fields that might have changed)
-      const updatedData = {
-        name: editItemForm.itemName,
-        category: editItemForm.category,
-        description: editItemForm.description,
-        quantity: parseInt(editItemForm.quantity),
-        supplier: editItemForm.stockNo,
-        location: editItemForm.location,
-        status: editItemForm.status,
-        unit: editItemForm.unit,
-        date: editItemForm.date,
-        itemCode: editItemForm.itemCode // Include itemCode if it can be updated
-      };
-
-      await SuppliesAPI.updateSupply(selectedItem._id, updatedData);
-
-      setSuppliesData(prevData =>
-        prevData.map(item =>
-          item._id === selectedItem._id
-            ? {
-                ...item,
-                itemCode: editItemForm.itemCode,
-                stockNo: editItemForm.stockNo,
-                itemName: editItemForm.itemName,
-                quantity: parseInt(editItemForm.quantity),
-                category: editItemForm.category,
-                description: editItemForm.description,
-                unit: editItemForm.unit,
-                location: editItemForm.location,
-                status: editItemForm.status,
-                date: editItemForm.date
-              }
-            : item
-        )
-      );
-      setSelectedItem(prev => ({
-        ...prev,
+      
+      // Create updated item object
+      const updatedItem = {
+        ...selectedItem,
         itemCode: editItemForm.itemCode,
         stockNo: editItemForm.stockNo,
         itemName: editItemForm.itemName,
@@ -778,10 +999,51 @@ const handleRemoveImage = async (supplyId) => {
         description: editItemForm.description,
         unit: editItemForm.unit,
         location: editItemForm.location,
-        status: editItemForm.status,
         date: editItemForm.date
-      })); // Update selected item in overview
+      };
+      
+      // Calculate new status based on thresholds (if quantity changed)
+      const itemWithNewStatus = supplyThresholdManager.updateItemStatus(updatedItem);
+      
+      // Prepare data for API
+      const updatedData = {
+        name: editItemForm.itemName,
+        category: editItemForm.category,
+        description: editItemForm.description,
+        quantity: parseInt(editItemForm.quantity),
+        supplier: editItemForm.stockNo,
+        location: editItemForm.location,
+        status: itemWithNewStatus.status, // Use calculated status
+        unit: editItemForm.unit,
+        date: editItemForm.date,
+        itemCode: editItemForm.itemCode
+      };
+
+      await SuppliesAPI.updateSupply(selectedItem._id, updatedData);
+
+      // Update local state
+      setSuppliesData(prevData =>
+        prevData.map(item =>
+          item._id === selectedItem._id ? itemWithNewStatus : item
+        )
+      );
+      
+      setSelectedItem(itemWithNewStatus);
+      
+      // Update statistics
+      const updatedSupplies = suppliesData.map(item => 
+        item._id === selectedItem._id ? itemWithNewStatus : item
+      );
+      const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
+      setStatusStats(stats);
+      
+      // Show status change notification if status changed
+      if (itemWithNewStatus.statusChanged) {
+        alert(`Item updated successfully!\nStatus changed to: ${itemWithNewStatus.status}`);
+      } else {
       alert('Item updated successfully!');
+      }
+      
       handleCloseEditItem();
     } catch (err) {
       console.error('Error updating item:', err);
@@ -831,6 +1093,68 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       )}
       
+      {/* NEW: Real-time Status Dashboard */}
+      {statusStats.total > 0 && (
+        <div className="status-dashboard" style={{
+          background: '#1a1a1a',
+          borderRadius: '10px',
+          padding: '20px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '15px'
+        }}>
+          <div className="status-stats" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div className="stat-item" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffffff' }}>{statusStats.total}</div>
+              <div style={{ fontSize: '12px', color: '#888888' }}>Total Items</div>
+            </div>
+            <div className="stat-item" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{statusStats.normal}</div>
+              <div style={{ fontSize: '12px', color: '#888888' }}>Normal</div>
+            </div>
+            <div className="stat-item" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ef4444' }}>{statusStats.understock}</div>
+              <div style={{ fontSize: '12px', color: '#888888' }}>Understock</div>
+            </div>
+            <div className="stat-item" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>{statusStats.overstock}</div>
+              <div style={{ fontSize: '12px', color: '#888888' }}>Overstock</div>
+            </div>
+          </div>
+          
+          <div className="dashboard-actions" style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              className="action-btn"
+              onClick={handleOpenThresholdModal}
+              style={{ background: '#6366f1', fontSize: '12px', padding: '8px 16px' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Set Thresholds
+            </button>
+            
+            {recommendations.length > 0 && (
+              <button 
+                className="action-btn"
+                onClick={handleShowRecommendations}
+                style={{ background: '#f59e0b', fontSize: '12px', padding: '8px 16px' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Recommendations ({recommendations.length})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="supplies-header">
         <h2 className="page-title">Supply Inventory</h2>
         <div className="table-controls">
@@ -901,6 +1225,7 @@ const handleRemoveImage = async (supplyId) => {
             <th>ITEM CODE</th>
             <th>STOCK NO.</th>
             <th>QUANTITY</th>
+            <th>STATUS</th>
             <th>ITEM NAME</th>
             <th>CATEGORY</th>
             <th>ACTION</th>
@@ -912,6 +1237,20 @@ const handleRemoveImage = async (supplyId) => {
               <td>{supply.itemCode}</td>
               <td>{supply.stockNo}</td>
               <td>{supply.quantity}</td>
+              <td>
+                <span 
+                  style={{ 
+                    color: getStatusColor(supply.status),
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    background: `${getStatusColor(supply.status)}20`
+                  }}
+                >
+                  {supply.status}
+                </span>
+              </td>
               <td>
                 <span 
                   className="item-name-clickable"
@@ -1273,11 +1612,40 @@ const handleRemoveImage = async (supplyId) => {
                   <span className="detail-label">Location:</span>
                   <span className="detail-value">{selectedItem.location || 'N/A'}</span>
                 </div>
-                {/* NEW FIELD DISPLAY: STATUS */}
+                {/* ENHANCED: STATUS with detailed information */}
                 <div className="detail-row">
                   <span className="detail-label">Status:</span>
-                  <span className="detail-value">{selectedItem.status || 'N/A'}</span>
+                  <div className="detail-value" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ color: getStatusColor(selectedItem.status), fontWeight: 'bold' }}>
+                      {selectedItem.status || 'N/A'}
+                    </span>
+                    {(() => {
+                      const detailedStatus = getDetailedStatusInfo(selectedItem);
+                      return detailedStatus ? (
+                        <div style={{ fontSize: '11px', color: '#666' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                            <span>Stock Level: {detailedStatus.percentage}%</span>
+                            {getTrendIcon(detailedStatus.trend)}
+                            {getUrgencyIndicator(detailedStatus.urgency)}
                 </div>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+                
+                {/* NEW: Show current thresholds */}
+                {(() => {
+                  const thresholds = getCurrentThresholds(selectedItem);
+                  return thresholds ? (
+                    <div className="detail-row">
+                      <span className="detail-label">Thresholds:</span>
+                      <span className="detail-value" style={{ fontSize: '12px', color: '#888' }}>
+                        Understock: ≤{thresholds.understock} | Overstock: ≥{thresholds.overstock}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
                 <div className="detail-row">
                   <span className="detail-label">Date:</span>
                   <span className="detail-value">{selectedItem.date || 'N/A'}</span>
@@ -1692,6 +2060,331 @@ const handleRemoveImage = async (supplyId) => {
   </div>
 )}
 
+{/* NEW: Threshold Configuration Modal */}
+{showThresholdModal && (
+  <div className="overlay" onClick={handleCloseThresholdModal}>
+    <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
+      <button className="close-overview-btn" onClick={handleCloseThresholdModal}>×</button>
+      <h3>Configure Stock Thresholds</h3>
+      
+      <div className="form-section">
+        <div className="form-group">
+          <label>Configuration Type:</label>
+          <div className="category-dropdown">
+            <select
+              name="type"
+              value={thresholdForm.type}
+              onChange={handleThresholdInputChange}
+            >
+              <option value="category">Category-wide</option>
+              <option value="item">Specific Item</option>
+            </select>
+          </div>
+        </div>
+
+        {thresholdForm.type === 'category' ? (
+          <div className="form-group">
+            <label>Category:</label>
+            <div className="category-dropdown">
+              <select
+                name="category"
+                value={thresholdForm.category}
+                onChange={handleThresholdInputChange}
+              >
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <div className="form-group">
+            <label>Select Item:</label>
+            <div className="category-dropdown">
+              <select
+                name="itemId"
+                value={thresholdForm.itemId}
+                onChange={handleThresholdInputChange}
+              >
+                <option value="">Choose an item</option>
+                {suppliesData.map(item => (
+                  <option key={item._id} value={item._id}>
+                    {item.itemName} ({item.itemCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label>Understock Threshold:</label>
+          <input
+            type="number"
+            name="understock"
+            value={thresholdForm.understock}
+            onChange={handleThresholdInputChange}
+            placeholder="e.g., 10"
+            min="0"
+          />
+          <small style={{ color: '#666', fontSize: '12px' }}>
+            Items with quantity ≤ this value will be marked as Understock
+          </small>
+        </div>
+
+        <div className="form-group">
+          <label>Overstock Threshold:</label>
+          <input
+            type="number"
+            name="overstock"
+            value={thresholdForm.overstock}
+            onChange={handleThresholdInputChange}
+            placeholder="e.g., 100"
+            min="1"
+          />
+          <small style={{ color: '#666', fontSize: '12px' }}>
+            Items with quantity ≥ this value will be marked as Overstock
+          </small>
+        </div>
+
+        {/* Show current thresholds */}
+        {(() => {
+          let currentThresholds = null;
+          if (thresholdForm.type === 'category' && thresholdForm.category) {
+            currentThresholds = supplyThresholdManager.categoryThresholds[thresholdForm.category];
+          } else if (thresholdForm.type === 'item' && thresholdForm.itemId) {
+            const item = suppliesData.find(i => i._id === thresholdForm.itemId);
+            if (item) {
+              currentThresholds = supplyThresholdManager.getThresholds(item);
+            }
+          }
+          
+          return currentThresholds ? (
+            <div style={{ 
+              background: '#f8f9fa', 
+              padding: '15px', 
+              borderRadius: '8px', 
+              marginTop: '15px',
+              border: '1px solid #ddd'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>
+                Current Thresholds:
+              </h4>
+              <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
+                Understock: ≤{currentThresholds.understock} | Overstock: ≥{currentThresholds.overstock}
+              </p>
+              {currentThresholds.critical && (
+                <p style={{ margin: '5px 0', fontSize: '12px', color: '#dc2626' }}>
+                  Critical: ≤{currentThresholds.critical}
+                </p>
+              )}
+              {currentThresholds.optimal && (
+                <p style={{ margin: '5px 0', fontSize: '12px', color: '#059669' }}>
+                  Optimal: ~{currentThresholds.optimal}
+                </p>
+              )}
+            </div>
+          ) : null;
+        })()}
+      </div>
+
+      <div className="form-actions">
+        <button className="action-btn cancel-btn" onClick={handleCloseThresholdModal}>
+          Cancel
+        </button>
+        <button className="action-btn update-btn" onClick={handleSaveThresholds}>
+          Save Thresholds
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ENHANCED: Recommendations Modal with detailed information */}
+{showRecommendations && (
+  <div className="overlay" onClick={handleCloseRecommendations}>
+    <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
+      <button className="close-overview-btn" onClick={handleCloseRecommendations}>×</button>
+      <h3>Stock Management Recommendations</h3>
+      
+      <div className="recommendations-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        {recommendations.length > 0 ? (
+          recommendations.map((rec, index) => (
+            <div 
+              key={index} 
+              className="recommendation-item"
+              style={{
+                background: rec.priority === 'critical' ? '#fee2e2' : 
+                           rec.priority === 'high' ? '#fef3c7' : '#f3f4f6',
+                border: `1px solid ${rec.priority === 'critical' ? '#fca5a5' : 
+                                   rec.priority === 'high' ? '#fcd34d' : '#d1d5db'}`,
+                borderRadius: '8px',
+                padding: '15px',
+                marginBottom: '10px'
+              }}
+            >
+              <div className="rec-header" style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="rec-type" style={{
+                    background: rec.priority === 'critical' ? '#dc2626' : 
+                               rec.priority === 'high' ? '#d97706' : '#6b7280',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase'
+                  }}>
+                    {rec.priority} - {rec.type}
+                  </span>
+                  {rec.action && (
+                    <span style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>
+                      {rec.action}
+                    </span>
+                  )}
+                </div>
+                <span className="rec-item" style={{ fontSize: '12px', color: '#666' }}>
+                  {rec.item.itemName}
+                </span>
+              </div>
+              
+              <p className="rec-message" style={{ 
+                margin: '0 0 10px 0', 
+                fontSize: '14px', 
+                color: '#333' 
+              }}>
+                {rec.message}
+              </p>
+              
+              {/* Enhanced recommendation details */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', color: '#666' }}>
+                  <strong>Current:</strong> {rec.item.quantity} {rec.item.unit || 'units'}
+                </div>
+                {rec.suggestedQuantity && (
+                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold' }}>
+                    <strong>Suggested:</strong> {rec.suggestedQuantity} {rec.item.unit || 'units'}
+                  </div>
+                )}
+                {rec.excessQuantity && (
+                  <div style={{ fontSize: '11px', color: '#d97706', fontWeight: 'bold' }}>
+                    <strong>Excess:</strong> {rec.excessQuantity} {rec.item.unit || 'units'}
+                  </div>
+                )}
+              </div>
+              
+              {/* Action buttons for recommendations */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button 
+                  style={{
+                    fontSize: '10px',
+                    padding: '4px 8px',
+                    background: '#6366f1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => {
+                    setSelectedItem(rec.item);
+                    setIsItemOverviewOpen(true);
+                    setShowRecommendations(false);
+                  }}
+                >
+                  View Item
+                </button>
+                
+                {rec.type === 'reorder' && (
+                  <button 
+                    style={{
+                      fontSize: '10px',
+                      padding: '4px 8px',
+                      background: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      setSelectedItem(rec.item);
+                      setShowRecommendations(false);
+                      handleOpenUpdateQuantity();
+                    }}
+                  >
+                    Update Stock
+                  </button>
+                )}
+                
+                <button 
+                  style={{
+                    fontSize: '10px',
+                    padding: '4px 8px',
+                    background: '#8b5cf6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => {
+                    setSelectedItem(rec.item);
+                    setShowRecommendations(false);
+                    handleOpenThresholdModal();
+                  }}
+                >
+                  Set Thresholds
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px', 
+            color: '#666' 
+          }}>
+            <p>No recommendations at this time.</p>
+            <p style={{ fontSize: '12px' }}>All items are within normal stock levels.</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Summary section */}
+      {recommendations.length > 0 && (
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '15px', 
+          background: '#f8f9fa', 
+          borderRadius: '8px',
+          border: '1px solid #ddd'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>
+            Summary
+          </h4>
+          <div style={{ display: 'flex', gap: '15px', fontSize: '12px' }}>
+            <span>
+              <strong>Critical:</strong> {recommendations.filter(r => r.priority === 'critical').length}
+            </span>
+            <span>
+              <strong>High:</strong> {recommendations.filter(r => r.priority === 'high').length}
+            </span>
+            <span>
+              <strong>Medium:</strong> {recommendations.filter(r => r.priority === 'medium').length}
+            </span>
+            <span>
+              <strong>Low:</strong> {recommendations.filter(r => r.priority === 'low').length}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
 {isStockCardOpen && selectedItem && (
   <div className="modal-overlay">
     <div className="repair-card-modal">
@@ -1946,6 +2639,7 @@ const handleRemoveImage = async (supplyId) => {
     </div>
   </div>
 )}
+
     </div>
   );
 }
