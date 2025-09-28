@@ -11,7 +11,9 @@ function EquipmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
- 
+  // NEW: Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Add Equipment Overlay states
   const [isAddEquipmentOverlayOpen, setIsAddEquipmentOverlayOpen] = useState(false);
@@ -66,7 +68,7 @@ const handlePrintStockCard = () => {
 };
 
   // Equipment categories and statuses
-  const equipmentCategories = ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety'];
+  const equipmentCategories = ['Sanitary Equipment', 'Office Equipment', 'Construction Equipment', 'Electrical Equipment'];
   const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
   const equipmentUnits = ['UNIT', 'SET', 'PIECE', 'LOT'];
 
@@ -74,6 +76,11 @@ const handlePrintStockCard = () => {
    useEffect(() => {
     loadEquipment();
   }, []);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Enhanced load equipment function with better error handling
   const loadEquipment = async () => {
@@ -124,6 +131,57 @@ setEquipmentData(transformedEquipment);
     item.serialNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // NEW: Pagination calculations
+  const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEquipment = filteredEquipment.slice(startIndex, endIndex);
+
+  // NEW: Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(parseInt(e.target.value));
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const generatePageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
 
   // Add Equipment Overlay handlers
   const handleAddEquipmentToggle = () => {
@@ -581,6 +639,23 @@ const equipmentData = {
             </svg>
           </div>
           
+          {/* NEW: Items per page selector */}
+          <div className="items-per-page-container">
+            <span>Show:</span>
+            <select 
+              className="items-per-page-select" 
+              value={itemsPerPage} 
+              onChange={handleItemsPerPageChange}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>per page</span>
+          </div>
+
           <button 
             className="refresh-btn" 
             onClick={handleRefreshEquipment}
@@ -633,7 +708,7 @@ const equipmentData = {
             </tr>
           </thead>
           <tbody>
-            {filteredEquipment.map((equipment, index) => (
+            {paginatedEquipment.map((equipment, index) => (
               <tr key={equipment._id || index}>
                 <td>{equipment.itemCode}</td>
                 <td>{equipment.quantity}</td>
@@ -644,7 +719,7 @@ const equipmentData = {
                     onClick={() => handleEquipmentClick(equipment)}
                     title="Click to view details"
                   >
-                    {equipment.name} {/* FIXED: Show name instead of description */}
+                    {equipment.name}
                   </span>
                 </td>
                 <td>
@@ -663,6 +738,47 @@ const equipmentData = {
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* NEW: Pagination Controls */}
+      {filteredEquipment.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredEquipment.length)} of {filteredEquipment.length} entries
+          </div>
+          
+          <div className="pagination-controls">
+            <button 
+              className="pagination-btn" 
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            
+            {generatePageNumbers().map((page, index) => (
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+              ) : (
+                <button
+                  key={page}
+                  className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </button>
+              )
+            ))}
+            
+            <button 
+              className="pagination-btn" 
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
 
       {equipmentData.length > 0 && (
