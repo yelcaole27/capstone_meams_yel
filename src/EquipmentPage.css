@@ -1142,5 +1142,42 @@
     padding: 10px 20px;
     font-size: 12px;
   }
+  /* Action buttons container */
+.action-buttons-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.view-icon-btn,
+.delete-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-icon-btn {
+  color: #888888;
+}
+
+.view-icon-btn:hover {
+  color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.delete-icon-btn {
+  color: #888888;
+}
+
+.delete-icon-btn:hover {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+  }
 }
 
