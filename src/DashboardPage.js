@@ -25,6 +25,9 @@ function DashboardPage() {
   const [showOfficeSupplyForm, setShowOfficeSupplyForm] = useState(false);
   const [showOtherSupplyForm, setShowOtherSupplyForm] = useState(false);
 
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+  const [showRepairForm, setShowRepairForm] = useState(false);
+
   // Get actual understock supplies from API data
   const getUnderstockData = () => {
     return suppliesData.filter(supply => {
@@ -40,6 +43,26 @@ function DashboardPage() {
       return status.toLowerCase() === 'beyond-useful-life' ||
              status.toLowerCase() === 'beyond useful life';
     }).slice(0, 10);
+  };
+
+  const getEquipmentMaintenanceData = () => {
+    return equipmentData.filter(equipment => {
+      const status = equipment.status || '';
+      return status.toLowerCase().includes('maintenance') || 
+             status.toLowerCase().includes('repair') ||
+             status.toLowerCase().includes('service');
+    });
+  };
+  const getEquipmentPurchaseData = () => {
+    return equipmentData.filter(equipment => {
+      const status = equipment.status || '';
+      return status.toLowerCase().includes('beyond') || 
+             status.toLowerCase().includes('end') ||
+             status.toLowerCase().includes('obsolete') || 
+             status.toLowerCase().includes('retired') ||
+             status.toLowerCase() === 'beyond-useful-life' ||
+             status.toLowerCase() === 'beyond useful life';
+    });
   };
 
   const understockData = getUnderstockData();
@@ -155,17 +178,20 @@ function DashboardPage() {
 };
 
   const getOtherRequisitionData = () => {
-  const officeSupplyCategories = ['office', 'stationery', 'paper', 'supplies', 'administrative'];
+  // Other Supply form shows Construction, Sanitary, and Electrical supplies
+  const otherSupplyCategories = [
+    'construction supply', 
+    'sanitary supply', 
+    'electrical supply'
+  ];
 
-  // Filters understock items to find those NOT in the office supply categories
   const otherUnderstockItems = understockData.filter(item => {
     const category = (item.category || '').toLowerCase();
-    return !officeSupplyCategories.some(cat => category.includes(cat));
+    return otherSupplyCategories.some(cat => category.includes(cat));
   });
 
-  // Map the filtered items to the requisition form's data structure
   return otherUnderstockItems.map(item => ({
-    qty: calculateRequiredQuantity(item),
+    qty: item.quantity || item.currentStock || 0, // Show actual current quantity
     unit: item.unit || 'pcs',
     description: item.name || item.itemName || 'N/A',
     remarks: ''
@@ -174,43 +200,68 @@ function DashboardPage() {
 
   // Prepare requisition data from understock items
   const getRequisitionData = () => {
-    const officeSupplyCategories = ['office', 'stationery', 'paper', 'supplies', 'administrative'];
+  // Office Supply form shows only "OFFICE SUPPLY" category items
+  const officeSupplyCategories = ['office supply'];
 
-    const officeUnderstockItems = understockData.filter(item => {
-      const category = (item.category || '').toLowerCase();
-      return officeSupplyCategories.some(cat => category.includes(cat));
-    });
+  const officeUnderstockItems = understockData.filter(item => {
+    const category = (item.category || '').toLowerCase();
+    return officeSupplyCategories.some(cat => category.includes(cat));
+  });
 
-    return officeUnderstockItems.map(item => ({
-      qty: calculateRequiredQuantity(item),
+  return officeUnderstockItems.map(item => ({
+    qty: item.quantity || item.currentStock || 0, // Show actual current quantity
+    unit: item.unit || 'pcs',
+    description: item.name || item.itemName || 'N/A',
+    remarks: ''
+  }));
+};
+
+  // NEW: Updated handleRepairChoice function
+  const handleRepairChoice = (choice) => {
+    console.log(`Selected repair type: ${choice}`);
+    setShowRepairModal(false);
+    
+    if (choice === 'PURCHASE') {
+      setShowPurchaseForm(true);
+    } else if (choice === 'REPAIR REQUEST') {
+      setShowRepairForm(true);
+    }
+  };
+
+  // NEW: Get purchase form data (equipment beyond useful life)
+  const getPurchaseFormData = () => {
+    const purchaseItems = getEquipmentPurchaseData();
+    
+    return purchaseItems.map(item => ({
+      stockNo: item.itemCode || item.id || 'N/A',
       unit: item.unit || 'pcs',
-      description: item.name || item.itemName || 'N/A',
-      remarks: '' // Keep remarks blank but editable
+      description: item.name || 'N/A',
+      quantity: 1, // Default quantity for replacement
+      amount: '' // Empty for user input
     }));
   };
 
-  // Calculate suggested quantity based on current stock and reorder levels
-  const calculateRequiredQuantity = (item) => {
-    const currentStock = parseInt(item.quantity) || 0;
-    const minStock = parseInt(item.minStock) || 10;
-    const maxStock = parseInt(item.maxStock) || 50;
-
-    // Suggest restocking to maximum level
-    return Math.max(maxStock - currentStock, minStock);
-  };
-
-  const handleRepairChoice = (choice) => {
-    console.log(`Selected repair type: ${choice}`);
-    // Add your logic here for handling the choice
-    setShowRepairModal(false);
-    // You can add navigation or other logic here
+  // NEW: Get repair form data (equipment needing maintenance)
+  const getRepairFormData = () => {
+    const repairItems = getEquipmentMaintenanceData();
+    
+    return repairItems.map(item => ({
+      stockNo: item.itemCode || item.id || 'N/A',
+      unit: item.unit || 'pcs',
+      description: item.name || 'N/A',
+      quantity: 1, // Usually 1 for repair
+      amount: '' // Empty for user input
+    }));
   };
 
   const closeModal = () => {
     setShowRequisitionModal(false);
     setShowRepairModal(false);
     setShowOfficeSupplyForm(false);
-    setShowOtherSupplyForm(false); // NEW: Close other supply form too
+    setShowOtherSupplyForm(false);
+    // NEW: Close new modals
+    setShowPurchaseForm(false);
+    setShowRepairForm(false);
   };
 
   // Process supplies data for pie chart
@@ -769,21 +820,6 @@ function DashboardPage() {
                   fontWeight: 'bold'
                 }}
               >
-                OFFICE SUPPLIES
-              </button>
-              <button
-                onClick={() => handleRequisitionChoice('OTHER SUPPLIES')}
-                style={{
-                  backgroundColor: '#000',
-                  color: 'white',
-                  padding: '12px 24px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
                 OTHER SUPPLIES
               </button>
             </div>
@@ -832,7 +868,7 @@ function DashboardPage() {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
-                onClick={() => handleRepairChoice('MAINTENANCE REQUEST')}
+                onClick={() => handleRepairChoice('PURCHASE')}
                 style={{
                   backgroundColor: '#000',
                   color: 'white',
@@ -844,7 +880,7 @@ function DashboardPage() {
                   fontWeight: 'bold'
                 }}
               >
-                MAINTENANCE REQUEST
+                PURCHASE
               </button>
               <button
                 onClick={() => handleRepairChoice('REPAIR REQUEST')}
@@ -859,7 +895,7 @@ function DashboardPage() {
                   fontWeight: 'bold'
                 }}
               >
-                REPAIR REQUEST
+                REPAIR 
               </button>
             </div>
             <button
@@ -882,375 +918,28 @@ function DashboardPage() {
 
       {/* Office Supply Requisition Form */}
       {showOfficeSupplyForm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-          overflow: 'auto',
-          padding: '20px'
-        }}>
-          <div className="requisition-form-modal" style={{
-            backgroundColor: 'white',
-            padding: '40px',
-            borderRadius: '8px',
-            width: '90%',
-            maxWidth: '800px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-            fontFamily: 'Arial, sans-serif'
-          }}>
-            <style>{`
-              .requisition-form-modal * {
-                color: black !important;
-              }
-              .requisition-form-modal input {
-                width: 100% !important;
-                border: none !important;
-                outline: none !important;
-                font-size: 12px !important;
-                color: black !important;
-                background-color: transparent !important;
-                font-family: Arial, sans-serif !important;
-              }
-              .requisition-form-modal input:focus {
-                color: black !important;
-              }
-              .requisition-form-modal .requisition-input-filled {
-                background-color: #f0f8ff !important;
-              }
-              .requisition-form-modal h2,
-              .requisition-form-modal h3,
-              .requisition-form-modal th,
-              .requisition-form-modal td,
-              .requisition-form-modal div,
-              .requisition-form-modal span,
-              .requisition-form-modal strong {
-                color: black !important;
-              }
-
-              /* Print-specific styles */
-              @media print {
-                .print-hidden {
-                  display: none !important;
-                }
-                .requisition-form-modal {
-                  box-shadow: none !important;
-                  border-radius: 0 !important;
-                  padding: 20px !important;
-                  width: 100% !important;
-                  max-width: none !important;
-                  max-height: none !important;
-                  overflow: visible !important;
-                }
-                .requisition-form-modal .requisition-input-filled {
-                  background-color: transparent !important;
-                }
-                body {
-                  background: white !important;
-                }
-                .requisition-form-modal input {
-                  background-color: transparent !important;
-                }
-              }
-            `}</style>
-            {/* Form Header */}
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{
-                textDecoration: 'underline',
-                margin: '0 0 20px 0',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }}>
-                REQUISITION FORM
-              </h2>
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                margin: '20px 0'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: '20px',
-                    height: '15px',
-                    backgroundColor: 'black',
-                    display: 'inline-block',
-                    position: 'relative'
-                  }}>
-                    <span style={{
-                      color: 'white',
-                      fontSize: '12px',
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      fontWeight: 'bold'
-                    }}>✓</span>
-                  </div>
-                  <span style={{ fontSize: '14px' }}>Office Supplies</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{
-                    width: '20px',
-                    height: '15px',
-                    border: '2px solid black',
-                    display: 'inline-block'
-                  }}></div>
-                  <span style={{ fontSize: '14px' }}>Other Supplies & Materials</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Department Header */}
-            <div style={{
-              textAlign: 'center',
-              fontWeight: 'bold',
-              fontSize: '16px',
-              marginBottom: '20px',
-              textDecoration: 'underline'
-            }}>
-              MAINTENANCE and ENGINEERING DIVISION
-            </div>
-
-            {/* Table */}
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              border: '2px solid black',
-              marginBottom: '30px'
-            }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f5f5f5' }}>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    width: '10%'
-                  }}>QTY</th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    width: '15%'
-                  }}>UNIT</th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    width: '50%'
-                  }}>DESCRIPTION</th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    width: '25%'
-                  }}>REMARKS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const requisitionData = getRequisitionData();
-                  const totalRows = 15;
-
-                  return [...Array(totalRows)].map((_, index) => {
-                    const itemData = index < requisitionData.length ? requisitionData[index] : null;
-
-                    return (
-                      <tr key={index}>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '8px',
-                          height: '25px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'requisition-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.qty : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '8px',
-                          height: '25px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'requisition-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.unit : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '8px',
-                          height: '25px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'requisition-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.description : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '8px',
-                          height: '25px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'requisition-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.remarks : ''}
-                            placeholder=""
-                          />
-                        </td>
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
-            </table>
-
-            {/* Form Footer */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <div style={{ fontSize: '12px' }}>
-                <strong>Purpose:</strong>
-                <span style={{ marginLeft: '50px', fontSize: '11px', fontStyle: 'italic' }}>
-                  To certify: accomplish the necessary documents at the right time.
-                </span>
-              </div>
-            </div>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '40px',
-              marginBottom: '30px'
-            }}>
-              <div>
-                <div style={{ marginBottom: '15px', fontSize: '12px' }}>
-                  <strong>Requisitioner:</strong>
-                </div>
-                <div style={{ marginBottom: '10px', fontSize: '12px' }}>
-                  <strong>Engr. Jayson Valeroso</strong>
-                </div>
-                <div style={{ fontSize: '11px', marginBottom: '5px' }}>
-                  MED Chief
-                </div>
-                <div style={{
-                  borderBottom: '1px solid black',
-                  width: '150px',
-                  fontSize: '10px',
-                  paddingTop: '20px'
-                }}>
-                  (Date)
-                </div>
-
-                <div style={{ marginTop: '20px', fontSize: '12px' }}>
-                  <strong>Receive:</strong>
-                </div>
-                <div style={{
-                  borderBottom: '1px solid black',
-                  width: '150px',
-                  marginTop: '30px'
-                }}>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ marginBottom: '15px', fontSize: '12px' }}>
-                  <strong>Approved by:</strong>
-                </div>
-                <div style={{
-                  borderBottom: '1px solid black',
-                  width: '200px',
-                  marginBottom: '5px',
-                  paddingTop: '20px'
-                }}>
-                </div>
-                <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
-                  Signature Over Printed Name/Date
-                </div>
-                <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
-                  Chief Head of Office
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="print-hidden" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginTop: '20px'
-            }}>
-              <button
-                onClick={closeModal}
-                style={{
-                  backgroundColor: '#666',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
-                Close
-              </button>
-
-              <button
-                onClick={() => window.print()}
-                style={{
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                🖨️ Print Requisition
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Other Supply Requisition Form */}
-      {showOtherSupplyForm && (
-  <div style={{
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-    overflow: 'auto',
-    padding: '20px'
-  }}>
+  <div 
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      overflow: 'auto',
+      padding: '20px'
+    }}
+    onClick={(e) => {
+      // Close when clicking outside the modal
+      if (e.target === e.currentTarget) {
+        closeModal();
+      }
+    }}
+  >
     <div className="requisition-form-modal" style={{
       backgroundColor: 'white',
       padding: '40px',
@@ -1260,8 +949,43 @@ function DashboardPage() {
       maxHeight: '90vh',
       overflow: 'auto',
       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-      fontFamily: 'Arial, sans-serif'
+      fontFamily: 'Arial, sans-serif',
+      position: 'relative'
     }}>
+      
+      {/* X Close Button */}
+      <button
+        onClick={closeModal}
+        className="print-hidden"
+        style={{
+          position: 'absolute',
+          top: '15px',
+          right: '15px',
+          background: 'none',
+          border: 'none',
+          fontSize: '24px',
+          cursor: 'pointer',
+          color: '#666',
+          width: '30px',
+          height: '30px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseOver={(e) => {
+          e.target.style.backgroundColor = '#f0f0f0';
+          e.target.style.color = '#000';
+        }}
+        onMouseOut={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+          e.target.style.color = '#666';
+        }}
+      >
+        ×
+      </button>
+
       <style>{`
         .requisition-form-modal * {
           color: black !important;
@@ -1316,6 +1040,398 @@ function DashboardPage() {
           }
         }
       `}</style>
+      
+      {/* Form Header */}
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h2 style={{
+          textDecoration: 'underline',
+          margin: '0 0 20px 0',
+          fontSize: '18px',
+          fontWeight: 'bold'
+        }}>
+          REQUISITION FORM
+        </h2>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          margin: '20px 0'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '20px',
+              height: '15px',
+              backgroundColor: 'black',
+              display: 'inline-block',
+              position: 'relative'
+            }}>
+              <span style={{
+                color: 'white',
+                fontSize: '12px',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontWeight: 'bold'
+              }}>✓</span>
+            </div>
+            <span style={{ fontSize: '14px' }}>Office Supplies</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '20px',
+              height: '15px',
+              border: '2px solid black',
+              display: 'inline-block'
+            }}></div>
+            <span style={{ fontSize: '14px' }}>Other Supplies & Materials</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Department Header */}
+      <div style={{
+        textAlign: 'center',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        marginBottom: '20px',
+        textDecoration: 'underline'
+      }}>
+        MAINTENANCE and ENGINEERING DIVISION
+      </div>
+
+      {/* Table */}
+      <table style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        border: '2px solid black',
+        marginBottom: '30px'
+      }}>
+        <thead>
+          <tr style={{ backgroundColor: '#f5f5f5' }}>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '10%'
+            }}>QTY</th>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '15%'
+            }}>UNIT</th>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '50%'
+            }}>DESCRIPTION</th>
+            <th style={{
+              border: '1px solid black',
+              padding: '8px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              width: '25%'
+            }}>REMARKS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            const requisitionData = getRequisitionData();
+            const totalRows = 15;
+
+            return [...Array(totalRows)].map((_, index) => {
+              const itemData = index < requisitionData.length ? requisitionData[index] : null;
+
+              return (
+                <tr key={index}>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input
+                      type="text"
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.qty : ''}
+                      placeholder=""
+                    />
+                  </td>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input
+                      type="text"
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.unit : ''}
+                      placeholder=""
+                    />
+                  </td>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input
+                      type="text"
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.description : ''}
+                      placeholder=""
+                    />
+                  </td>
+                  <td style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    height: '25px'
+                  }}>
+                    <input
+                      type="text"
+                      className={`${itemData ? 'requisition-input-filled' : ''}`}
+                      defaultValue={itemData ? itemData.remarks : ''}
+                      placeholder=""
+                    />
+                  </td>
+                </tr>
+              );
+            });
+          })()}
+        </tbody>
+      </table>
+
+      {/* Form Footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ fontSize: '12px' }}>
+          <strong>Purpose:</strong>
+          <span style={{ marginLeft: '50px', fontSize: '11px', fontStyle: 'italic' }}>
+            To certify: accomplish the necessary documents at the right time.
+          </span>
+        </div>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '40px',
+        marginBottom: '30px'
+      }}>
+        <div>
+          <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+            <strong>Requisitioner:</strong>
+          </div>
+          <div style={{ 
+            marginBottom: '10px', 
+            fontSize: '12px', 
+            height: '20px',
+            borderBottom: '1px solid black',
+            width: '200px'
+          }}>
+            {/* Name removed - space preserved for user input */}
+          </div>
+          <div style={{ fontSize: '11px', marginBottom: '5px' }}>
+            MED Chief
+          </div>
+          <div style={{
+            borderBottom: '1px solid black',
+            width: '150px',
+            fontSize: '10px',
+            paddingTop: '20px'
+          }}>
+            (Date)
+          </div>
+
+          <div style={{ marginTop: '20px', fontSize: '12px' }}>
+            <strong>Receive:</strong>
+          </div>
+          <div style={{
+            borderBottom: '1px solid black',
+            width: '150px',
+            marginTop: '30px'
+          }}>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+            <strong>Approved by:</strong>
+          </div>
+          <div style={{
+            borderBottom: '1px solid black',
+            width: '200px',
+            marginBottom: '5px',
+            paddingTop: '20px'
+          }}>
+          </div>
+          <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
+            Signature Over Printed Name/Date
+          </div>
+          <div style={{ fontSize: '10px', textAlign: 'center', width: '200px' }}>
+            Chief Head of Office
+          </div>
+        </div>
+      </div>
+
+      {/* Print Button - positioned in bottom right */}
+      <div className="print-hidden" style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        marginTop: '20px'
+      }}>
+        <button
+          onClick={() => window.print()}
+          style={{
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            padding: '10px 20px',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          🖨️ Print Requisition
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Other Supply Requisition Form */}
+{showOtherSupplyForm && (
+  <div 
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      overflow: 'auto',
+      padding: '20px'
+    }}
+    onClick={(e) => {
+      // Close when clicking outside the modal
+      if (e.target === e.currentTarget) {
+        closeModal();
+      }
+    }}
+  >
+    <div className="requisition-form-modal" style={{
+      backgroundColor: 'white',
+      padding: '40px',
+      borderRadius: '8px',
+      width: '90%',
+      maxWidth: '800px',
+      maxHeight: '90vh',
+      overflow: 'auto',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+      fontFamily: 'Arial, sans-serif',
+      position: 'relative'
+    }}>
+      
+      {/* X Close Button */}
+      <button
+        onClick={closeModal}
+        className="print-hidden"
+        style={{
+          position: 'absolute',
+          top: '15px',
+          right: '15px',
+          background: 'none',
+          border: 'none',
+          fontSize: '24px',
+          cursor: 'pointer',
+          color: '#666',
+          width: '30px',
+          height: '30px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseOver={(e) => {
+          e.target.style.backgroundColor = '#f0f0f0';
+          e.target.style.color = '#000';
+        }}
+        onMouseOut={(e) => {
+          e.target.style.backgroundColor = 'transparent';
+          e.target.style.color = '#666';
+        }}
+      >
+        ×
+      </button>
+
+      {/* Same styling and form content as Office Supply form, but with Other Supplies checkbox checked */}
+      <style>{`
+        .requisition-form-modal * {
+          color: black !important;
+        }
+        .requisition-form-modal input {
+          width: 100% !important;
+          border: none !important;
+          outline: none !important;
+          font-size: 12px !important;
+          color: black !important;
+          background-color: transparent !important;
+          font-family: Arial, sans-serif !important;
+        }
+        .requisition-form-modal input:focus {
+          color: black !important;
+        }
+        .requisition-form-modal .requisition-input-filled {
+          background-color: #f0f8ff !important;
+        }
+        .requisition-form-modal h2,
+        .requisition-form-modal h3,
+        .requisition-form-modal th,
+        .requisition-form-modal td,
+        .requisition-form-modal div,
+        .requisition-form-modal span,
+        .requisition-form-modal strong {
+          color: black !important;
+        }
+
+        /* Print-specific styles */
+        @media print {
+          .print-hidden {
+            display: none !important;
+          }
+          .requisition-form-modal {
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 20px !important;
+            width: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          .requisition-form-modal .requisition-input-filled {
+            background-color: transparent !important;
+          }
+          body {
+            background: white !important;
+          }
+          .requisition-form-modal input {
+            background-color: transparent !important;
+          }
+        }
+      `}</style>
+      
       {/* Form Header */}
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h2 style={{
@@ -1365,6 +1481,7 @@ function DashboardPage() {
         </div>
       </div>
 
+      {/* Rest of the form content remains the same, including the same requisitioner section with empty name space */}
       {/* Department Header */}
       <div style={{
         textAlign: 'center',
@@ -1376,7 +1493,7 @@ function DashboardPage() {
         MAINTENANCE and ENGINEERING DIVISION
       </div>
 
-      {/* Table */}
+      {/* Table with getOtherRequisitionData */}
       <table style={{
         width: '100%',
         borderCollapse: 'collapse',
@@ -1489,6 +1606,7 @@ function DashboardPage() {
           </span>
         </div>
       </div>
+      
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
@@ -1499,8 +1617,14 @@ function DashboardPage() {
           <div style={{ marginBottom: '15px', fontSize: '12px' }}>
             <strong>Requisitioner:</strong>
           </div>
-          <div style={{ marginBottom: '10px', fontSize: '12px' }}>
-            <strong>Engr. Jayson Valeroso</strong>
+          <div style={{ 
+            marginBottom: '10px', 
+            fontSize: '12px', 
+            height: '20px',
+            borderBottom: '1px solid black',
+            width: '200px'
+          }}>
+            {/* Name removed - space preserved for user input */}
           </div>
           <div style={{ fontSize: '11px', marginBottom: '5px' }}>
             MED Chief
@@ -1545,28 +1669,13 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Print Button - positioned in bottom right */}
       <div className="print-hidden" style={{
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         alignItems: 'center',
         marginTop: '20px'
       }}>
-        <button
-  onClick={() => setShowOtherSupplyForm(false)}
-  style={{
-    backgroundColor: '#666',
-    color: 'white',
-    padding: '10px 20px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  }}
->
-  Close
-</button>
-
         <button
           onClick={() => window.print()}
           style={{
@@ -1588,6 +1697,848 @@ function DashboardPage() {
     </div>
   </div>
 )}
+
+    {/* NEW: Purchase Form Modal */}
+      {showPurchaseForm && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+            overflow: 'auto',
+            padding: '20px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeModal();
+            }
+          }}
+        >
+          <div className="purchase-repair-form-modal" style={{
+            backgroundColor: 'white',
+            padding: '40px',
+            borderRadius: '8px',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            fontFamily: 'Arial, sans-serif',
+            position: 'relative'
+          }}>
+            
+            <button
+              onClick={closeModal}
+              className="print-hidden"
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#666',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.backgroundColor = '#f0f0f0';
+                e.target.style.color = '#000';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#666';
+              }}
+            >
+              ×
+            </button>
+
+            <style>{`
+              .purchase-repair-form-modal * {
+                color: black !important;
+              }
+              .purchase-repair-form-modal input {
+                width: 100% !important;
+                border: none !important;
+                outline: none !important;
+                font-size: 12px !important;
+                color: black !important;
+                background-color: transparent !important;
+                font-family: Arial, sans-serif !important;
+              }
+              .purchase-repair-form-modal input:focus {
+                color: black !important;
+              }
+              .purchase-repair-form-modal .form-input-filled {
+                background-color: #f0f8ff !important;
+              }
+              .purchase-repair-form-modal h2,
+              .purchase-repair-form-modal h3,
+              .purchase-repair-form-modal th,
+              .purchase-repair-form-modal td,
+              .purchase-repair-form-modal div,
+              .purchase-repair-form-modal span,
+              .purchase-repair-form-modal strong {
+                color: black !important;
+              }
+
+              @media print {
+                .print-hidden {
+                  display: none !important;
+                }
+                .purchase-repair-form-modal {
+                  box-shadow: none !important;
+                  border-radius: 0 !important;
+                  padding: 20px !important;
+                  width: 100% !important;
+                  max-width: none !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                }
+                .purchase-repair-form-modal .form-input-filled {
+                  background-color: transparent !important;
+                }
+                body {
+                  background: white !important;
+                }
+                .purchase-repair-form-modal input {
+                  background-color: transparent !important;
+                }
+              }
+            `}</style>
+
+            {/* Form Header */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <h2 style={{
+                textDecoration: 'underline',
+                margin: '0 0 10px 0',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                PURCHASE/REPAIR FORM
+              </h2>
+            </div>
+
+            {/* Checkboxes - Purchase is checked */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              margin: '20px 0',
+              paddingLeft: '50px',
+              paddingRight: '50px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '15px',
+                  backgroundColor: 'black',
+                  display: 'inline-block',
+                  position: 'relative'
+                }}>
+                  <span style={{
+                    color: 'white',
+                    fontSize: '12px',
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontWeight: 'bold'
+                  }}>✓</span>
+                </div>
+                <span style={{ fontSize: '14px' }}>Purchase</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '15px',
+                  border: '2px solid black',
+                  display: 'inline-block'
+                }}></div>
+                <span style={{ fontSize: '14px' }}>Repair</span>
+              </div>
+            </div>
+
+            {/* Place and Date of Delivery */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+              fontSize: '14px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>Place of Delivery:</span>
+                <span style={{ 
+                  textDecoration: 'underline',
+                  fontWeight: 'bold',
+                  minWidth: '150px'
+                }}>
+                  Universidad de Manila
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>Date of Delivery:</span>
+                <div style={{
+                  borderBottom: '2px solid black',
+                  width: '150px',
+                  height: '20px'
+                }}>
+                  <input
+                    type="text"
+                    placeholder=""
+                    style={{
+                      border: 'none',
+                      outline: 'none',
+                      width: '100%',
+                      fontSize: '12px',
+                      textAlign: 'center'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Department Header */}
+            <div style={{
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '16px',
+              marginBottom: '20px',
+              textDecoration: 'underline'
+            }}>
+              MAINTENANCE and ENGINEERING DIVISION
+            </div>
+
+            {/* Main Table */}
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              border: '2px solid black',
+              marginBottom: '20px'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5' }}>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '15%'
+                  }}>STOCK NO.</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '10%'
+                  }}>UNIT</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '40%'
+                  }}>DESCRIPTION</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '15%'
+                  }}>QUANTITY</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '20%'
+                  }}>AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const purchaseData = getPurchaseFormData();
+                  const totalRows = 12;
+
+                  return [...Array(totalRows)].map((_, index) => {
+                    const itemData = index < purchaseData.length ? purchaseData[index] : null;
+
+                    return (
+                      <tr key={index}>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.stockNo : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.unit : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.description : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.quantity : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.amount : ''}
+                            placeholder=""
+                          />
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+
+            {/* Footer Note */}
+            <div style={{
+              fontSize: '10px',
+              marginBottom: '20px',
+              textAlign: 'left'
+            }}>
+              <strong>In case of failure to make the full delivery within the time specified above, a penalty of one-tenth (1/10)</strong><br />
+              <strong>of one (1) percent for every day of delay shall be imposed.</strong>
+            </div>
+
+            {/* Signature Section */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginTop: '30px'
+            }}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px' }}>
+                  <strong>Conforme:</strong>
+                </div>
+                <div style={{
+                  borderBottom: '2px solid black',
+                  width: '250px',
+                  height: '40px',
+                  marginBottom: '5px'
+                }}>
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  textAlign: 'center',
+                  width: '250px'
+                }}>
+                  <strong>Signature Over Printed Name/Date</strong>
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  textAlign: 'center',
+                  width: '250px'
+                }}>
+                  <strong>(Date)</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Print Button */}
+            <div className="print-hidden" style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              marginTop: '30px'
+            }}>
+              <button
+                onClick={() => window.print()}
+                style={{
+                  backgroundColor: '#FF6B35',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                Print Purchase Form
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Repair Form Modal */}
+      {showRepairForm && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+            overflow: 'auto',
+            padding: '20px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeModal();
+            }
+          }}
+        >
+          <div className="purchase-repair-form-modal" style={{
+            backgroundColor: 'white',
+            padding: '40px',
+            borderRadius: '8px',
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            fontFamily: 'Arial, sans-serif',
+            position: 'relative'
+          }}>
+            
+            <button
+              onClick={closeModal}
+              className="print-hidden"
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#666',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.backgroundColor = '#f0f0f0';
+                e.target.style.color = '#000';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = '#666';
+              }}
+            >
+              ×
+            </button>
+
+            <style>{`
+              .purchase-repair-form-modal * {
+                color: black !important;
+              }
+              .purchase-repair-form-modal input {
+                width: 100% !important;
+                border: none !important;
+                outline: none !important;
+                font-size: 12px !important;
+                color: black !important;
+                background-color: transparent !important;
+                font-family: Arial, sans-serif !important;
+              }
+              .purchase-repair-form-modal input:focus {
+                color: black !important;
+              }
+              .purchase-repair-form-modal .form-input-filled {
+                background-color: #f0f8ff !important;
+              }
+              .purchase-repair-form-modal h2,
+              .purchase-repair-form-modal h3,
+              .purchase-repair-form-modal th,
+              .purchase-repair-form-modal td,
+              .purchase-repair-form-modal div,
+              .purchase-repair-form-modal span,
+              .purchase-repair-form-modal strong {
+                color: black !important;
+              }
+
+              @media print {
+                .print-hidden {
+                  display: none !important;
+                }
+                .purchase-repair-form-modal {
+                  box-shadow: none !important;
+                  border-radius: 0 !important;
+                  padding: 20px !important;
+                  width: 100% !important;
+                  max-width: none !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                }
+                .purchase-repair-form-modal .form-input-filled {
+                  background-color: transparent !important;
+                }
+                body {
+                  background: white !important;
+                }
+                .purchase-repair-form-modal input {
+                  background-color: transparent !important;
+                }
+              }
+            `}</style>
+
+            {/* Form Header */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <h2 style={{
+                textDecoration: 'underline',
+                margin: '0 0 10px 0',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                PURCHASE/REPAIR FORM
+              </h2>
+            </div>
+
+            {/* Checkboxes - Repair is checked */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              margin: '20px 0',
+              paddingLeft: '50px',
+              paddingRight: '50px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '15px',
+                  border: '2px solid black',
+                  display: 'inline-block'
+                }}></div>
+                <span style={{ fontSize: '14px' }}>Purchase</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '15px',
+                  backgroundColor: 'black',
+                  display: 'inline-block',
+                  position: 'relative'
+                }}>
+                  <span style={{
+                    color: 'white',
+                    fontSize: '12px',
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontWeight: 'bold'
+                  }}>✓</span>
+                </div>
+                <span style={{ fontSize: '14px' }}>Repair</span>
+              </div>
+            </div>
+
+            {/* Place and Date of Delivery */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+              fontSize: '14px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>Place of Delivery:</span>
+                <span style={{ 
+                  textDecoration: 'underline',
+                  fontWeight: 'bold',
+                  minWidth: '150px'
+                }}>
+                  Universidad de Manila
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>Date of Delivery:</span>
+                <div style={{
+                  borderBottom: '2px solid black',
+                  width: '150px',
+                  height: '20px'
+                }}>
+                  <input
+                    type="text"
+                    placeholder=""
+                    style={{
+                      border: 'none',
+                      outline: 'none',
+                      width: '100%',
+                      fontSize: '12px',
+                      textAlign: 'center'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Department Header */}
+            <div style={{
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '16px',
+              marginBottom: '20px',
+              textDecoration: 'underline'
+            }}>
+              MAINTENANCE and ENGINEERING DIVISION
+            </div>
+
+            {/* Main Table */}
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              border: '2px solid black',
+              marginBottom: '20px'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5' }}>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '15%'
+                  }}>STOCK NO.</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '10%'
+                  }}>UNIT</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '40%'
+                  }}>DESCRIPTION</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '15%'
+                  }}>QUANTITY</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '20%'
+                  }}>AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const repairData = getRepairFormData();
+                  const totalRows = 12;
+
+                  return [...Array(totalRows)].map((_, index) => {
+                    const itemData = index < repairData.length ? repairData[index] : null;
+
+                    return (
+                      <tr key={index}>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.stockNo : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.unit : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.description : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.quantity : ''}
+                            placeholder=""
+                          />
+                        </td>
+                        <td style={{
+                          border: '1px solid black',
+                          padding: '6px',
+                          height: '30px'
+                        }}>
+                          <input
+                            type="text"
+                            className={`${itemData ? 'form-input-filled' : ''}`}
+                            defaultValue={itemData ? itemData.amount : ''}
+                            placeholder=""
+                          />
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+
+            {/* Footer Note */}
+            <div style={{
+              fontSize: '10px',
+              marginBottom: '20px',
+              textAlign: 'left'
+            }}>
+              <strong>In case of failure to make the full delivery within the time specified above, a penalty of one-tenth (1/10)</strong><br />
+              <strong>of one (1) percent for every day of delay shall be imposed.</strong>
+            </div>
+
+            {/* Signature Section */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginTop: '30px'
+            }}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '12px', marginBottom: '5px' }}>
+                  <strong>Conforme:</strong>
+                </div>
+                <div style={{
+                  borderBottom: '2px solid black',
+                  width: '250px',
+                  height: '40px',
+                  marginBottom: '5px'
+                }}>
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  textAlign: 'center',
+                  width: '250px'
+                }}>
+                  <strong>Signature Over Printed Name/Date</strong>
+                </div>
+                <div style={{ 
+                  fontSize: '10px', 
+                  textAlign: 'center',
+                  width: '250px'
+                }}>
+                  <strong>(Date)</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Print Button */}
+            <div className="print-hidden" style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              marginTop: '30px'
+            }}>
+              <button
+                onClick={() => window.print()}
+                style={{
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                Print Repair Form
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </section>
   );
