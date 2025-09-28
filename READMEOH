@@ -39,7 +39,7 @@
 - pip install Pillow
 - pip install pydantic[email]
 - pip install email-validator
-- pip install bcrypt
+- pip install bcrypt==3.2.2
 - pip install pandas openpyxl xlrd
 - pip install numpy scipy statsmodels python-dateutil pandas
 
