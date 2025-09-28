@@ -33,6 +33,26 @@ function EquipmentPage() {
   const [dragActive, setDragActive] = useState(false);
   const [addingEquipment, setAddingEquipment] = useState(false);
 
+  // NEW: Report Repair and Update Equipment states
+const [showReportRepairModal, setShowReportRepairModal] = useState(false);
+const [showUpdateEquipmentModal, setShowUpdateEquipmentModal] = useState(false);
+const [repairData, setRepairData] = useState({
+  repairDate: '',
+  repairDetails: '',
+  repairAmount: '',
+  repairedBy: '',
+  repairStatus: 'In Progress'
+});
+const [updateData, setUpdateData] = useState({
+  name: '',
+  description: '',
+  category: '',
+  location: '',
+  status: '',
+  usefulLife: '',
+  amount: ''
+});
+
   const convertFileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -65,6 +85,124 @@ const closeRepairDocument = () => {
 // Add this function to handle printing
 const handlePrintStockCard = () => {
   window.print();
+};
+
+// NEW: Report Repair and Update Equipment handlers
+const handleReportRepair = () => {
+  setShowReportRepairModal(true);
+  setRepairData({
+    repairDate: new Date().toISOString().split('T')[0],
+    repairDetails: '',
+    repairAmount: '',
+    repairedBy: '',
+    repairStatus: 'In Progress'
+  });
+};
+
+const handleUpdateEquipment = () => {
+  setShowUpdateEquipmentModal(true);
+  // Pre-populate form with current equipment data
+  setUpdateData({
+    name: selectedEquipment.name || '',
+    description: selectedEquipment.description || '',
+    category: selectedEquipment.category || '',
+    location: selectedEquipment.location || '',
+    status: selectedEquipment.status || '',
+    usefulLife: selectedEquipment.usefulLife || '',
+    amount: selectedEquipment.amount || ''
+  });
+};
+
+const handleRepairDataChange = (e) => {
+  const { name, value } = e.target;
+  setRepairData(prev => ({ ...prev, [name]: value }));
+};
+
+const handleUpdateDataChange = (e) => {
+  const { name, value } = e.target;
+  setUpdateData(prev => ({ ...prev, [name]: value }));
+};
+
+const submitRepairReport = async () => {
+  try {
+    // Validate repair form
+    if (!repairData.repairDetails.trim()) {
+      alert('Please enter repair details');
+      return;
+    }
+    
+    if (!repairData.repairedBy.trim()) {
+      alert('Please enter who performed the repair');
+      return;
+    }
+
+    // Here you would typically call your API to save the repair record
+    // await EquipmentAPI.addRepairRecord(selectedEquipment._id, repairData);
+    
+    console.log('Repair reported:', repairData);
+    alert('Repair report submitted successfully!');
+    setShowReportRepairModal(false);
+    
+    // Optionally update equipment status if repair is completed
+    if (repairData.repairStatus === 'Completed') {
+      // Update equipment status to 'Within-Useful-Life' or appropriate status
+      const updatedEquipment = { ...selectedEquipment, status: 'Within-Useful-Life' };
+      setSelectedEquipment(updatedEquipment);
+      
+      // Update in the main equipment list
+      setEquipmentData(prevData => 
+        prevData.map(item => 
+          item._id === selectedEquipment._id 
+            ? { ...item, status: 'Within-Useful-Life' }
+            : item
+        )
+      );
+    }
+    
+  } catch (error) {
+    console.error('Error submitting repair report:', error);
+    alert('Failed to submit repair report. Please try again.');
+  }
+};
+
+const submitEquipmentUpdate = async () => {
+  try {
+    // Validate update form
+    if (!updateData.name.trim()) {
+      alert('Equipment name is required');
+      return;
+    }
+    
+    if (!updateData.description.trim()) {
+      alert('Description is required');
+      return;
+    }
+
+    // FIX: Actually call the API to update the database
+    await EquipmentAPI.updateEquipment(selectedEquipment._id, updateData);
+    
+    console.log('Equipment updated:', updateData);
+    
+    // Update the selected equipment with new data
+    const updatedEquipment = { ...selectedEquipment, ...updateData };
+    setSelectedEquipment(updatedEquipment);
+    
+    // Update in the main equipment list
+    setEquipmentData(prevData => 
+      prevData.map(item => 
+        item._id === selectedEquipment._id 
+          ? { ...item, ...updateData }
+          : item
+      )
+    );
+    
+    alert('Equipment updated successfully!');
+    setShowUpdateEquipmentModal(false);
+    
+  } catch (error) {
+    console.error('Error updating equipment:', error);
+    alert('Failed to update equipment. Please try again.');
+  }
 };
 
   // Equipment categories and statuses
@@ -1096,44 +1234,58 @@ const equipmentData = {
             </div>
             
             <div className="item-overview-actions">
-              <button className="action-btn view-stock-btn" onClick={handleViewMaintenanceLog}>
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-  View Maintenance Log ▪
-</button>
-              
-              <button className="action-btn view-docs-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                View Documents ◌
-              </button>
-              
-              <button 
-                className="action-btn qr-code-btn"
-                onClick={() => generateQRCode(selectedEquipment)}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-                  <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
-                  <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
-                  <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
-                  <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
-                  <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
-                </svg>
-                Generate QR-code ⚙
-              </button>
-              
-              
-            </div>
+  <button className="action-btn repair-btn" onClick={handleReportRepair}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    Report Repair
+  </button>
+  
+  <button className="action-btn update-btn" onClick={handleUpdateEquipment}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18.5 2.50023C18.8978 2.10243 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.10243 21.5 2.50023C21.8978 2.89804 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.10243 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    Update Equipment
+  </button>
+
+  <button className="action-btn view-stock-btn" onClick={handleViewMaintenanceLog}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    View Maintenance Log ▪
+  </button>
+  
+  <button className="action-btn view-docs-btn">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    View Documents ◌
+  </button>
+  
+  <button 
+    className="action-btn qr-code-btn"
+    onClick={() => generateQRCode(selectedEquipment)}
+  >
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+      <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
+      <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
+      <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
+      <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
+      <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
+    </svg>
+    Generate QR-code ⚙
+  </button>
+</div>
             
             <button className="close-overview-btn" onClick={handleCloseEquipmentOverview}>
               ×
@@ -1250,6 +1402,228 @@ const equipmentData = {
           </div>
         </div>
       )}
+
+      {/* Report Repair Modal */}
+{showReportRepairModal && selectedEquipment && (
+  <div className="overlay" onClick={() => setShowReportRepairModal(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <h3>Report Repair - {selectedEquipment.name}</h3>
+      
+      <div className="repair-form">
+        <div className="form-group">
+          <label>Equipment Code:</label>
+          <input 
+            type="text" 
+            value={selectedEquipment.itemCode} 
+            disabled 
+            className="disabled-input"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Date: *</label>
+          <input 
+            type="date" 
+            name="repairDate"
+            value={repairData.repairDate}
+            onChange={handleRepairDataChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Details: *</label>
+          <textarea 
+            name="repairDetails"
+            value={repairData.repairDetails}
+            onChange={handleRepairDataChange}
+            placeholder="Describe the repair work performed..."
+            rows="4"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Amount:</label>
+          <div className="amount-container">
+            <span className="currency-symbol">₱</span>
+            <input 
+              type="number" 
+              name="repairAmount"
+              value={repairData.repairAmount}
+              onChange={handleRepairDataChange}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Repaired By: *</label>
+          <input 
+            type="text" 
+            name="repairedBy"
+            value={repairData.repairedBy}
+            onChange={handleRepairDataChange}
+            placeholder="Enter technician/repair person name"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Status: *</label>
+          <select 
+            name="repairStatus"
+            value={repairData.repairStatus}
+            onChange={handleRepairDataChange}
+            required
+          >
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Pending Parts">Pending Parts</option>
+            <option value="On Hold">On Hold</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button 
+          className="submit-btn" 
+          onClick={submitRepairReport}
+        >
+          Submit Repair Report
+        </button>
+        <button 
+          className="cancel-btn" 
+          onClick={() => setShowReportRepairModal(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Update Equipment Modal */}
+{showUpdateEquipmentModal && selectedEquipment && (
+  <div className="overlay" onClick={() => setShowUpdateEquipmentModal(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <h3>Update Equipment - {selectedEquipment.itemCode}</h3>
+      
+      <div className="update-form">
+        <div className="form-group">
+          <label>Equipment Name: *</label>
+          <input 
+            type="text" 
+            name="name"
+            value={updateData.name}
+            onChange={handleUpdateDataChange}
+            placeholder="Enter equipment name"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description: *</label>
+          <textarea 
+            name="description"
+            value={updateData.description}
+            onChange={handleUpdateDataChange}
+            placeholder="Enter equipment description"
+            rows="3"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Category:</label>
+          <select 
+            name="category"
+            value={updateData.category}
+            onChange={handleUpdateDataChange}
+          >
+            <option value="">Select Category</option>
+            {equipmentCategories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Location:</label>
+          <input 
+            type="text" 
+            name="location"
+            value={updateData.location}
+            onChange={handleUpdateDataChange}
+            placeholder="Enter location"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Status:</label>
+          <select 
+            name="status"
+            value={updateData.status}
+            onChange={handleUpdateDataChange}
+          >
+            {equipmentStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Useful Life:</label>
+          <div className="useful-life-container">
+            <input 
+              type="number" 
+              name="usefulLife"
+              value={updateData.usefulLife}
+              onChange={handleUpdateDataChange}
+              placeholder="Enter years"
+              min="1"
+              max="50"
+            />
+            <span className="useful-life-unit">years</span>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Amount:</label>
+          <div className="amount-container">
+            <span className="currency-symbol">₱</span>
+            <input 
+              type="number" 
+              name="amount"
+              value={updateData.amount}
+              onChange={handleUpdateDataChange}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button 
+          className="submit-btn" 
+          onClick={submitEquipmentUpdate}
+        >
+          Update Equipment
+        </button>
+        <button 
+          className="cancel-btn" 
+          onClick={() => setShowUpdateEquipmentModal(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
     {showRepairDocument && selectedEquipment && (
   <div className="modal-overlay">
