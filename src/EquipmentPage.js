@@ -21,12 +21,12 @@ function EquipmentPage() {
     itemCode: '',
     name: '',        // Equipment name (what displays in table)
     quantity: '',
-    unit: '',
     description: '', // Separate description field
     category: '',
     location: '',
     status: 'Within-Useful-Life',
-    serialNo: '',
+    usefulLife: '',
+    amount: '',
     date: '',
     itemPicture: null
   });
@@ -70,7 +70,6 @@ const handlePrintStockCard = () => {
   // Equipment categories and statuses
   const equipmentCategories = ['Sanitary Equipment', 'Office Equipment', 'Construction Equipment', 'Electrical Equipment'];
   const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
-  const equipmentUnits = ['UNIT', 'SET', 'PIECE', 'LOT'];
 
   // Load equipment from database when component mounts
    useEffect(() => {
@@ -95,13 +94,13 @@ const handlePrintStockCard = () => {
   _id: item._id || item.id,
   itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
   quantity: item.quantity || 1,
-  unit: item.unit || 'UNIT',
+  usefulLife: item.usefulLife || 1,
+  amount: item.amount || 0.0,
   name: item.name || 'Unknown Equipment',
   description: item.description || 'No description available',
   category: item.category || 'General',
   location: item.location || 'Unknown',
   status: item.status || 'Within-Useful-Life',
-  serialNo: item.serialNo || item.serial_number || `SN-${Math.floor(Math.random() * 10000)}`,
   supplier: item.supplier || '',
   unit_price: item.unit_price || 0,
   date: item.date || '',  // NEW FIELD: Date field
@@ -189,14 +188,14 @@ setEquipmentData(transformedEquipment);
     if (isAddEquipmentOverlayOpen) {
       setNewEquipment({
         itemCode: '',
-        name: '',          // Reset name
+        name: '',          
         quantity: '',
-        unit: '',
-        description: '',   // Reset description
+        description: '',   
         category: '',
         location: '',
         status: 'Within-Useful-Life',
-        serialNo: '',
+        usefulLife: '',
+        amount: '',
         date: '',
         itemPicture: null
       });
@@ -292,17 +291,19 @@ setEquipmentData(transformedEquipment);
       errors.push('Quantity must be a positive number');
     }
     
-    if (!newEquipment.unit) {
-      errors.push('Unit is required');
-    }
+    if (!newEquipment.usefulLife || parseInt(newEquipment.usefulLife) <= 0) {
+    errors.push('Useful life must be a positive number');
+  }
+
+   if (!newEquipment.amount || parseFloat(newEquipment.amount) < 0) {
+    errors.push('Amount must be a non-negative number');
+  }
     
     if (!newEquipment.category) {
       errors.push('Category is required');
     }
     
-    if (!newEquipment.serialNo.trim()) {
-      errors.push('Serial Number is required');
-    }
+    
     
     if (!newEquipment.status) {
       errors.push('Status is required');
@@ -325,22 +326,22 @@ if (newEquipment.itemPicture) {
 }
 
 const equipmentData = {
-  name: newEquipment.name.trim(),
-  description: newEquipment.description.trim(),
-  category: newEquipment.category,
-  quantity: parseInt(newEquipment.quantity),
-  unit: newEquipment.unit,
-  location: newEquipment.location.trim() || '',
-  status: newEquipment.status,
-  serialNo: newEquipment.serialNo.trim(),
-  itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-  unit_price: 0,
-  supplier: '',
-  date: newEquipment.date,
-  image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
-  image_filename: newEquipment.itemPicture?.name || null,
-  image_content_type: newEquipment.itemPicture?.type || null,
-};
+      name: newEquipment.name.trim(),
+      description: newEquipment.description.trim(),
+      category: newEquipment.category,
+      quantity: parseInt(newEquipment.quantity),
+      usefulLife: parseInt(newEquipment.usefulLife), 
+      amount: parseFloat(newEquipment.amount),       
+      location: newEquipment.location.trim() || '',
+      status: newEquipment.status,
+      itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+      unit_price: parseFloat(newEquipment.amount), 
+      supplier: '',
+      date: newEquipment.date,
+      image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
+      image_filename: newEquipment.itemPicture?.name || null,
+      image_content_type: newEquipment.itemPicture?.type || null,
+    };
 
 
     console.log('📤 Adding new equipment:', equipmentData);
@@ -349,25 +350,24 @@ const equipmentData = {
 
     // Add new equipment to state including image data
     const newEquipmentItem = {
-  _id: savedEquipment._id || savedEquipment.id,
-  itemCode: equipmentData.itemCode,
-  name: newEquipment.name.trim(),
-  quantity: parseInt(newEquipment.quantity),
-  unit: newEquipment.unit,
-  description: newEquipment.description.trim(),
-  category: newEquipment.category,
-  location: newEquipment.location.trim(),
-  status: newEquipment.status,
-  serialNo: newEquipment.serialNo.trim(),
-  // Use the base64 image string from backend for display
-  itemPicture: savedEquipment.image_data,  
-  image_data: savedEquipment.image_data, // base64 image string from backend
-  image_filename: savedEquipment.image_filename,
-  image_content_type: savedEquipment.image_content_type,
-  supplier: '',
-  unit_price: 0,
-  date: newEquipment.date
-};
+      _id: savedEquipment._id || savedEquipment.id,
+      itemCode: equipmentData.itemCode,
+      name: newEquipment.name.trim(),
+      quantity: parseInt(newEquipment.quantity),
+      usefulLife: parseInt(newEquipment.usefulLife), 
+      amount: parseFloat(newEquipment.amount),       
+      description: newEquipment.description.trim(),
+      category: newEquipment.category,
+      location: newEquipment.location.trim(),
+      status: newEquipment.status,
+      itemPicture: savedEquipment.image_data,  
+      image_data: savedEquipment.image_data,
+      image_filename: savedEquipment.image_filename,
+      image_content_type: savedEquipment.image_content_type,
+      supplier: '',
+      unit_price: parseFloat(newEquipment.amount), 
+      date: newEquipment.date
+    };
     setEquipmentData(prevData => [...prevData, newEquipmentItem]);
 
     alert(`Equipment "${newEquipment.name}" added successfully!`);
@@ -421,11 +421,11 @@ const equipmentData = {
         name: equipment.name,
         description: equipment.description,
         quantity: equipment.quantity,
-        unit: equipment.unit,
+        usefulLife: equipment.usefulLife,
+        amount: equipment.amount,
         category: equipment.category,
         location: equipment.location,
         status: equipment.status,
-        serialNo: equipment.serialNo,
         date: equipment.date,
         id: equipment._id,
         timestamp: new Date().toISOString(),
@@ -534,7 +534,7 @@ const equipmentData = {
               <h2>${qrCodeEquipment.name}</h2>
               <div class="item-details">
                 <p><strong>Item Code:</strong> ${qrCodeEquipment.itemCode}</p>
-                <p><strong>Serial No:</strong> ${qrCodeEquipment.serialNo}</p>
+                <p><strong>Useful Life:</strong> ${qrCodeEquipment.usefulLife}</p>
                 <p><strong>Category:</strong> ${qrCodeEquipment.category}</p>
                 <p><strong>Location:</strong> ${qrCodeEquipment.location}</p>
                 <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
@@ -702,8 +702,9 @@ const equipmentData = {
             <tr>
               <th>ITEM CODE</th>
               <th>QUANTITY</th>
-              <th>UNIT</th>
+              <th>USEFUL LIFE</th>
               <th>EQUIPMENT NAME</th>
+              <th>AMOUNT</th>
               <th>ACTION</th>
             </tr>
           </thead>
@@ -712,7 +713,7 @@ const equipmentData = {
               <tr key={equipment._id || index}>
                 <td>{equipment.itemCode}</td>
                 <td>{equipment.quantity}</td>
-                <td>{equipment.unit}</td>
+                <td>{equipment.usefulLife ? `${equipment.usefulLife} years` : 'N/A'}</td>
                 <td>
                   <span 
                     className="description-clickable"
@@ -722,6 +723,7 @@ const equipmentData = {
                     {equipment.name}
                   </span>
                 </td>
+                <td>₱{equipment.amount ? parseFloat(equipment.amount).toFixed(2) : '0.00'}</td>
                 <td>
   <div className="action-buttons-container">
     <button 
@@ -857,19 +859,38 @@ const equipmentData = {
               </div>
 
               <div className="form-group">
-                <label>UNIT: *</label>
-                <select 
-                  name="unit" 
-                  value={newEquipment.unit} 
-                  onChange={handleEquipmentInputChange}
-                  required
-                >
-                  <option value="">Select Unit</option>
-                  {equipmentUnits.map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                </select>
-              </div>
+  <label>USEFUL LIFE: *</label>
+  <div className="useful-life-container">
+    <input 
+      type="number" 
+      name="usefulLife" 
+      value={newEquipment.usefulLife} 
+      onChange={handleEquipmentInputChange}
+      placeholder="Enter years"
+      min="1"
+      max="50"
+      required
+    />
+    <span className="useful-life-unit">years</span>
+  </div>
+</div>
+
+<div className="form-group">
+  <label>AMOUNT: *</label>
+  <div className="amount-container">
+    <span className="currency-symbol">₱</span>
+    <input 
+      type="number" 
+      name="amount" 
+      value={newEquipment.amount} 
+      onChange={handleEquipmentInputChange}
+      placeholder="0.00"
+      min="0"
+      step="0.01"
+      required
+    />
+  </div>
+</div>
 
               <div className="form-group">
                 <label>DESCRIPTION: *</label>
@@ -923,17 +944,7 @@ const equipmentData = {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>SERIAL NO.: *</label>
-                <input 
-                  type="text" 
-                  name="serialNo" 
-                  value={newEquipment.serialNo} 
-                  onChange={handleEquipmentInputChange}
-                  placeholder="Enter unique serial number"
-                  required
-                />
-              </div>
+
 
               <div className="form-group">
                  <label>DATE:</label>
@@ -1042,8 +1053,12 @@ const equipmentData = {
                   <span className="detail-value">{selectedEquipment.itemCode}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="detail-label">Serial No.:</span>
-                  <span className="detail-value">{selectedEquipment.serialNo}</span>
+                  <span className="detail-label">Useful Life (Years):</span>
+                  <span className="detail-value">{selectedEquipment.usefulLife}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Amount:</span>
+                  <span className="detail-value">{selectedEquipment.amount}</span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Category:</span>
@@ -1156,8 +1171,8 @@ const equipmentData = {
                 </div>
                 
                 <div className="qr-detail-row">
-                  <span className="qr-detail-label">Serial No.:</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.serialNo}</span>
+                  <span className="qr-detail-label">Useful Life (Years):</span>
+                  <span className="qr-detail-value">{qrCodeEquipment.usefulLife}</span>
                 </div>
                 
                 <div className="qr-detail-row">
@@ -1209,12 +1224,12 @@ const equipmentData = {
                   itemCode: qrCodeEquipment.itemCode,
                   name: qrCodeEquipment.name,
                   description: qrCodeEquipment.description,
-                  serialNo: qrCodeEquipment.serialNo,
+                  usefulLife: qrCodeEquipment.usefulLife,
                   category: qrCodeEquipment.category,
                   location: qrCodeEquipment.location,
                   status: qrCodeEquipment.status,
                   quantity: qrCodeEquipment.quantity,
-                  unit: qrCodeEquipment.unit,
+                  amount: qrCodeEquipment.amount,
                   id: qrCodeEquipment._id,
                   timestamp: new Date().toISOString()
                 };
