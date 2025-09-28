@@ -1,5 +1,28 @@
 /* EquipmentPage.css - Updated to match Supplies page with overview functionality */
 
+
+.supplies-page-container {
+  flex-grow: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+}
+
+.supplies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 28px;
+  color: #ffffff;
+  font-weight: 700;
+  margin: 0;
+}
+
 .equipment-page-container {
   flex-grow: 1;
   padding: 20px;
