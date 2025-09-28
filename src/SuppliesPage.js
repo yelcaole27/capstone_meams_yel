@@ -57,6 +57,9 @@ function SuppliesPage() {
     date: ''
   });
 
+  // NEW: Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
   
@@ -70,6 +73,11 @@ function SuppliesPage() {
   useEffect(() => {
     loadSupplies();
   }, []);
+
+  // Reset to first page when search term or category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
 
   // Load supplies from database
   const loadSupplies = async () => {
@@ -97,8 +105,8 @@ function SuppliesPage() {
         location: supply.location || '',
         status: supply.status || 'Normal',
         date: supply.date || '',
-        has_image: supply.image_data ? true : false,          // <-- Add this line
-        image_data: supply.image_data || null                 // <-- Add this line
+        has_image: supply.image_data ? true : false,
+        image_data: supply.image_data || null
       };
     });
 
@@ -153,39 +161,162 @@ function SuppliesPage() {
     return matchesSearch && matchesCategory;
   });
 
+  // NEW: Pagination calculations
+  const totalPages = Math.ceil(filteredSupplies.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSupplies = filteredSupplies.slice(startIndex, endIndex);
+
+  // NEW: Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(parseInt(e.target.value));
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const generatePageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
   // QR Code generation function - UPDATED to include new fields
   const generateQRCode = async (item) => {
+  try {
+    // Create minimal HTML for stock card format
+    const htmlTemplate = `
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <style>
+            body { font: 12px Arial; padding: 8px; text-align: center; }
+            h1 { font: 14px Arial; margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 8px auto; max-width: 350px; }
+            td, th { border: 1px solid #000; padding: 4px; font: 10px Arial; }
+            th { background: #eee; }
+          </style>
+        </head>
+        <body>
+          <h1>Universidad De Manila<br>Stock Card</h1>
+          <table>
+            <tr>
+              <td><b>Item:</b></td>
+              <td>${item.itemName}</td>
+              <td><b>Stock No.:</b></td>
+              <td>${item.stockNo}</td>
+            </tr>
+            <tr>
+              <td><b>Category:</b></td>
+              <td>${item.category}</td>
+              <td><b>Description:</b></td>
+              <td>${item.description || 'N/A'}</td>
+            </tr>
+          </table>
+          <table>
+            <tr>
+              <th>Date</th>
+              <th>Receipt</th>
+              <th>Issue</th>
+              <th>Balance</th>
+            </tr>
+            <tr>
+              <td>${item.date}</td>
+              <td>${item.quantity}</td>
+              <td>-</td>
+              <td>${item.quantity}</td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `.replace(/\s+/g, ' ').trim();
+
+    const dataURI = `data:text/html;charset=utf-8,${encodeURIComponent(htmlTemplate)}`;
+    
+    // Check if HTML is too large for QR code
+    if (htmlTemplate.length > 400) {
+      throw new Error('HTML content exceeds QR code capacity');
+    }
+
+    // Generate QR code with HTML content
+    const qrDataURL = await QRCode.toDataURL(dataURI, {
+      width: 200,
+      margin: 1,
+      errorCorrectionLevel: 'L'
+    });
+
+    // Update state with generated QR code
+    setQrCodeDataURL(qrDataURL);
+    setQrCodeItem(item);
+    setIsQRModalOpen(true);
+
+  } catch (error) {
+    console.warn('HTML format failed, falling back to text format:', error.message);
+    
     try {
-      const qrData = JSON.stringify({
-        itemCode: item.itemCode,
-        itemName: item.itemName,
-        stockNo: item.stockNo,
-        category: item.category,
-        quantity: item.quantity,
-        description: item.description,
-        unit: item.unit, // NEW FIELD
-        location: item.location, // NEW FIELD
-        status: item.status, // NEW FIELD
-        timestamp: new Date().toISOString()
-      });
+      // Fallback to plain text format
+      const textContent = [
+        'UNIVERSIDAD DE MANILA - STOCK CARD',
+        `Item: ${item.itemName}`,
+        `Stock No: ${item.stockNo}`,
+        `Category: ${item.category}`,
+        `Description: ${item.description || 'N/A'}`,
+        `Date: ${item.date}`,
+        `Quantity: ${item.quantity}`,
+        '------',
+        'Date | Receipt | Issue | Balance',
+        `${item.date} | ${item.quantity} | - | ${item.quantity}`
+      ].join('\n');
 
-      const dataURL = await QRCode.toDataURL(qrData, {
-        width: 300,
+      const qrDataURL = await QRCode.toDataURL(textContent, {
+        width: 200,
         margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
+        errorCorrectionLevel: 'M'
       });
 
-      setQrCodeDataURL(dataURL);
+      // Update state with text-based QR code
+      setQrCodeDataURL(qrDataURL);
       setQrCodeItem(item);
       setIsQRModalOpen(true);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-      alert('Failed to generate QR code');
+
+    } catch (textError) {
+      console.error('QR code generation failed completely:', textError.message);
+      alert('Unable to generate QR code - content is too large for encoding');
     }
-  };
+  }
+};
 
   // FOR STOCK CARD //
 const [isStockCardOpen, setIsStockCardOpen] = useState(false);
@@ -439,7 +570,6 @@ const convertFileToBase64 = (file) => {
   });
 };
 
-
   const handleItemClick = (item) => {
     setSelectedItem(item);
     setIsItemOverviewOpen(true);
@@ -528,7 +658,6 @@ const convertFileToBase64 = (file) => {
       setLoading(false);
     }
   };
-
 
 const handleRemoveImage = async (supplyId) => {
   if (!window.confirm('Are you sure you want to remove this image?')) return;
@@ -662,7 +791,6 @@ const handleRemoveImage = async (supplyId) => {
     }
   };
 
-
   // Show loading state
   if (loading && suppliesData.length === 0) {
     return (
@@ -747,6 +875,23 @@ const handleRemoveImage = async (supplyId) => {
               </div>
             )}
           </div>
+
+          {/* NEW: Items per page selector */}
+          <div className="items-per-page-container">
+            <span>Show:</span>
+            <select 
+              className="items-per-page-select" 
+              value={itemsPerPage} 
+              onChange={handleItemsPerPageChange}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>per page</span>
+          </div>
         </div>
       </div>
 
@@ -762,7 +907,7 @@ const handleRemoveImage = async (supplyId) => {
           </tr>
         </thead>
         <tbody>
-          {filteredSupplies.map((supply, index) => (
+          {paginatedSupplies.map((supply, index) => (
             <tr key={supply._id || index}>
               <td>{supply.itemCode}</td>
               <td>{supply.stockNo}</td>
@@ -792,6 +937,47 @@ const handleRemoveImage = async (supplyId) => {
           ))}
         </tbody>
       </table>
+
+      {/* NEW: Pagination Controls */}
+      {filteredSupplies.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredSupplies.length)} of {filteredSupplies.length} entries
+          </div>
+          
+          <div className="pagination-controls">
+            <button 
+              className="pagination-btn" 
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            
+            {generatePageNumbers().map((page, index) => (
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+              ) : (
+                <button
+                  key={page}
+                  className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </button>
+              )
+            ))}
+            
+            <button 
+              className="pagination-btn" 
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       <button className="add-item-button" onClick={handleOverlayToggle}>
         {loading ? 'Loading...' : 'Add Item Supply'}
