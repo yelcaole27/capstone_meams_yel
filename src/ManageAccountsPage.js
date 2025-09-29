@@ -547,6 +547,7 @@ function ManageAccountsPage() {
           <div 
             key={account._id} 
             className={`account-card ${!account.status ? 'inactive' : ''}`}
+            onClick={() => handleNameClick(account)}
           >
             <div className="account-avatar">
               {/* UPDATED: Display profile picture if available, otherwise show default icon */}
