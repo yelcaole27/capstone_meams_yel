@@ -16,10 +16,8 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import pandas as pd
 import io
 from typing import Optional, Dict, Any
-import pandas as pd
 import base64
 from fastapi import UploadFile
 from fastapi.responses import Response
@@ -203,6 +201,7 @@ class SupplyCreate(BaseModel):
     itemPicture: Optional[str] = None  # Base64 encoded image string
     image_filename: Optional[str] = None
     image_content_type: Optional[str] = None
+    transactionHistory: Optional[List[Dict]] = []
 
 class SupplyUpdate(BaseModel):
     name: Optional[str] = None
@@ -217,6 +216,7 @@ class SupplyUpdate(BaseModel):
     image_data: Optional[str] = None
     image_filename: Optional[str] = None
     image_content_type: Optional[str] = None
+    transactionHistory: Optional[List[Dict]] = None
 
 class EquipmentCreate(BaseModel):
     name: str
@@ -441,7 +441,7 @@ def supply_helper(supply) -> dict:
         "description": supply.get("description", ""),
         "category": supply["category"],
         "quantity": supply["quantity"],
-                "supplier": supply.get("supplier", ""),
+        "supplier": supply.get("supplier", ""),
         "location": supply.get("location", ""),
         "status": supply.get("status", "available"),
         "itemCode": supply.get("itemCode", ""),
@@ -451,7 +451,8 @@ def supply_helper(supply) -> dict:
         "image_filename": supply.get("image_filename"),
         "image_content_type": supply.get("image_content_type"),
         "created_at": supply.get("created_at", datetime.utcnow()),
-        "updated_at": supply.get("updated_at", datetime.utcnow())
+        "updated_at": supply.get("updated_at", datetime.utcnow()),
+        "transactionHistory": supply.get("transactionHistory", []),
     }
 
 def equipment_helper(equipment) -> dict:
@@ -1150,33 +1151,53 @@ async def update_supply(supply_id: str, supply_update: SupplyUpdate, request: Re
     payload = verify_token(token)
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    
+
     if not ObjectId.is_valid(supply_id):
         raise HTTPException(status_code=400, detail="Invalid supply ID format")
-    
+
     supply_before = supplies_collection.find_one({"_id": ObjectId(supply_id)})
     if not supply_before:
         raise HTTPException(status_code=404, detail="Supply not found")
-    
+
     update_data = {k: v for k, v in supply_update.dict().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    
+
     update_data["updated_at"] = datetime.utcnow()
-    
+
+    # Check if quantity is being updated and track transaction
+    if "quantity" in update_data:
+        old_quantity = supply_before.get("quantity", 0)
+        new_quantity = update_data["quantity"]
+        quantity_change = new_quantity - old_quantity
+
+        # Create transaction entry
+        transaction = {
+            "date": datetime.utcnow(),
+            "receipt": max(0, quantity_change),  # Quantity added (positive change)
+            "issue": max(0, -quantity_change),   # Quantity subtracted (negative change)
+            "balance": new_quantity
+        }
+
+        # Append transaction to transactionHistory
+        supplies_collection.update_one(
+            {"_id": ObjectId(supply_id)},
+            {"$push": {"transactionHistory": transaction}}
+        )
+
     result = supplies_collection.update_one({"_id": ObjectId(supply_id)}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Supply not found")
-    
+
     updated_supply = supplies_collection.find_one({"_id": ObjectId(supply_id)})
-    
+
     await create_log_entry(
         username,
         "Updated a supply.",
         f"Updated supply: {supply_before.get('name', 'Unknown')} ({supply_before.get('itemCode')})",
         client_ip
     )
-    
+
     return {"success": True, "message": "Supply updated successfully", "data": supply_helper(updated_supply)}
 
 @app.delete("/api/supplies/{supply_id}")
