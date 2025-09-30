@@ -422,4 +422,8 @@ class SupplyThresholdManager {
 // Create singleton instance
 const supplyThresholdManager = new SupplyThresholdManager();
 
+<<<<<<< HEAD
 export default supplyThresholdManager;
+=======
+export default supplyThresholdManager;
+>>>>>>> 2ab8c5ff9b976edf9b794ded8d5bbf899017a469
