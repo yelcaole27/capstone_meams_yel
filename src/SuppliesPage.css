@@ -8,6 +8,25 @@
   height: calc(100vh - 60px);
 }
 
+/* Print styles to print only the stock card modal */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .modal-overlay, 
+  .modal-overlay * {
+    visibility: visible;
+  }
+  .modal-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+  }
+}
+
 .supplies-header {
   display: flex;
   justify-content: space-between;
@@ -846,12 +865,13 @@
 
 /* Action Buttons */
 .modal-print-section {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
+  position: relative;
+  height: 50px; /* Ensure space for buttons */
 }
 
 .modal-print-btn {
+  position: absolute;
+  bottom: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -870,6 +890,21 @@
   background: #f0f0f0;
   transform: translateY(-1px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Specific colors for Download PDF and Print buttons */
+.modal-print-section .modal-print-btn:nth-child(1) {
+  left: 0;
+  background: #90EE90; /* Light green for Download PDF */
+}
+
+.modal-print-section .modal-print-btn:nth-child(1):hover {
+  background: #7BC97B; /* Darker light green on hover */
+}
+
+.modal-print-section .modal-print-btn:nth-child(2) {
+  right: 0;
+  background: #ADD8E6; /* Light blue for Print */
 }
 
 .modal-close-btn {
@@ -1295,6 +1330,4 @@
   letter-spacing: 0.5px;
 
 }
-
-
 
