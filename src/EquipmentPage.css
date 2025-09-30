@@ -1,4 +1,26 @@
-/* EquipmentPage.css - Updated to match Supplies page with overview functionality */
+/* EquipmentPage.css - Fixed dropdown and form styling issues */
+
+.supplies-page-container {
+  flex-grow: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+}
+
+.supplies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 28px;
+  color: #ffffff;
+  font-weight: 700;
+  margin: 0;
+}
 
 .equipment-page-container {
   flex-grow: 1;
@@ -13,13 +35,6 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-}
-
-.page-title {
-  font-size: 28px;
-  color: #ffffff;
-  font-weight: 700;
-  margin: 0;
 }
 
 .table-controls {
@@ -107,12 +122,18 @@
   color: #ffffff;
 }
 
-/* View icon button styling */
-.view-icon-btn {
+/* Action buttons container */
+.action-buttons-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.view-icon-btn,
+.delete-icon-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #888888;
   padding: 5px;
   border-radius: 4px;
   transition: all 0.2s ease;
@@ -121,9 +142,22 @@
   justify-content: center;
 }
 
+.view-icon-btn {
+  color: #888888;
+}
+
 .view-icon-btn:hover {
   color: #4a9eff;
   background: rgba(74, 158, 255, 0.1);
+}
+
+.delete-icon-btn {
+  color: #888888;
+}
+
+.delete-icon-btn:hover {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
 }
 
 .add-equipment-button {
@@ -141,6 +175,447 @@
 
 .add-equipment-button:hover {
   background: #218838;
+}
+
+/* Enhanced Overlay Styling */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  backdrop-filter: blur(5px);
+}
+
+/* FIXED: Modal Overlay for Repair and Update Forms */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+/* FIXED: Dark Modal Content for Repair and Update Forms */
+.modal-content {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border-radius: 12px;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+  position: relative;
+  border: 1px solid #444;
+}
+
+/* FIXED: Modal Header Styling */
+.modal-content h2 {
+  color: #ffffff !important;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  text-align: left;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 15px;
+}
+
+/* FIXED: Form Labels */
+.modal-content label,
+.repair-form label,
+.update-form label {
+  color: #ffffff !important;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* FIXED: Form Inputs Styling */
+.modal-content input,
+.modal-content textarea,
+.modal-content select,
+.repair-form input,
+.repair-form textarea,
+.repair-form select,
+.update-form input,
+.update-form textarea,
+.update-form select {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #555 !important;
+  border-radius: 8px;
+  padding: 12px 15px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus,
+.modal-content select:focus {
+  outline: none;
+  border-color: #4a9eff !important;
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+  background: #222 !important;
+}
+
+/* Enhanced Form Styling and Improvements */
+
+/* Better focus states for all form inputs */
+.modal-content input:focus,
+.modal-content textarea:focus,
+.modal-content select:focus {
+  outline: none;
+  border-color: #4a9eff !important;
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+  background: #222 !important;
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
+
+/* Enhanced select dropdown hover state */
+.modal-content select:hover {
+  border-color: #777 !important;
+  background-color: #222 !important;
+  transition: all 0.3s ease;
+}
+
+/* Improved textarea styling */
+.modal-content textarea {
+  resize: vertical;
+  min-height: 120px;
+  max-height: 300px;
+  font-family: inherit;
+  line-height: 1.6;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+/* Better input validation styling */
+.modal-content input:invalid,
+.modal-content select:invalid,
+.modal-content textarea:invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.modal-content input:valid,
+.modal-content select:valid,
+.modal-content textarea:valid {
+  border-color: #28a745 !important;
+}
+
+/* Required field indicator */
+.modal-content label::after {
+  content: " *";
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Optional field styling */
+.modal-content .optional-field label::after {
+  content: " (optional)";
+  color: #888;
+  font-weight: normal;
+  font-size: 12px;
+}
+
+/* Form field animations */
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading state for buttons */
+.submit-btn:disabled,
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Better button focus states */
+.submit-btn:focus,
+.cancel-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.3);
+}
+
+/* Improved modal backdrop */
+.modal-overlay {
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal content animation */
+.modal-content {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Better scroll styling for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* FIXED: Disabled Input Styling */
+.disabled-input {
+  background: #333 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+  border-color: #444 !important;
+}
+
+/* FIXED: Select Dropdown Styling - This was the main issue */
+.modal-content select {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #555 !important;
+  border-radius: 8px;
+  padding: 12px 40px 12px 15px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23ffffff' d='M4 6l4 4 4-4H4z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
+}
+
+.modal-content select:focus {
+  outline: none;
+  border-color: #4a9eff !important;
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+  background-color: #222 !important;
+}
+
+/* FIXED: Select Options Styling */
+.modal-content select option {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  padding: 10px;
+  border: none;
+}
+
+/* FIXED: Amount Container with Currency Symbol */
+.amount-container {
+  position: relative;
+}
+
+.currency-symbol {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ffffff !important;
+  font-weight: bold;
+  z-index: 2;
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.amount-container input {
+  padding-left: 35px !important;
+}
+
+/* Useful Life Container */
+.useful-life-container {
+  position: relative;
+}
+
+.useful-life-unit {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ffffff !important;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 2;
+  font-weight: 500;
+}
+
+.useful-life-container input {
+  padding-right: 50px !important;
+}
+
+/* Form Group Spacing */
+.modal-content .form-group,
+.repair-form .form-group,
+.update-form .form-group {
+  margin-bottom: 20px;
+}
+
+/* FIXED: Textarea Styling */
+.modal-content textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  line-height: 1.5;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+/* FIXED: Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+}
+
+/* FIXED: Button Styling */
+.submit-btn,
+.cancel-btn,
+.modal-content button[type="submit"],
+.modal-content button[type="button"] {
+  background: #28a745 !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+  min-width: 120px;
+  text-transform: none;
+}
+
+.cancel-btn {
+  background: #6c757d !important;
+}
+
+.submit-btn:hover,
+.modal-content button[type="submit"]:hover {
+  background: #218838 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.cancel-btn:hover {
+  background: #5a6268 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* FIXED: Date Input Specific Styling */
+.date-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(100%);
+  background-color: transparent;
+  padding: 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+/* FIXED: Close Button */
+.modal-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: #444;
+  color: #fff;
 }
 
 /* Add Equipment Modal - Following SuppliesPage theme */
@@ -233,14 +708,34 @@
   background: #0056b3;
 }
 
-/* Category Dropdown */
+/* FIXED: Category Dropdown for Add Equipment Modal */
 .form-group select {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-  padding-right: 40px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: white;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M4 6l4 4 4-4H4z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 16px !important;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.form-group select option {
+  background: white;
+  color: #333;
+  padding: 8px;
 }
 
 /* File Input */
@@ -350,21 +845,6 @@
   background: #218838;
 }
 
-/* Enhanced Overlay Styling - Copied from SuppliesPage.css */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-  backdrop-filter: blur(5px);
-}
-
 /* Equipment Overview Modal */
 .item-overview-content {
   background: #e8e8e8;
@@ -405,7 +885,15 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  background: #f8f9fa; /* Add subtle background to match supplies modal */
+  background: #f8f9fa;
+}
+
+.item-image-placeholder img.item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
 }
 
 .placeholder-box {
@@ -448,7 +936,6 @@
   font-size: 14px;
 }
 
-
 .item-overview-actions {
   display: flex;
   gap: 15px;
@@ -469,28 +956,14 @@
   gap: 8px;
   letter-spacing: 0.5px;
   font-weight: 600;
-}
-
-.action-btn {
-  background: #007bff; /* primary blue */
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: 0.5px;
-  font-weight: 600;
   transition: background-color 0.2s ease;
 }
 
 .action-btn:hover {
   background: #0056b3;
 }
-/* Specific colors for different buttons to match supplies */
+
+/* Specific colors for different buttons */
 .view-stock-btn {
   background: #17a2b8;
 }
@@ -539,8 +1012,7 @@
   color: #333;
 }
 
-
-/* QR Code Modal Styles - Copied from SuppliesPage.css */
+/* QR Code Modal Styles */
 .qr-modal-content {
   background: #e8e8e8;
   padding: 30px;
@@ -732,118 +1204,6 @@
   font-style: italic;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .qr-modal-content {
-    width: 95vw;
-    padding: 20px;
-  }
-  
-  .qr-display-section {
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-  }
-  
-  .qr-code-container {
-    flex: none;
-  }
-  
-  .qr-actions {
-    justify-content: center;
-  }
-  
-  .qr-action-btn {
-    flex: 1;
-    max-width: 120px;
-    justify-content: center;
-  }
-  
-  .add-equipment-content {
-    width: 95vw;
-    padding: 20px;
-  }
-  
-  .item-overview-layout {
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .item-image-placeholder {
-    flex: none;
-    align-self: center;
-  }
-}
-
-.item-image-placeholder img.item-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-}
-
-.date-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #333;
-  border-radius: 4px;
-  background: #2a2a2a;
-  color: #ffffff;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border-color 0.3s ease;
-}
-
-.date-input:focus {
-  outline: none;
-  border-color: #0066cc;
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-}
-
-.date-input::-webkit-calendar-picker-indicator {
-  background-color: #ffffff;
-  padding: 2px;
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.date-input::-webkit-calendar-picker-indicator:hover {
-  background-color: #e0e0e0;
-}
-
-/* Dark theme adjustments for date input */
-.dark-theme .date-input {
-  background: #1a1a1a;
-  border-color: #555;
-  color: #ffffff;
-}
-
-.dark-theme .date-input:focus {
-  border-color: #4a9eff;
-}
-
-/* Responsive design for date input */
-@media (max-width: 768px) {
-  .date-input {
-    padding: 10px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
 /* Repair Card Modal */
 .repair-card-modal {
   background: white;
@@ -855,30 +1215,6 @@
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   padding: 40px;
-}
-
-/* Modal Close Button */
-.modal-close-btn {
-  position: absolute;
-  top: 20px;
-  right: 25px;
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: #666;
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.modal-close-btn:hover {
-  background-color: #f0f0f0;
-  color: #333;
 }
 
 /* Modal Header */
@@ -1063,6 +1399,63 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .modal-content {
+    width: 95vw;
+    padding: 20px;
+    max-width: none;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .submit-btn,
+  .cancel-btn {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .qr-modal-content {
+    width: 95vw;
+    padding: 20px;
+  }
+  
+  .qr-display-section {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+  
+  .qr-code-container {
+    flex: none;
+  }
+  
+  .qr-actions {
+    justify-content: center;
+  }
+  
+  .qr-action-btn {
+    flex: 1;
+    max-width: 120px;
+    justify-content: center;
+  }
+  
+  .add-equipment-content {
+    width: 95vw;
+    padding: 20px;
+  }
+  
+  .item-overview-layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .item-image-placeholder {
+    flex: none;
+    align-self: center;
+  }
+
   .repair-card-modal {
     width: 95%;
     padding: 25px;
@@ -1072,17 +1465,6 @@
   .modal-header {
     flex-direction: column;
     gap: 10px;
-  }
-
-  .modal-info-row {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .modal-info-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
   }
 
   .modal-repair-table {
@@ -1120,4 +1502,3 @@
     font-size: 12px;
   }
 }
-

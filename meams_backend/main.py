@@ -223,12 +223,11 @@ class EquipmentCreate(BaseModel):
     description: str
     category: str
     quantity: int
-    unit: Optional[str] = "UNIT"
+    usefulLife: int
+    amount: float
     location: Optional[str] = ""
     status: Optional[str] = "Operational"
-    serialNo: Optional[str] = ""
     itemCode: Optional[str] = ""
-    unit_price: Optional[float] = 0.0
     supplier: Optional[str] = ""
     date: Optional[str] = ""
     image_data: Optional[str] = None  # base64 string
@@ -240,12 +239,11 @@ class EquipmentUpdate(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     quantity: Optional[int] = None
-    unit: Optional[str] = None
+    usefulLife: Optional[int] = None 
+    amount: Optional[float] = None 
     location: Optional[str] = None
     status: Optional[str] = None
-    serialNo: Optional[str] = None
     itemCode: Optional[str] = None
-    unit_price: Optional[float] = None
     supplier: Optional[str] = None
     date: Optional[str] = None
 
@@ -463,12 +461,11 @@ def equipment_helper(equipment) -> dict:
         "description": equipment.get("description", equipment.get("name", "")),
         "category": equipment.get("category", "General"),
         "quantity": equipment.get("quantity", 1),
-        "unit": equipment.get("unit", "UNIT"),
+        "usefulLife": equipment.get("usefulLife", 1),
+        "amount": equipment.get("amount", 0.0),
         "location": equipment.get("location", ""),
         "status": equipment.get("status", "Operational"),
-        "serialNo": equipment.get("serialNo", equipment.get("serial_number", "")),
         "itemCode": equipment.get("itemCode", equipment.get("item_code", "")),
-        "unit_price": equipment.get("unit_price", 0.0),
         "supplier": equipment.get("supplier", ""),
         "date": equipment.get("date", ""),
         "image_data": equipment.get("image_data"),
@@ -593,12 +590,11 @@ def validate_and_transform_equipment(item_data: dict, index: int) -> tuple:
         "description": clean_string(item_data.get('description', item_name)),
         "category": category,
         "quantity": quantity,
-        "unit": clean_string(item_data.get('unit', 'UNIT')),
+        "usefulLife": int(item_data.get('usefulLife', 1)),
+        "amount": float(item_data.get('amount', 0.0)),
         "location": clean_string(item_data.get('location', '')),
         "status": clean_string(item_data.get('status', 'Operational')),
-        "serialNo": clean_string(item_data.get('serialNo') or item_data.get('serial_number', '')),
         "itemCode": str(item_code),
-        "unit_price": unit_price,
         "supplier": clean_string(item_data.get('supplier', '')),
         "date": clean_string(item_data.get('date_added') or item_data.get('date', '')),
         "created_at": datetime.utcnow(),
@@ -2212,12 +2208,12 @@ async def export_equipment(token: str = Depends(oauth2_scheme)):
                 "success": True,
                 "message": "No equipment data found",
                 "data": [],
-                "csv_data": "name,description,category,quantity,unit,location,status,serialNo,itemCode,unit_price,supplier,date\n",
+                "csv_data": "name,description,category,quantity,usefulLife,amount,location,status,itemCode,supplier,date\n",
                 "filename": f"equipment_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
             }
         
         # Convert to CSV format
-        csv_rows = ["name,description,category,quantity,unit,location,status,serialNo,itemCode,unit_price,supplier,date"]
+        csv_rows = ["name,description,category,quantity,usefulLife,amount,location,status,itemCode,supplier,date"]
         
         for equipment in equipment_list:
             row_data = [
@@ -2225,12 +2221,11 @@ async def export_equipment(token: str = Depends(oauth2_scheme)):
                 str(equipment.get('description', '')),
                 str(equipment.get('category', '')),
                 str(equipment.get('quantity', 1)),
-                str(equipment.get('unit', 'UNIT')),
+                str(equipment.get('usefulLife', 1)),
+                str(equipment.get('amount', 0.0)),
                 str(equipment.get('location', '')),
                 str(equipment.get('status', 'Operational')),
-                str(equipment.get('serialNo', '')),
                 str(equipment.get('itemCode', '')),
-                str(equipment.get('unit_price', 0.0)),
                 str(equipment.get('supplier', '')),
                 str(equipment.get('date', ''))
             ]
@@ -2378,19 +2373,18 @@ async def export_all_data(token: str = Depends(oauth2_scheme)):
             # Export equipment
             equipment_list = list(equipment_collection.find())
             if equipment_list:
-                equipment_csv = "name,description,category,quantity,unit,location,status,serialNo,itemCode,unit_price,supplier,date\n"
+                equipment_csv = "name,description,category,quantity,usefulLife,amount,location,status,itemCode,supplier,date\n"
                 for equipment in equipment_list:
                     row_data = [
                         str(equipment.get('name', '')),
                         str(equipment.get('description', '')),
                         str(equipment.get('category', '')),
                         str(equipment.get('quantity', 1)),
-                        str(equipment.get('unit', 'UNIT')),
+                        str(equipment.get('usefulLife', 1)),
+                        str(equipment.get('amount', 0.0)),
                         str(equipment.get('location', '')),
                         str(equipment.get('status', 'Operational')),
-                        str(equipment.get('serialNo', '')),
                         str(equipment.get('itemCode', '')),
-                        str(equipment.get('unit_price', 0.0)),
                         str(equipment.get('supplier', '')),
                         str(equipment.get('date', ''))
                     ]

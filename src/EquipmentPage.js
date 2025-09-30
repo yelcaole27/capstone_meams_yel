@@ -11,7 +11,9 @@ function EquipmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
- 
+  // NEW: Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Add Equipment Overlay states
   const [isAddEquipmentOverlayOpen, setIsAddEquipmentOverlayOpen] = useState(false);
@@ -19,17 +21,37 @@ function EquipmentPage() {
     itemCode: '',
     name: '',        // Equipment name (what displays in table)
     quantity: '',
-    unit: '',
     description: '', // Separate description field
     category: '',
     location: '',
     status: 'Within-Useful-Life',
-    serialNo: '',
+    usefulLife: '',
+    amount: '',
     date: '',
     itemPicture: null
   });
   const [dragActive, setDragActive] = useState(false);
   const [addingEquipment, setAddingEquipment] = useState(false);
+
+  // NEW: Report Repair and Update Equipment states
+const [showReportRepairModal, setShowReportRepairModal] = useState(false);
+const [showUpdateEquipmentModal, setShowUpdateEquipmentModal] = useState(false);
+const [repairData, setRepairData] = useState({
+  repairDate: '',
+  repairDetails: '',
+  repairAmount: '',
+  repairedBy: '',
+  repairStatus: 'In Progress'
+});
+const [updateData, setUpdateData] = useState({
+  name: '',
+  description: '',
+  category: '',
+  location: '',
+  status: '',
+  usefulLife: '',
+  amount: ''
+});
 
   const convertFileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
@@ -65,15 +87,137 @@ const handlePrintStockCard = () => {
   window.print();
 };
 
+// NEW: Report Repair and Update Equipment handlers
+const handleReportRepair = () => {
+  setShowReportRepairModal(true);
+  setRepairData({
+    repairDate: new Date().toISOString().split('T')[0],
+    repairDetails: '',
+    repairAmount: '',
+    repairedBy: '',
+    repairStatus: 'In Progress'
+  });
+};
+
+const handleUpdateEquipment = () => {
+  setShowUpdateEquipmentModal(true);
+  // Pre-populate form with current equipment data
+  setUpdateData({
+    name: selectedEquipment.name || '',
+    description: selectedEquipment.description || '',
+    category: selectedEquipment.category || '',
+    location: selectedEquipment.location || '',
+    status: selectedEquipment.status || '',
+    usefulLife: selectedEquipment.usefulLife || '',
+    amount: selectedEquipment.amount || ''
+  });
+};
+
+const handleRepairDataChange = (e) => {
+  const { name, value } = e.target;
+  setRepairData(prev => ({ ...prev, [name]: value }));
+};
+
+const handleUpdateDataChange = (e) => {
+  const { name, value } = e.target;
+  setUpdateData(prev => ({ ...prev, [name]: value }));
+};
+
+const submitRepairReport = async () => {
+  try {
+    // Validate repair form
+    if (!repairData.repairDetails.trim()) {
+      alert('Please enter repair details');
+      return;
+    }
+    
+    if (!repairData.repairedBy.trim()) {
+      alert('Please enter who performed the repair');
+      return;
+    }
+
+    // Here you would typically call your API to save the repair record
+    // await EquipmentAPI.addRepairRecord(selectedEquipment._id, repairData);
+    
+    console.log('Repair reported:', repairData);
+    alert('Repair report submitted successfully!');
+    setShowReportRepairModal(false);
+    
+    // Optionally update equipment status if repair is completed
+    if (repairData.repairStatus === 'Completed') {
+      // Update equipment status to 'Within-Useful-Life' or appropriate status
+      const updatedEquipment = { ...selectedEquipment, status: 'Within-Useful-Life' };
+      setSelectedEquipment(updatedEquipment);
+      
+      // Update in the main equipment list
+      setEquipmentData(prevData => 
+        prevData.map(item => 
+          item._id === selectedEquipment._id 
+            ? { ...item, status: 'Within-Useful-Life' }
+            : item
+        )
+      );
+    }
+    
+  } catch (error) {
+    console.error('Error submitting repair report:', error);
+    alert('Failed to submit repair report. Please try again.');
+  }
+};
+
+const submitEquipmentUpdate = async () => {
+  try {
+    // Validate update form
+    if (!updateData.name.trim()) {
+      alert('Equipment name is required');
+      return;
+    }
+    
+    if (!updateData.description.trim()) {
+      alert('Description is required');
+      return;
+    }
+
+    // FIX: Actually call the API to update the database
+    await EquipmentAPI.updateEquipment(selectedEquipment._id, updateData);
+    
+    console.log('Equipment updated:', updateData);
+    
+    // Update the selected equipment with new data
+    const updatedEquipment = { ...selectedEquipment, ...updateData };
+    setSelectedEquipment(updatedEquipment);
+    
+    // Update in the main equipment list
+    setEquipmentData(prevData => 
+      prevData.map(item => 
+        item._id === selectedEquipment._id 
+          ? { ...item, ...updateData }
+          : item
+      )
+    );
+    
+    alert('Equipment updated successfully!');
+    setShowUpdateEquipmentModal(false);
+    
+  } catch (error) {
+    console.error('Error updating equipment:', error);
+    alert('Failed to update equipment. Please try again.');
+  }
+};
+
   // Equipment categories and statuses
-  const equipmentCategories = ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety'];
+  const equipmentCategories = ['Sanitary Equipment', 'Office Equipment', 'Construction Equipment', 'Electrical Equipment'];
   const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
-  const equipmentUnits = ['UNIT', 'SET', 'PIECE', 'LOT'];
 
   // Load equipment from database when component mounts
    useEffect(() => {
     loadEquipment();
   }, []);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Enhanced load equipment function with better error handling
   const loadEquipment = async () => {
@@ -88,13 +232,13 @@ const handlePrintStockCard = () => {
   _id: item._id || item.id,
   itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
   quantity: item.quantity || 1,
-  unit: item.unit || 'UNIT',
+  usefulLife: item.usefulLife || 1,
+  amount: item.amount || 0.0,
   name: item.name || 'Unknown Equipment',
   description: item.description || 'No description available',
   category: item.category || 'General',
   location: item.location || 'Unknown',
   status: item.status || 'Within-Useful-Life',
-  serialNo: item.serialNo || item.serial_number || `SN-${Math.floor(Math.random() * 10000)}`,
   supplier: item.supplier || '',
   unit_price: item.unit_price || 0,
   date: item.date || '',  // NEW FIELD: Date field
@@ -125,20 +269,71 @@ setEquipmentData(transformedEquipment);
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // NEW: Pagination calculations
+  const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEquipment = filteredEquipment.slice(startIndex, endIndex);
+
+  // NEW: Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(parseInt(e.target.value));
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const generatePageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
   // Add Equipment Overlay handlers
   const handleAddEquipmentToggle = () => {
     setIsAddEquipmentOverlayOpen(!isAddEquipmentOverlayOpen);
     if (isAddEquipmentOverlayOpen) {
       setNewEquipment({
         itemCode: '',
-        name: '',          // Reset name
+        name: '',          
         quantity: '',
-        unit: '',
-        description: '',   // Reset description
+        description: '',   
         category: '',
         location: '',
         status: 'Within-Useful-Life',
-        serialNo: '',
+        usefulLife: '',
+        amount: '',
         date: '',
         itemPicture: null
       });
@@ -234,17 +429,19 @@ setEquipmentData(transformedEquipment);
       errors.push('Quantity must be a positive number');
     }
     
-    if (!newEquipment.unit) {
-      errors.push('Unit is required');
-    }
+    if (!newEquipment.usefulLife || parseInt(newEquipment.usefulLife) <= 0) {
+    errors.push('Useful life must be a positive number');
+  }
+
+   if (!newEquipment.amount || parseFloat(newEquipment.amount) < 0) {
+    errors.push('Amount must be a non-negative number');
+  }
     
     if (!newEquipment.category) {
       errors.push('Category is required');
     }
     
-    if (!newEquipment.serialNo.trim()) {
-      errors.push('Serial Number is required');
-    }
+    
     
     if (!newEquipment.status) {
       errors.push('Status is required');
@@ -267,22 +464,22 @@ if (newEquipment.itemPicture) {
 }
 
 const equipmentData = {
-  name: newEquipment.name.trim(),
-  description: newEquipment.description.trim(),
-  category: newEquipment.category,
-  quantity: parseInt(newEquipment.quantity),
-  unit: newEquipment.unit,
-  location: newEquipment.location.trim() || '',
-  status: newEquipment.status,
-  serialNo: newEquipment.serialNo.trim(),
-  itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-  unit_price: 0,
-  supplier: '',
-  date: newEquipment.date,
-  image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
-  image_filename: newEquipment.itemPicture?.name || null,
-  image_content_type: newEquipment.itemPicture?.type || null,
-};
+      name: newEquipment.name.trim(),
+      description: newEquipment.description.trim(),
+      category: newEquipment.category,
+      quantity: parseInt(newEquipment.quantity),
+      usefulLife: parseInt(newEquipment.usefulLife), 
+      amount: parseFloat(newEquipment.amount),       
+      location: newEquipment.location.trim() || '',
+      status: newEquipment.status,
+      itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+      unit_price: parseFloat(newEquipment.amount), 
+      supplier: '',
+      date: newEquipment.date,
+      image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
+      image_filename: newEquipment.itemPicture?.name || null,
+      image_content_type: newEquipment.itemPicture?.type || null,
+    };
 
 
     console.log('📤 Adding new equipment:', equipmentData);
@@ -291,25 +488,24 @@ const equipmentData = {
 
     // Add new equipment to state including image data
     const newEquipmentItem = {
-  _id: savedEquipment._id || savedEquipment.id,
-  itemCode: equipmentData.itemCode,
-  name: newEquipment.name.trim(),
-  quantity: parseInt(newEquipment.quantity),
-  unit: newEquipment.unit,
-  description: newEquipment.description.trim(),
-  category: newEquipment.category,
-  location: newEquipment.location.trim(),
-  status: newEquipment.status,
-  serialNo: newEquipment.serialNo.trim(),
-  // Use the base64 image string from backend for display
-  itemPicture: savedEquipment.image_data,  
-  image_data: savedEquipment.image_data, // base64 image string from backend
-  image_filename: savedEquipment.image_filename,
-  image_content_type: savedEquipment.image_content_type,
-  supplier: '',
-  unit_price: 0,
-  date: newEquipment.date
-};
+      _id: savedEquipment._id || savedEquipment.id,
+      itemCode: equipmentData.itemCode,
+      name: newEquipment.name.trim(),
+      quantity: parseInt(newEquipment.quantity),
+      usefulLife: parseInt(newEquipment.usefulLife), 
+      amount: parseFloat(newEquipment.amount),       
+      description: newEquipment.description.trim(),
+      category: newEquipment.category,
+      location: newEquipment.location.trim(),
+      status: newEquipment.status,
+      itemPicture: savedEquipment.image_data,  
+      image_data: savedEquipment.image_data,
+      image_filename: savedEquipment.image_filename,
+      image_content_type: savedEquipment.image_content_type,
+      supplier: '',
+      unit_price: parseFloat(newEquipment.amount), 
+      date: newEquipment.date
+    };
     setEquipmentData(prevData => [...prevData, newEquipmentItem]);
 
     alert(`Equipment "${newEquipment.name}" added successfully!`);
@@ -363,11 +559,11 @@ const equipmentData = {
         name: equipment.name,
         description: equipment.description,
         quantity: equipment.quantity,
-        unit: equipment.unit,
+        usefulLife: equipment.usefulLife,
+        amount: equipment.amount,
         category: equipment.category,
         location: equipment.location,
         status: equipment.status,
-        serialNo: equipment.serialNo,
         date: equipment.date,
         id: equipment._id,
         timestamp: new Date().toISOString(),
@@ -476,7 +672,7 @@ const equipmentData = {
               <h2>${qrCodeEquipment.name}</h2>
               <div class="item-details">
                 <p><strong>Item Code:</strong> ${qrCodeEquipment.itemCode}</p>
-                <p><strong>Serial No:</strong> ${qrCodeEquipment.serialNo}</p>
+                <p><strong>Useful Life:</strong> ${qrCodeEquipment.usefulLife}</p>
                 <p><strong>Category:</strong> ${qrCodeEquipment.category}</p>
                 <p><strong>Location:</strong> ${qrCodeEquipment.location}</p>
                 <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
@@ -581,6 +777,23 @@ const equipmentData = {
             </svg>
           </div>
           
+          {/* NEW: Items per page selector */}
+          <div className="items-per-page-container">
+            <span>Show:</span>
+            <select 
+              className="items-per-page-select" 
+              value={itemsPerPage} 
+              onChange={handleItemsPerPageChange}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>per page</span>
+          </div>
+
           <button 
             className="refresh-btn" 
             onClick={handleRefreshEquipment}
@@ -627,42 +840,97 @@ const equipmentData = {
             <tr>
               <th>ITEM CODE</th>
               <th>QUANTITY</th>
-              <th>UNIT</th>
+              <th>USEFUL LIFE</th>
               <th>EQUIPMENT NAME</th>
+              <th>AMOUNT</th>
               <th>ACTION</th>
             </tr>
           </thead>
           <tbody>
-            {filteredEquipment.map((equipment, index) => (
+            {paginatedEquipment.map((equipment, index) => (
               <tr key={equipment._id || index}>
                 <td>{equipment.itemCode}</td>
                 <td>{equipment.quantity}</td>
-                <td>{equipment.unit}</td>
+                <td>{equipment.usefulLife ? `${equipment.usefulLife} years` : 'N/A'}</td>
                 <td>
                   <span 
                     className="description-clickable"
                     onClick={() => handleEquipmentClick(equipment)}
                     title="Click to view details"
                   >
-                    {equipment.name} {/* FIXED: Show name instead of description */}
+                    {equipment.name}
                   </span>
                 </td>
+                <td>₱{equipment.amount ? parseFloat(equipment.amount).toFixed(2) : '0.00'}</td>
                 <td>
-                  <button 
-                    className="view-icon-btn"
-                    onClick={() => handleEquipmentClick(equipment)}
-                    title="View equipment details"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </td>
+  <div className="action-buttons-container">
+    <button 
+      className="view-icon-btn"
+      onClick={() => handleEquipmentClick(equipment)}
+      title="View equipment details"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+    <button 
+      className="delete-icon-btn"
+      onClick={() => handleDeleteEquipment(equipment._id, equipment.name)}
+      title="Delete equipment"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* NEW: Pagination Controls */}
+      {filteredEquipment.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredEquipment.length)} of {filteredEquipment.length} entries
+          </div>
+          
+          <div className="pagination-controls">
+            <button 
+              className="pagination-btn" 
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            
+            {generatePageNumbers().map((page, index) => (
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+              ) : (
+                <button
+                  key={page}
+                  className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </button>
+              )
+            ))}
+            
+            <button 
+              className="pagination-btn" 
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
 
       {equipmentData.length > 0 && (
@@ -729,19 +997,38 @@ const equipmentData = {
               </div>
 
               <div className="form-group">
-                <label>UNIT: *</label>
-                <select 
-                  name="unit" 
-                  value={newEquipment.unit} 
-                  onChange={handleEquipmentInputChange}
-                  required
-                >
-                  <option value="">Select Unit</option>
-                  {equipmentUnits.map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                </select>
-              </div>
+  <label>USEFUL LIFE: *</label>
+  <div className="useful-life-container">
+    <input 
+      type="number" 
+      name="usefulLife" 
+      value={newEquipment.usefulLife} 
+      onChange={handleEquipmentInputChange}
+      placeholder="Enter years"
+      min="1"
+      max="50"
+      required
+    />
+    <span className="useful-life-unit">years</span>
+  </div>
+</div>
+
+<div className="form-group">
+  <label>AMOUNT: *</label>
+  <div className="amount-container">
+    <span className="currency-symbol">₱</span>
+    <input 
+      type="number" 
+      name="amount" 
+      value={newEquipment.amount} 
+      onChange={handleEquipmentInputChange}
+      placeholder="0.00"
+      min="0"
+      step="0.01"
+      required
+    />
+  </div>
+</div>
 
               <div className="form-group">
                 <label>DESCRIPTION: *</label>
@@ -795,17 +1082,7 @@ const equipmentData = {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>SERIAL NO.: *</label>
-                <input 
-                  type="text" 
-                  name="serialNo" 
-                  value={newEquipment.serialNo} 
-                  onChange={handleEquipmentInputChange}
-                  placeholder="Enter unique serial number"
-                  required
-                />
-              </div>
+
 
               <div className="form-group">
                  <label>DATE:</label>
@@ -914,8 +1191,12 @@ const equipmentData = {
                   <span className="detail-value">{selectedEquipment.itemCode}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="detail-label">Serial No.:</span>
-                  <span className="detail-value">{selectedEquipment.serialNo}</span>
+                  <span className="detail-label">Useful Life (Years):</span>
+                  <span className="detail-value">{selectedEquipment.usefulLife}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Amount:</span>
+                  <span className="detail-value">{selectedEquipment.amount}</span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Category:</span>
@@ -953,57 +1234,58 @@ const equipmentData = {
             </div>
             
             <div className="item-overview-actions">
-              <button className="action-btn view-stock-btn" onClick={handleViewMaintenanceLog}>
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-  View Maintenance Log ▪
-</button>
-              
-              <button className="action-btn view-docs-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                View Documents ◌
-              </button>
-              
-              <button 
-                className="action-btn qr-code-btn"
-                onClick={() => generateQRCode(selectedEquipment)}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-                  <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
-                  <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
-                  <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
-                  <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
-                  <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
-                </svg>
-                Generate QR-code ⚙
-              </button>
-              
-              <button 
-                className="action-btn delete-btn"
-                onClick={() => handleDeleteEquipment(selectedEquipment._id, selectedEquipment.name)}
-                style={{ 
-                  background: '#dc3545',
-                  marginLeft: 'auto'
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Delete Equipment
-              </button>
-            </div>
+  <button className="action-btn repair-btn" onClick={handleReportRepair}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    Report Repair
+  </button>
+  
+  <button className="action-btn update-btn" onClick={handleUpdateEquipment}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18.5 2.50023C18.8978 2.10243 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.10243 21.5 2.50023C21.8978 2.89804 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.10243 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    Update Equipment
+  </button>
+
+  <button className="action-btn view-stock-btn" onClick={handleViewMaintenanceLog}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    View Maintenance Log ▪
+  </button>
+  
+  <button className="action-btn view-docs-btn">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+    View Documents ◌
+  </button>
+  
+  <button 
+    className="action-btn qr-code-btn"
+    onClick={() => generateQRCode(selectedEquipment)}
+  >
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+      <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
+      <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
+      <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
+      <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
+      <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
+    </svg>
+    Generate QR-code ⚙
+  </button>
+</div>
             
             <button className="close-overview-btn" onClick={handleCloseEquipmentOverview}>
               ×
@@ -1041,8 +1323,8 @@ const equipmentData = {
                 </div>
                 
                 <div className="qr-detail-row">
-                  <span className="qr-detail-label">Serial No.:</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.serialNo}</span>
+                  <span className="qr-detail-label">Useful Life (Years):</span>
+                  <span className="qr-detail-value">{qrCodeEquipment.usefulLife}</span>
                 </div>
                 
                 <div className="qr-detail-row">
@@ -1094,12 +1376,12 @@ const equipmentData = {
                   itemCode: qrCodeEquipment.itemCode,
                   name: qrCodeEquipment.name,
                   description: qrCodeEquipment.description,
-                  serialNo: qrCodeEquipment.serialNo,
+                  usefulLife: qrCodeEquipment.usefulLife,
                   category: qrCodeEquipment.category,
                   location: qrCodeEquipment.location,
                   status: qrCodeEquipment.status,
                   quantity: qrCodeEquipment.quantity,
-                  unit: qrCodeEquipment.unit,
+                  amount: qrCodeEquipment.amount,
                   id: qrCodeEquipment._id,
                   timestamp: new Date().toISOString()
                 };
@@ -1120,6 +1402,228 @@ const equipmentData = {
           </div>
         </div>
       )}
+
+      {/* Report Repair Modal */}
+{showReportRepairModal && selectedEquipment && (
+  <div className="overlay" onClick={() => setShowReportRepairModal(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <h3>Report Repair - {selectedEquipment.name}</h3>
+      
+      <div className="repair-form">
+        <div className="form-group">
+          <label>Equipment Code:</label>
+          <input 
+            type="text" 
+            value={selectedEquipment.itemCode} 
+            disabled 
+            className="disabled-input"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Date: *</label>
+          <input 
+            type="date" 
+            name="repairDate"
+            value={repairData.repairDate}
+            onChange={handleRepairDataChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Details: *</label>
+          <textarea 
+            name="repairDetails"
+            value={repairData.repairDetails}
+            onChange={handleRepairDataChange}
+            placeholder="Describe the repair work performed..."
+            rows="4"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Amount:</label>
+          <div className="amount-container">
+            <span className="currency-symbol">₱</span>
+            <input 
+              type="number" 
+              name="repairAmount"
+              value={repairData.repairAmount}
+              onChange={handleRepairDataChange}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Repaired By: *</label>
+          <input 
+            type="text" 
+            name="repairedBy"
+            value={repairData.repairedBy}
+            onChange={handleRepairDataChange}
+            placeholder="Enter technician/repair person name"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Status: *</label>
+          <select 
+            name="repairStatus"
+            value={repairData.repairStatus}
+            onChange={handleRepairDataChange}
+            required
+          >
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Pending Parts">Pending Parts</option>
+            <option value="On Hold">On Hold</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button 
+          className="submit-btn" 
+          onClick={submitRepairReport}
+        >
+          Submit Repair Report
+        </button>
+        <button 
+          className="cancel-btn" 
+          onClick={() => setShowReportRepairModal(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Update Equipment Modal */}
+{showUpdateEquipmentModal && selectedEquipment && (
+  <div className="overlay" onClick={() => setShowUpdateEquipmentModal(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <h3>Update Equipment - {selectedEquipment.itemCode}</h3>
+      
+      <div className="update-form">
+        <div className="form-group">
+          <label>Equipment Name: *</label>
+          <input 
+            type="text" 
+            name="name"
+            value={updateData.name}
+            onChange={handleUpdateDataChange}
+            placeholder="Enter equipment name"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description: *</label>
+          <textarea 
+            name="description"
+            value={updateData.description}
+            onChange={handleUpdateDataChange}
+            placeholder="Enter equipment description"
+            rows="3"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Category:</label>
+          <select 
+            name="category"
+            value={updateData.category}
+            onChange={handleUpdateDataChange}
+          >
+            <option value="">Select Category</option>
+            {equipmentCategories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Location:</label>
+          <input 
+            type="text" 
+            name="location"
+            value={updateData.location}
+            onChange={handleUpdateDataChange}
+            placeholder="Enter location"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Status:</label>
+          <select 
+            name="status"
+            value={updateData.status}
+            onChange={handleUpdateDataChange}
+          >
+            {equipmentStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Useful Life:</label>
+          <div className="useful-life-container">
+            <input 
+              type="number" 
+              name="usefulLife"
+              value={updateData.usefulLife}
+              onChange={handleUpdateDataChange}
+              placeholder="Enter years"
+              min="1"
+              max="50"
+            />
+            <span className="useful-life-unit">years</span>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Amount:</label>
+          <div className="amount-container">
+            <span className="currency-symbol">₱</span>
+            <input 
+              type="number" 
+              name="amount"
+              value={updateData.amount}
+              onChange={handleUpdateDataChange}
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button 
+          className="submit-btn" 
+          onClick={submitEquipmentUpdate}
+        >
+          Update Equipment
+        </button>
+        <button 
+          className="cancel-btn" 
+          onClick={() => setShowUpdateEquipmentModal(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
     {showRepairDocument && selectedEquipment && (
   <div className="modal-overlay">
@@ -1380,4 +1884,3 @@ const equipmentData = {
 }
 
 export default EquipmentPage;
-
