@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import html2pdf from 'html2pdf.js';
 import SuppliesAPI from './suppliesApi'; // Import the API service
 import supplyThresholdManager from './SupplyThresholdManager'; // Import threshold manager
 import './SuppliesPage.css';
@@ -179,7 +180,8 @@ function SuppliesPage() {
         status: supply.status || 'Normal',
         date: supply.date || '',
         has_image: supply.image_data ? true : false,
-        image_data: supply.image_data || null
+        image_data: supply.image_data || null,
+        transactionHistory: supply.transactionHistory || [] // Add this line
       };
     });
 
@@ -607,9 +609,18 @@ const handleCloseStockCard = () => {
       category: newItem.category,
       quantity: parseInt(newItem.quantity)
     };
-    
+
     // Calculate status based on thresholds
     const calculatedStatus = supplyThresholdManager.calculateStatus(tempItem);
+
+    // Initialize transaction history for new item
+    const initialTransactionHistory = [{
+      date: newItem.date || new Date().toISOString().slice(0, 10),
+      receipt: parseInt(newItem.quantity),
+      issue: null,
+      balance: parseInt(newItem.quantity),
+      timestamp: new Date().toISOString()
+    }];
 
     const supplyData = {
       name: newItem.itemName,
@@ -622,7 +633,8 @@ const handleCloseStockCard = () => {
       status: calculatedStatus, // Use calculated status instead of manual selection
       unit: newItem.unit,
       date: newItem.date,
-      itemPicture: imageBase64
+      itemPicture: imageBase64,
+      transactionHistory: initialTransactionHistory
     };
 
     const response = await SuppliesAPI.addSupply(supplyData);
@@ -849,7 +861,10 @@ const convertFileToBase64 = (file) => {
       return;
     }
 
+    const receiptQty = parseInt(receipt) || 0;
+    const issueQty = parseInt(issue) || 0;
     const newQuantity = parseInt(balance);
+
     if (isNaN(newQuantity) || newQuantity < 0) {
       alert('Invalid quantity. Balance cannot be negative.');
       return;
@@ -857,53 +872,75 @@ const convertFileToBase64 = (file) => {
 
     try {
       setLoading(true);
-      
-      // Create updated item with new quantity
-      const updatedItem = { ...selectedItem, quantity: newQuantity, date: date };
-      
-      // Calculate new status based on thresholds
-      const itemWithNewStatus = supplyThresholdManager.updateItemStatus(updatedItem);
-      
-      // Update API with new quantity and calculated status
-      await SuppliesAPI.updateSupply(selectedItem._id, { 
+
+      // Initialize transaction history if it doesn't exist
+      const currentHistory = selectedItem.transactionHistory || [];
+
+      // Create transaction record
+      const transaction = {
+        date: date,
+        receipt: receiptQty > 0 ? receiptQty : null,
+        issue: issueQty > 0 ? issueQty : null,
+        balance: newQuantity,
+        timestamp: new Date().toISOString()
+      };
+
+      // Add transaction to history
+      const updatedHistory = [...currentHistory, transaction];
+
+      // Create updated item with new quantity, date, and transaction history
+      const updatedItem = {
+        ...selectedItem,
         quantity: newQuantity,
         date: date,
-        status: itemWithNewStatus.status // Update status based on threshold
+        transactionHistory: updatedHistory
+      };
+
+      // Calculate new status based on thresholds
+      const itemWithNewStatus = supplyThresholdManager.updateItemStatus(updatedItem);
+
+      // Update API with new quantity, date, status, and transaction history
+      await SuppliesAPI.updateSupply(selectedItem._id, {
+        quantity: newQuantity,
+        date: date,
+        status: itemWithNewStatus.status,
+        transactionHistory: updatedHistory
       });
 
-      // Update local state with new quantity and status
-      setSuppliesData(prevData => 
-        prevData.map(item => 
-          item._id === selectedItem._id 
-            ? { ...item, quantity: newQuantity, date: date, status: itemWithNewStatus.status } 
+      // Update local state with new quantity, status, and transaction history
+      setSuppliesData(prevData =>
+        prevData.map(item =>
+          item._id === selectedItem._id
+            ? { ...item, quantity: newQuantity, date: date, status: itemWithNewStatus.status, transactionHistory: updatedHistory }
             : item
         )
       );
-      
+
       // Update selected item in overview
-      setSelectedItem(prev => ({ 
-        ...prev, 
-        quantity: newQuantity, 
-        date: date, 
-        status: itemWithNewStatus.status 
+      setSelectedItem(prev => ({
+        ...prev,
+        quantity: newQuantity,
+        date: date,
+        status: itemWithNewStatus.status,
+        transactionHistory: updatedHistory
       }));
-      
+
       // Update statistics
-      const updatedSupplies = suppliesData.map(item => 
-        item._id === selectedItem._id 
-          ? { ...item, quantity: newQuantity, date: date, status: itemWithNewStatus.status } 
+      const updatedSupplies = suppliesData.map(item =>
+        item._id === selectedItem._id
+          ? { ...item, quantity: newQuantity, date: date, status: itemWithNewStatus.status, transactionHistory: updatedHistory }
           : item
       );
       const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
       setStatusStats(stats);
-      
+
       // Show status change notification if status changed
       if (itemWithNewStatus.statusChanged) {
         alert(`Quantity updated successfully!\nStatus changed to: ${itemWithNewStatus.status}`);
       } else {
-      alert('Quantity updated successfully!');
+        alert('Quantity updated successfully!');
       }
-      
+
       handleCloseUpdateQuantity();
     } catch (err) {
       console.error('Error updating quantity:', err);
@@ -2435,20 +2472,33 @@ const handleRemoveImage = async (supplyId) => {
             </tr>
           </thead>
           <tbody>
-            <tr className="stock-row">
-              <td className="date-cell">{selectedItem.date}</td>
-              <td className="receipt-cell">{selectedItem.quantity}</td>
-              <td className="quantity-issue-cell"></td>
-              <td className="balance-cell">{selectedItem.quantity}</td>
-            </tr>
-            {Array.from({ length: 9 }, (_, index) => (
-              <tr key={index} className="stock-row">
-                <td className="date-cell"></td>
-                <td className="receipt-cell"></td>
-                <td className="quantity-issue-cell"></td>
-                <td className="balance-column"></td>
-              </tr>
-            ))}
+            {selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0 ? (
+              selectedItem.transactionHistory.map((transaction, index) => (
+                <tr key={index} className="stock-row">
+                  <td className="date-cell">{transaction.date || ''}</td>
+                  <td className="receipt-cell">{transaction.receipt !== null && transaction.receipt !== undefined ? transaction.receipt : ''}</td>
+                  <td className="quantity-issue-cell">{transaction.issue !== null && transaction.issue !== undefined ? transaction.issue : ''}</td>
+                  <td className="balance-cell">{transaction.balance !== null && transaction.balance !== undefined ? transaction.balance : ''}</td>
+                </tr>
+              ))
+            ) : (
+              <>
+                <tr className="stock-row">
+                  <td className="date-cell">{selectedItem.date}</td>
+                  <td className="receipt-cell">{selectedItem.quantity}</td>
+                  <td className="quantity-issue-cell"></td>
+                  <td className="balance-cell">{selectedItem.quantity}</td>
+                </tr>
+                {Array.from({ length: 9 }, (_, index) => (
+                  <tr key={index} className="stock-row">
+                    <td className="date-cell"></td>
+                    <td className="receipt-cell"></td>
+                    <td className="quantity-issue-cell"></td>
+                    <td className="balance-column"></td>
+                  </tr>
+                ))}
+              </>
+            )}
           </tbody>
         </table>
       </div>
@@ -2457,9 +2507,107 @@ const handleRemoveImage = async (supplyId) => {
         <button
           className="modal-print-btn"
           onClick={() => {
+            const element = document.createElement('div');
+            element.innerHTML = `
+              <div style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white;">
+                <div style="max-width: 800px; margin: 0 auto; border: 2px solid #333; border-radius: 8px; padding: 30px;">
+                  <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; gap: 15px;">
+                    <img src="/UDMLOGO.png" alt="University Logo" style="width: 50px; height: 50px;" />
+                    <div style="text-align: center;">
+                      <h3 style="font-size: 16px; font-weight: bold; margin: 0; color: #333;">Universidad De Manila</h3>
+                      <p style="font-size: 12px; margin: 2px 0 0 0; color: #666;">Stock Card</p>
+                    </div>
+                  </div>
+
+                  <div style="border-top: 1px solid #333; margin: 20px 0;"></div>
+
+                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #333;">
+                    <tr>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; width: 15%; color: #333;">Item:</td>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedItem.itemName || 'N/A'}</td>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; width: 15%; color: #333;">Stock No.:</td>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedItem.stockNo || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Category:</td>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedItem.category || 'N/A'}</td>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Description:</td>
+                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedItem.description || 'N/A'}</td>
+                    </tr>
+                  </table>
+
+                  <table style="width: 100%; border-collapse: collapse; border: 2px solid #333; margin-top: 10px;">
+                    <thead>
+                      <tr>
+                        <th rowspan="2" style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Date</th>
+                        <th colspan="3" style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef;">Quantity</th>
+                      </tr>
+                      <tr>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Receipt</th>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Issue</th>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
+                        ? selectedItem.transactionHistory.map(transaction => `
+                          <tr>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.date || ''}</td>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.receipt !== null && transaction.receipt !== undefined ? transaction.receipt : ''}</td>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.issue !== null && transaction.issue !== undefined ? transaction.issue : ''}</td>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.balance !== null && transaction.balance !== undefined ? transaction.balance : ''}</td>
+                          </tr>
+                        `).join('')
+                        : `
+                          <tr>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${selectedItem.date}</td>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${selectedItem.quantity}</td>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;"></td>
+                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${selectedItem.quantity}</td>
+                          </tr>
+                          ${Array.from({ length: 20 }, () => `
+                            <tr>
+                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
+                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
+                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
+                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
+                            </tr>
+                          `).join('')}
+                        `
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+
+            const opt = {
+              margin: 0.5,
+              filename: `Stock_Card_${selectedItem.itemName || 'Item'}_${selectedItem.itemCode || ''}.pdf`,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true },
+              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Download PDF
+        </button>
+
+        <button
+          className="modal-print-btn"
+          onClick={() => {
+            // Create a print-friendly version without opening new tab
             const printWindow = window.open('', '_blank');
-            handleCloseStockCard();
-            printWindow.document.write(`
+            const printContent = `
               <html>
                 <head>
                   <title>Stock Card - ${selectedItem.itemName || 'Item'}</title>
@@ -2469,6 +2617,7 @@ const handleRemoveImage = async (supplyId) => {
                       margin: 0;
                       padding: 20px;
                       background: white;
+                      color: #333;
                     }
                     .print-container {
                       max-width: 800px;
@@ -2477,149 +2626,146 @@ const handleRemoveImage = async (supplyId) => {
                       border-radius: 8px;
                       padding: 30px;
                     }
-                    .print-header {
+                    .header {
                       display: flex;
                       align-items: center;
                       justify-content: center;
+                      text-align: center;
                       margin-bottom: 20px;
                       gap: 15px;
                     }
-                    .print-logo {
+                    .logo {
                       width: 50px;
                       height: 50px;
                     }
-                    .print-title {
+                    .title-section {
                       text-align: center;
                     }
-                    .print-university {
+                    .university-name {
+                      font-size: 18px;
+                      font-weight: bold;
+                      color: #2c5530;
+                      margin: 0;
+                    }
+                    .document-type {
                       font-size: 16px;
                       font-weight: bold;
-                      margin: 0;
                       color: #333;
+                      margin: 5px 0 0 0;
                     }
-                    .print-document-type {
-                      font-size: 12px;
-                      margin: 2px 0 0 0;
-                      color: #666;
-                    }
-                    .print-divider {
-                      border-top: 1px solid #333;
+                    .divider {
+                      border-top: 2px solid #333;
                       margin: 20px 0;
                     }
-                    .print-info-table {
+                    .info-table {
                       width: 100%;
-                      border-collapse: collapse;
                       margin-bottom: 20px;
                       border: 1px solid #333;
+                      border-collapse: collapse;
                     }
-                    .print-info-table td {
+                    .info-table td {
                       padding: 8px 12px;
                       border: 1px solid #333;
-                      font-size: 12px;
+                      font-size: 14px;
                     }
-                    .print-info-label {
-                      background: #f8f9fa;
+                    .label-cell {
                       font-weight: bold;
-                      width: 15%;
+                      background-color: #f5f5f5;
+                      color: #333;
+                      text-align: right;
+                      width: 150px;
+                    }
+                    .value-cell {
                       color: #333;
                     }
-                    .print-info-value {
-                      width: 35%;
-                      text-decoration: underline;
-                    }
-                    .print-table {
+                    .transaction-table {
                       width: 100%;
                       border-collapse: collapse;
                       border: 2px solid #333;
-                      margin-top: 10px;
                     }
-                    .print-table th,
-                    .print-table td {
+                    .transaction-table th,
+                    .transaction-table td {
                       border: 1px solid #333;
                       padding: 8px;
                       text-align: center;
-                      font-size: 11px;
+                      font-size: 12px;
                     }
-                    .print-table th {
+                    .transaction-table th {
+                      background-color: #f5f5f5;
                       font-weight: bold;
-                      background: #e9ecef;
-                    }
-                    .print-table .date-column, .print-table .receipt-column, .print-table .quantity-issue-column, .print-table .balance-column {
-                      width: 25%;
-                    }
-                    .quantity-header {
-                      font-weight: bold;
-                      background: #e9ecef;
-                    }
-                    @media print {
-                      body { padding: 0; }
-                      .print-container {
-                        border: 1px solid #333;
-                        box-shadow: none;
-                      }
                     }
                   </style>
                 </head>
                 <body>
                   <div class="print-container">
-                    <div class="print-header">
-                      <img src="/UDMLOGO.png" alt="University Logo" class="print-logo" />
-                      <div class="print-title">
-                        <h3 class="print-university">Universidad De Manila</h3>
-                        <p class="print-document-type">Stock Card</p>
+                    <div class="header">
+                      <img src="/UDMLOGO.png" alt="University Logo" class="logo" />
+                      <div class="title-section">
+                        <h3 class="university-name">Universidad De Manila</h3>
+                        <p class="document-type">Stock Card</p>
                       </div>
                     </div>
-
-                    <div class="print-divider"></div>
-
-                    <table class="print-info-table">
+                    <div class="divider"></div>
+                    <table class="info-table">
                       <tr>
-                        <td class="print-info-label">Item:</td>
-                        <td class="print-info-value">${selectedItem.itemName || 'N/A'}</td>
-                        <td class="print-info-label">Stock No.:</td>
-                        <td class="print-info-value">${selectedItem.stockNo || 'N/A'}</td>
+                        <td class="label-cell">Item:</td>
+                        <td class="value-cell">${selectedItem.itemName || 'N/A'}</td>
+                        <td class="label-cell">Stock No.:</td>
+                        <td class="value-cell">${selectedItem.stockNo || 'N/A'}</td>
                       </tr>
                       <tr>
-                        <td class="print-info-label">Category:</td>
-                        <td class="print-info-value">${selectedItem.category || 'N/A'}</td>
-                        <td class="print-info-label">Description:</td>
-                        <td class="print-info-value">${selectedItem.description || 'N/A'}</td>
+                        <td class="label-cell">Category:</td>
+                        <td class="value-cell">${selectedItem.category || 'N/A'}</td>
+                        <td class="label-cell">Description:</td>
+                        <td class="value-cell">${selectedItem.description || 'N/A'}</td>
                       </tr>
                     </table>
-
-                    <table class="print-table">
+                    <table class="transaction-table">
                       <thead>
                         <tr>
-                          <th rowSpan="2" class="date-column">Date</th>
-                          <th colSpan="3" class="quantity-header">Quantity</th>
+                          <th rowspan="2">Date</th>
+                          <th colspan="3">Quantity</th>
                         </tr>
                         <tr>
-                          <th class="receipt-column">Receipt</th>
-                          <th class="quantity-issue-column">Issue</th>
-                          <th class="balance-column">Balance</th>
+                          <th>Receipt</th>
+                          <th>Issue</th>
+                          <th>Balance</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td class="date-cell" style="color: black;">${selectedItem.date}</td>
-                          <td>${selectedItem.quantity}</td>
-                          <td>&nbsp;</td>
-                          <td>${selectedItem.quantity}</td>
-                        </tr>
-                        ${Array.from({ length: 20 }, () => `
-                          <tr>
-                            <td class="date-cell">&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                          </tr>
-                        `).join('')}
+                        ${selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
+                          ? selectedItem.transactionHistory.map(transaction => `
+                            <tr>
+                              <td>${transaction.date || ''}</td>
+                              <td>${transaction.receipt !== null && transaction.receipt !== undefined ? transaction.receipt : ''}</td>
+                              <td>${transaction.issue !== null && transaction.issue !== undefined ? transaction.issue : ''}</td>
+                              <td>${transaction.balance !== null && transaction.balance !== undefined ? transaction.balance : ''}</td>
+                            </tr>
+                          `).join('')
+                          : `
+                            <tr>
+                              <td>${selectedItem.date}</td>
+                              <td>${selectedItem.quantity}</td>
+                              <td></td>
+                              <td>${selectedItem.quantity}</td>
+                            </tr>
+                            ${Array.from({ length: 20 }, () => `
+                              <tr>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                              </tr>
+                            `).join('')}
+                          `
+                        }
                       </tbody>
                     </table>
                   </div>
                 </body>
               </html>
-            `);
+            `;
+            printWindow.document.write(printContent);
             printWindow.document.close();
             printWindow.focus();
             setTimeout(() => {
@@ -2629,17 +2775,18 @@ const handleRemoveImage = async (supplyId) => {
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Print Stock Card
+          Print
         </button>
       </div>
     </div>
   </div>
 )}
-
     </div>
   );
 }
