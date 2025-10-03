@@ -28,6 +28,7 @@
 - npm install axios
 - npm install react-router-dom
 - npm install recharts
+- npm install html2pdf.js
 - pip install fastapi
 - pip install uvicorn
 - pip install pydantic
