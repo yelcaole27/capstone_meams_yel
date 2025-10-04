@@ -1,13 +1,14 @@
 """
-Bulk import router - handles CSV/Excel file imports
+========================
+OPTIMIZED bulk_import.py
+========================
+KEY FIX: Lazy import of pandas only when needed
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Request
-import pandas as pd
 import io
 import os
 from datetime import datetime
 from typing import List
-
 from services.auth_service import verify_token
 from services.log_service import create_log_entry
 from services.supply_service import supply_helper
@@ -17,7 +18,7 @@ from dependencies import get_current_user
 
 router = APIRouter(prefix="/api", tags=["bulk_import"])
 
-def validate_and_transform_supply(item_data: dict, index: int) -> tuple:
+def validate_and_transform_supply(item_data: dict, index: int, pd) -> tuple:
     """Validate and transform supply item data"""
     errors = []
     
@@ -80,7 +81,7 @@ def validate_and_transform_supply(item_data: dict, index: int) -> tuple:
     
     return transformed_item, errors
 
-def validate_and_transform_equipment(item_data: dict, index: int) -> tuple:
+def validate_and_transform_equipment(item_data: dict, index: int, pd) -> tuple:
     """Validate and transform equipment item data"""
     errors = []
     
@@ -162,12 +163,18 @@ async def bulk_import(
     request: Request = None,
     token: str = Depends(get_current_user)
 ):
-    """Bulk import supplies or equipment from CSV/Excel file"""
+    """Bulk import supplies or equipment from CSV/Excel file
+    
+    PERFORMANCE NOTE: Pandas is imported lazily here to avoid blocking app startup
+    """
     payload = verify_token(token)
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     try:
+        # 🚀 LAZY IMPORT - Only import pandas when this endpoint is called
+        import pandas as pd
+        
         # Validate file extension
         allowed_extensions = ['.csv', '.xls', '.xlsx']
         file_extension = os.path.splitext(file.filename)[1].lower()
@@ -207,9 +214,9 @@ async def bulk_import(
                 continue
             
             if import_type == "supplies":
-                transformed_item, errors = validate_and_transform_supply(item_data, index)
+                transformed_item, errors = validate_and_transform_supply(item_data, index, pd)
             elif import_type == "equipment":
-                transformed_item, errors = validate_and_transform_equipment(item_data, index)
+                transformed_item, errors = validate_and_transform_equipment(item_data, index, pd)
             else:
                 raise HTTPException(
                     status_code=400,
