@@ -12,6 +12,11 @@ function StaffLayout() {
   const { theme, toggleTheme } = useTheme();
   const [showStaffMenu, setShowStaffMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [bugReport, setBugReport] = useState('');
+  const [isSendingReport, setIsSendingReport] = useState(false);
+  const [showUserGuideModal, setShowUserGuideModal] = useState(false);
   const currentUser = getCurrentUser();
 
   // State for full name and profile picture
@@ -60,18 +65,62 @@ function StaffLayout() {
     fetchUserProfile();
   }, [authToken, currentUser]);
 
-  // ? NEW: Add this callback function for profile picture updates from modal
+  const toggleHelpMenu = () => setShowHelpMenu(!showHelpMenu);
+
+  const handleSendReport = async () => {
+    if (!bugReport.trim()) {
+      alert('Please enter your question or bug report.');
+      return;
+    }
+
+    try {
+      setIsSendingReport(true);
+      const token = getAuthToken();
+
+      if (!token) {
+        alert('Authentication required. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:8000/api/report-bug', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: bugReport,
+          username: currentUser?.username || 'unknown_user',
+          role: currentUser?.role || 'unknown_role'
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Bug report sent successfully to our team!');
+        setBugReport('');
+        setShowReportModal(false);
+      } else {
+        throw new Error(result.detail || 'Failed to send bug report');
+      }
+    } catch (error) {
+      console.error('Bug report error:', error);
+      alert('Failed to send bug report. Please try again later.');
+    } finally {
+      setIsSendingReport(false);
+    }
+  };
+
   const handleProfilePictureUpdate = (newPicture) => {
     console.log('Profile picture updated from modal:', newPicture);
     setProfilePicture(newPicture);
   };
 
-  // Handle avatar click to open file selector
   const handleAvatarClick = () => {
     if (!uploadingPicture) fileInputRef.current?.click();
   };
 
-  // Handle file selection and upload
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -112,7 +161,6 @@ function StaffLayout() {
     }
   };
 
-  // Handle delete profile picture
   const handleDeleteProfilePicture = async (e) => {
     e.stopPropagation();
     if (!profilePicture) return;
@@ -249,7 +297,6 @@ function StaffLayout() {
                 Dashboard
               </Link>
             </li>
-            {/* Supplies */}
             <li>
               <Link to="/supplies" className={`nav-item ${isActive('/supplies') ? 'active' : ''}`}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -258,7 +305,6 @@ function StaffLayout() {
                 Supplies
               </Link>
             </li>
-            {/* Equipment */}
             <li>
               <Link to="/equipment" className={`nav-item ${isActive('/equipment') ? 'active' : ''}`}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -267,7 +313,6 @@ function StaffLayout() {
                 Equipment
               </Link>
             </li>
-            {/* Settings */}
             <li>
               <Link to="/settings" className={`nav-item ${isActive('/settings') ? 'active' : ''}`}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -294,6 +339,32 @@ function StaffLayout() {
         <header className="main-header">
           <h1>Welcome, {fullName}</h1>
           <div className="header-actions">
+            {/* Help & Support Dropdown */}
+            <div className="staff-menu-dropdown">
+              <button className="staff-menu-toggle" onClick={toggleHelpMenu}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {showHelpMenu && (
+                <div className="admin-dropdown-content">
+                  <a href="#" onClick={(e) => { 
+                    e.preventDefault(); 
+                    setShowHelpMenu(false); 
+                    setShowUserGuideModal(true);
+                  }}>User Guide</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); setShowHelpMenu(false); }}>About MED</a>
+                  <a href="#" onClick={(e) => { 
+                    e.preventDefault(); 
+                    setShowHelpMenu(false); 
+                    setShowReportModal(true);
+                  }}>Report Issue</a>
+                </div>
+              )}
+            </div>
+
             {/* Theme Toggle Button */}
             <button 
               className="theme-toggle-btn" 
@@ -301,12 +372,10 @@ function StaffLayout() {
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
               {theme === 'light' ? (
-                // Moon icon for dark mode
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="currentColor"/>
                 </svg>
               ) : (
-                // Sun icon for light mode
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" fill="currentColor"/>
                   <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -321,11 +390,12 @@ function StaffLayout() {
               )}
             </button>
             
+            {/* Profile Dropdown */}
             <div className="staff-menu-dropdown">
               <button className="staff-menu-toggle" onClick={toggleStaffMenu}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor" />
-              </svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor" />
+                </svg>
               </button>
               {showStaffMenu && (
                 <div className="staff-dropdown-content">
@@ -337,18 +407,317 @@ function StaffLayout() {
           </div>
         </header>
 
-        {/* ADDED: Wrap Outlet in scrollable container - This is the key fix! */}
         <div className="main-content-scrollable">
           <Outlet />
         </div>
       </main>
 
-      {/* ? UPDATED: Profile Modal with callback prop */}
       <ProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onProfilePictureUpdate={handleProfilePictureUpdate}
       />
+
+      {/* Report Issue Modal */}
+      {showReportModal && (
+        <div className="modal-overlay" onClick={() => setShowReportModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', padding: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '600' }}>Report Issue</h2>
+              <button 
+                onClick={() => setShowReportModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '0',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <p style={{ color: '#666', marginBottom: '20px' }}>
+              Please describe the issue you're experiencing or any questions you have:
+            </p>
+            
+            <textarea
+              style={{
+                width: '100%',
+                minHeight: '150px',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                marginBottom: '20px'
+              }}
+              placeholder="Type your issue or question here..."
+              value={bugReport}
+              onChange={(e) => setBugReport(e.target.value)}
+            />
+            
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowReportModal(false);
+                  setBugReport('');
+                }}
+                style={{
+                  padding: '10px 20px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendReport}
+                disabled={isSendingReport || !bugReport.trim()}
+                style={{
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: isSendingReport || !bugReport.trim() ? '#ccc' : '#4CAF50',
+                  color: 'white',
+                  cursor: isSendingReport || !bugReport.trim() ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isSendingReport ? 'Sending...' : 'Send Report'}
+                {!isSendingReport && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Guide Modal */}
+      {showUserGuideModal && (
+        <div className="modal-overlay" onClick={() => setShowUserGuideModal(false)}>
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '800px', 
+              padding: '0',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: '8px',
+              background: theme === 'light' ? '#ffffff' : '#1e1e1e'
+            }}
+          >
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '30px',
+              background: theme === 'light' ? '#2c3e50' : '#0d1117',
+              color: '#ffffff',
+              borderRadius: '8px 8px 0 0'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '600', color: '#ffffff' }}>System User Guide</h2>
+              <button 
+                onClick={() => setShowUserGuideModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '28px',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  padding: '0',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '0' }}>
+              <div style={{ 
+                padding: '30px', 
+                background: theme === 'light' ? '#f8f9fa' : '#161b22'
+              }}>
+                <h3 style={{ 
+                  fontSize: '20px', 
+                  fontWeight: '600', 
+                  margin: '0 0 20px 0', 
+                  color: theme === 'light' ? '#2c3e50' : '#e6edf3'
+                }}>
+                  Managing Supplies and Equipment
+                </h3>
+              </div>
+              
+              <div style={{ 
+                padding: '30px', 
+                background: theme === 'light' ? '#ffffff' : '#0d1117'
+              }}>
+                <h4 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  marginBottom: '15px', 
+                  color: theme === 'light' ? '#2c3e50' : '#e6edf3'
+                }}>
+                  1. Adding Supply
+                </h4>
+                <ol style={{ 
+                  paddingLeft: '25px', 
+                  margin: '0', 
+                  color: theme === 'light' ? '#444' : '#c9d1d9'
+                }}>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Navigate to the Supplies section.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Scroll down to find and click the "Add Supply" button.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Complete the required information fields.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Click Add to save the new supply item.</li>
+                </ol>
+              </div>
+
+              <div style={{ 
+                padding: '30px', 
+                background: theme === 'light' ? '#f8f9fa' : '#161b22'
+              }}>
+                <h4 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  marginBottom: '15px', 
+                  color: theme === 'light' ? '#2c3e50' : '#e6edf3'
+                }}>
+                  2. Adding Equipment
+                </h4>
+                <ol style={{ 
+                  paddingLeft: '25px', 
+                  margin: '0', 
+                  color: theme === 'light' ? '#444' : '#c9d1d9'
+                }}>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Go to the Equipment section.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Scroll down to locate and click the "Add Equipment" button.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Fill in the necessary details about the equipment.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Click Add to register the new equipment.</li>
+                </ol>
+              </div>
+
+              <div style={{ 
+                padding: '30px', 
+                background: theme === 'light' ? '#ffffff' : '#0d1117'
+              }}>
+                <h4 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  marginBottom: '15px', 
+                  color: theme === 'light' ? '#2c3e50' : '#e6edf3'
+                }}>
+                  3. Updating Supply Quantity
+                </h4>
+                <ol style={{ 
+                  paddingLeft: '25px', 
+                  margin: '0', 
+                  color: theme === 'light' ? '#444' : '#c9d1d9'
+                }}>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Go to the Supplies section.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Click the name of the supply you wish to modify.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Select the "Update Supply" button.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Enter the exact new amount (quantity) for the supply and save the changes.</li>
+                </ol>
+              </div>
+
+              <div style={{ 
+                padding: '30px', 
+                background: theme === 'light' ? '#f8f9fa' : '#161b22'
+              }}>
+                <h4 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  marginBottom: '15px', 
+                  color: theme === 'light' ? '#2c3e50' : '#e6edf3'
+                }}>
+                  4. Updating Equipment Details
+                </h4>
+                <ol style={{ 
+                  paddingLeft: '25px', 
+                  margin: '0', 
+                  color: theme === 'light' ? '#444' : '#c9d1d9'
+                }}>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Go to the Equipment section.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Click the name of the equipment you want to change.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Select the "Update Equipment" button.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Adjust the details (e.g., RepairDate, RepairDetails) as needed and save the changes.</li>
+                </ol>
+              </div>
+
+              <div style={{ 
+                padding: '30px', 
+                background: theme === 'light' ? '#ffffff' : '#0d1117'
+              }}>
+                <h4 style={{ 
+                  fontSize: '18px', 
+                  fontWeight: '600', 
+                  marginBottom: '15px', 
+                  color: theme === 'light' ? '#2c3e50' : '#e6edf3'
+                }}>
+                  5. Locating the QR Code Generator
+                </h4>
+                <ol style={{ 
+                  paddingLeft: '25px', 
+                  margin: '0', 
+                  color: theme === 'light' ? '#444' : '#c9d1d9'
+                }}>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Navigate to either the Supplies or Equipment section.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>Click the item name (supply or equipment) for which you need a QR code.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>You will see and click the "Generate QR Code" button.</li>
+                  <li style={{ marginBottom: '10px', lineHeight: '1.6' }}>The system will then display the unique QR code for that specific item.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div style={{ 
+              padding: '20px 30px', 
+              background: theme === 'light' ? '#f8f9fa' : '#161b22', 
+              borderTop: theme === 'light' ? '1px solid #e0e0e0' : '1px solid #30363d', 
+              textAlign: 'right',
+              borderRadius: '0 0 8px 8px'
+            }}>
+              <button
+                onClick={() => setShowUserGuideModal(false)}
+                style={{
+                  padding: '12px 30px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: '#4CAF50',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
