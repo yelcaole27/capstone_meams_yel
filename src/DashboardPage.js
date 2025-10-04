@@ -440,23 +440,26 @@ function DashboardPage() {
                   <Line
                     type="monotone"
                     dataKey="quantity"
-                    stroke="#82ca9d"
-                    activeDot={{ r: 8 }}
+                    stroke={chartColors.primaryLine || '#2e7d32'} // darker green for visibility
+                    strokeWidth={2.5}
+                    activeDot={{ r: 7 }}
                     name="Forecasted Quantity"
                   />
                   <Line
                     type="monotone"
                     dataKey="lower_bound"
-                    stroke="#8884d8"
+                    stroke={chartColors.secondaryLine || '#1565c0'} // strong blue
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Lower Bound"
                     dot={false}
                   />
                   <Line
                     type="monotone"
                     dataKey="upper_bound"
-                    stroke="#ffc658"
+                    stroke={chartColors.accentLine || '#ef6c00'} // orange
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Upper Bound"
                     dot={false}
                   />
@@ -488,23 +491,26 @@ function DashboardPage() {
                   <Line
                     type="monotone"
                     dataKey="quantity"
-                    stroke="#82ca9d"
-                    activeDot={{ r: 8 }}
+                    stroke={chartColors.primaryLine || '#2e7d32'} // darker green for visibility
+                    strokeWidth={2.5}
+                    activeDot={{ r: 7 }}
                     name="Forecasted Quantity"
                   />
                   <Line
                     type="monotone"
                     dataKey="lower_bound"
-                    stroke="#8884d8"
+                    stroke={chartColors.secondaryLine || '#1565c0'} // strong blue
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Lower Bound"
                     dot={false}
                   />
                   <Line
                     type="monotone"
                     dataKey="upper_bound"
-                    stroke="#ffc658"
+                    stroke={chartColors.accentLine || '#ef6c00'} // orange
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Upper Bound"
                     dot={false}
                   />
@@ -515,7 +521,7 @@ function DashboardPage() {
             )}
           </div>
         </div>
-
+            
         {/* Middle Row: Pie Charts with Status Tables */}
         <div className="graph-card pie-graph-1">
           <h3>Supply Status Distribution</h3>
@@ -565,8 +571,15 @@ function DashboardPage() {
             {/* Status Table */}
             <div style={{ flex: '0 0 250px' }}>
               <div className="status-table-container">
-                <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>
-                  Supply Status Summary
+                <h4
+                  style={{
+                    margin: '0 0 15px 0',
+                    color: chartColors.text,
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                   Supply Status Summary
                 </h4>
                 <table className="status-table">
                   <thead>
@@ -650,7 +663,14 @@ function DashboardPage() {
             {/* Status Table */}
             <div style={{ flex: '0 0 250px' }}>
               <div className="status-table-container">
-                <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>
+                <h4
+                  style={{
+                    margin: '0 0 15px 0',
+                    color: chartColors.text,
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                >
                   Equipment Status Summary
                 </h4>
                 <table className="status-table">
