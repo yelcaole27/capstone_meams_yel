@@ -1,6 +1,45 @@
 /* StaffLayout.css */
 @import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
 
+/* ============================================================
+   THEME VARIABLES (Shared with MainLayout)
+   ============================================================ */
+:root {
+  --background: #2a2a2a;
+  --sidebar-bg: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #333333;
+  --hover-bg: #333333;
+  --active-bg: #4a4a4a;
+  --accent: #4ade80;
+}
+
+.theme-light {
+  --background: #f5f5f5;
+  --sidebar-bg: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #444444;
+  --border-color: #dddddd;
+  --hover-bg: #e8e8e8;
+  --active-bg: #dcdcdc;
+  --accent: #22c55e;
+}
+
+.theme-dark {
+  --background: #2a2a2a;
+  --sidebar-bg: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #333333;
+  --hover-bg: #333333;
+  --active-bg: #4a4a4a;
+  --accent: #4ade80;
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
 * {
   margin: 0;
   padding: 0;
@@ -9,10 +48,10 @@
 
 html, body, #root {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   margin: 0;
   padding: 0;
-  background: #2a2a2a;
+  background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   overflow: hidden;
 }
@@ -20,19 +59,30 @@ html, body, #root {
 .staff-layout-container {
   display: flex;
   height: 100vh;
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--background);
+  color: var(--text-primary);
 }
 
+/* ============================================================
+   SIDEBAR STYLES
+   ============================================================ */
 .staff-sidebar {
   width: 250px;
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   padding: 30px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  border-right: 1px solid #333333;
+  border-right: 1px solid var(--border-color);
   flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.staff-sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .staff-sidebar .logo {
@@ -42,12 +92,15 @@ html, body, #root {
 .staff-sidebar .logo-text {
   font-family: 'Koulen', cursive;
   font-size: 32px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 400;
   letter-spacing: 2px;
   text-align: center;
 }
 
+/* ============================================================
+   STAFF INFO & AVATAR
+   ============================================================ */
 .staff-info {
   text-align: center;
   margin-bottom: 40px;
@@ -57,10 +110,10 @@ html, body, #root {
 .staff-avatar {
   width: 80px;
   height: 80px;
-  background: #333333;
+  background: var(--hover-bg);
   border-radius: 50%;
   margin: 0 auto 10px;
-  border: 2px solid #555555;
+  border: 2px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -71,7 +124,7 @@ html, body, #root {
 }
 
 .staff-avatar:hover {
-  border-color: #4ade80;
+  border-color: var(--accent);
   transform: scale(1.05);
 }
 
@@ -89,7 +142,7 @@ html, body, #root {
 }
 
 .avatar-placeholder {
-  color: #888888;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -99,7 +152,7 @@ html, body, #root {
 }
 
 .staff-avatar:hover .avatar-placeholder {
-  color: #4ade80;
+  color: var(--accent);
 }
 
 .avatar-overlay {
@@ -115,7 +168,7 @@ html, body, #root {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
-  color: #4ade80;
+  color: var(--accent);
 }
 
 .staff-avatar:hover .avatar-overlay {
@@ -154,8 +207,8 @@ html, body, #root {
 .upload-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid #333;
-  border-top: 2px solid #4ade80;
+  border: 2px solid var(--hover-bg);
+  border-top: 2px solid var(--accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -168,10 +221,12 @@ html, body, #root {
 .staff-name {
   font-size: 16px;
   font-weight: 500;
-  color: #cccccc;
+  color: var(--text-secondary);
 }
 
-/* Navigation Menu */
+/* ============================================================
+   NAVIGATION MENU
+   ============================================================ */
 .nav-menu {
   width: 100%;
   flex: 1;
@@ -192,7 +247,7 @@ html, body, #root {
   align-items: center;
   padding: 12px 15px;
   border-radius: 10px;
-  color: #cccccc;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 16px;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -200,35 +255,37 @@ html, body, #root {
 
 .nav-item svg {
   margin-right: 12px;
-  color: #888888;
+  color: var(--text-secondary);
   transition: color 0.2s ease;
 }
 
 .nav-item:hover {
-  background: #333333;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .nav-item:hover svg {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .nav-item.active {
-  background: #4a4a4a;
-  color: #ffffff;
+  background: var(--active-bg);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .nav-item.active svg {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
-/* Sign out button */
+/* ============================================================
+   SIGN OUT
+   ============================================================ */
 .sign-out {
   width: 100%;
   margin-top: auto;
   padding-top: 20px;
-  border-top: 1px solid #333333;
+  border-top: 1px solid var(--border-color);
 }
 
 .sign-out-btn {
@@ -239,7 +296,7 @@ html, body, #root {
   align-items: center;
   padding: 12px 15px;
   border-radius: 10px;
-  color: #cccccc;
+  color: var(--text-secondary);
   font-size: 16px;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -247,27 +304,29 @@ html, body, #root {
 
 .sign-out-btn svg {
   margin-right: 12px;
-  color: #888888;
+  color: var(--text-secondary);
   transition: color 0.2s ease;
 }
 
 .sign-out-btn:hover {
-  background: #333333;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .sign-out-btn:hover svg {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
-/* Main Content */
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
 .main-content {
-  flex-grow: 1;
-  background: #2a2a2a;
-  padding: 30px;
+  flex: 1;
+  background: var(--background);
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .main-header {
@@ -275,42 +334,80 @@ html, body, #root {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #333333;
+  padding: 30px 30px 20px 30px;
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  background: var(--background);
 }
 
 .main-header h1 {
   font-family: 'Koulen', cursive;
   font-size: 25px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 400;
 }
 
-/* Main Content */
-.main-content {
-  flex: 1;
+/* Header Actions Container */
+.header-actions {
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.main-header {
-  background: #333333;
-  padding: 20px 30px;
-  border-bottom: 1px solid #444444;
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 15px;
 }
 
-.main-header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #ffffff;
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: var(--hover-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
 }
 
-/* Staff Menu Dropdown - Fixed to match MainLayout.css */
+.theme-toggle-btn:hover {
+  background: var(--active-bg);
+  color: var(--text-primary);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle-btn:hover svg {
+  transform: rotate(20deg);
+}
+
+/* Scrollable Content Area */
+.main-content-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 30px 30px 30px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.main-content-scrollable::-webkit-scrollbar {
+  display: none;
+}
+
+.main-content-scrollable > * {
+  min-height: max-content;
+}
+
+/* ============================================================
+   STAFF MENU DROPDOWN
+   ============================================================ */
 .staff-menu-dropdown {
   position: relative;
   display: inline-block;
@@ -319,7 +416,7 @@ html, body, #root {
 .staff-menu-toggle {
   background: none;
   border: none;
-  color: #cccccc;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 5px;
   border-radius: 5px;
@@ -330,8 +427,8 @@ html, body, #root {
 }
 
 .staff-menu-toggle:hover {
-  color: #ffffff;
-  background: #333333;
+  color: var(--text-primary);
+  background: var(--hover-bg);
 }
 
 .staff-menu-toggle svg {
@@ -341,7 +438,7 @@ html, body, #root {
 
 .staff-dropdown-content {
   position: absolute;
-  background-color: #1a1a1a;
+  background-color: var(--sidebar-bg);
   min-width: 160px;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
   z-index: 1;
@@ -353,7 +450,7 @@ html, body, #root {
 }
 
 .staff-dropdown-content a {
-  color: #cccccc;
+  color: var(--text-secondary);
   padding: 12px 16px;
   text-decoration: none;
   display: block;
@@ -362,8 +459,8 @@ html, body, #root {
 }
 
 .staff-dropdown-content a:hover {
-  background-color: #333333;
-  color: #ffffff;
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .staff-dropdown-content a:first-child {
@@ -376,8 +473,8 @@ html, body, #root {
   border-bottom-right-radius: 10px;
 }
 
-.main-content > div { /* Targeting the direct children of main-content (DashboardPage, SuppliesPage etc.) */
+.main-content > div {
   flex-grow: 1;
-  display: flex; /* Often children might need to be flex containers themselves */
+  display: flex;
   flex-direction: column;
 }
