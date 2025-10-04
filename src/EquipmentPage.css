@@ -1338,7 +1338,7 @@
 
 .details-col {
   width: 28%;
-  text-align: left !important;
+  text-align: center !important;
 }
 
 .amount-col {
@@ -1361,8 +1361,8 @@
 }
 
 .details-cell {
-  text-align: left;
-  padding-left: 12px;
+  text-align: center;
+  padding-left: 0px;
 }
 
 /* Modal Print Section */
@@ -1501,5 +1501,13 @@
     padding: 10px 20px;
     font-size: 12px;
   }
+
+ .modal-repair-table .details-col {
+  text-align: center;
+}
+
+.modal-repair-table .details-cell {
+  text-align: center;
+}
 
 }
