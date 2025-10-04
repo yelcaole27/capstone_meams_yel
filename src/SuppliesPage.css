@@ -1,4 +1,4 @@
-/* SuppliesPage.css - Updated with pagination and improved table layout */
+/* SuppliesPage.css - Updated with theme variables */
 
 .supplies-page-container {
   flex-grow: 1;
@@ -36,7 +36,7 @@
 
 .page-title {
   font-size: 28px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 700;
   margin: 0;
 }
@@ -53,11 +53,11 @@
 }
 
 .search-input {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px 15px 12px 40px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   width: 100%;
 }
@@ -67,7 +67,7 @@
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 /* Updated dropdown styling */
@@ -76,11 +76,11 @@
 }
 
 .category-dropdown {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px 15px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   min-width: 180px;
@@ -96,16 +96,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .items-per-page-select {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 12px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -118,7 +118,7 @@
 .supplies-table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 20px;
@@ -129,13 +129,13 @@
   padding: 15px 20px;
   text-align: left;
   font-size: 15px;
-  color: #e0e0e0;
-  border-bottom: 1px solid #333333;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .supplies-table th {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 16px;
 }
@@ -145,18 +145,18 @@
 }
 
 .supplies-table tr:hover {
-  background-color: #242424;
+  background-color: var(--hover-bg);
 }
 
 .item-name-clickable {
   cursor: pointer;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .item-name-clickable:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 /* Action buttons container */
@@ -180,7 +180,7 @@
 }
 
 .view-icon-btn {
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .view-icon-btn:hover {
@@ -189,7 +189,7 @@
 }
 
 .delete-icon-btn {
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .delete-icon-btn:hover {
@@ -204,7 +204,7 @@
   align-items: center;
   margin: 20px 0;
   padding: 20px 0;
-  border-top: 1px solid #333333;
+  border-top: 1px solid var(--border-color);
 }
 
 .pagination-controls {
@@ -214,9 +214,9 @@
 }
 
 .pagination-btn {
-  background: #2a2a2a;
-  border: 1px solid #333333;
-  color: #ffffff;
+  background: var(--hover-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -236,13 +236,14 @@
 }
 
 .pagination-btn:disabled {
-  background: #1a1a1a;
-  color: #666666;
+  background: var(--sidebar-bg);
+  color: var(--text-secondary);
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .pagination-info {
-  color: #888888;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -580,8 +581,8 @@
   padding: 12px;
   border: 1px solid #333;
   border-radius: 4px;
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
   transition: border-color 0.3s ease;
@@ -602,16 +603,6 @@
 
 .date-input::-webkit-calendar-picker-indicator:hover {
   background-color: #e0e0e0;
-}
-
-.dark-theme .date-input {
-  background: #1a1a1a;
-  border-color: #555;
-  color: #ffffff;
-}
-
-.dark-theme .date-input:focus {
-  border-color: #4a9eff;
 }
 
 /* Modal Overlays and Containers */
@@ -866,7 +857,7 @@
 /* Action Buttons */
 .modal-print-section {
   position: relative;
-  height: 50px; /* Ensure space for buttons */
+  height: 50px;
 }
 
 .modal-print-btn {
@@ -892,19 +883,18 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Specific colors for Download PDF and Print buttons */
 .modal-print-section .modal-print-btn:nth-child(1) {
   left: 0;
-  background: #90EE90; /* Light green for Download PDF */
+  background: #90EE90;
 }
 
 .modal-print-section .modal-print-btn:nth-child(1):hover {
-  background: #7BC97B; /* Darker light green on hover */
+  background: #7BC97B;
 }
 
 .modal-print-section .modal-print-btn:nth-child(2) {
   right: 0;
-  background: #ADD8E6; /* Light blue for Print */
+  background: #ADD8E6;
 }
 
 .modal-close-btn {
@@ -1296,19 +1286,6 @@
   flex: 0 0 200px;
 }
 
-.placeholder-box {
-  width: 200px;
-  height: 200px;
-  background: #ddd;
-  border: 2px dashed #999;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 14px;
-}
-
 .item-details {
   flex: 1;
   display: flex;
@@ -1328,6 +1305,4 @@
   min-width: 100px;
   font-size: 12px;
   letter-spacing: 0.5px;
-
 }
-
