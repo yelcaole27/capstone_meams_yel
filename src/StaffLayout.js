@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { useTheme } from './ThemeContext';
 import ProfileModal from './ProfileModal';
 import './StaffLayout.css';
 
@@ -8,6 +9,7 @@ function StaffLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { getCurrentUser, authToken } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showStaffMenu, setShowStaffMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const currentUser = getCurrentUser();
@@ -291,18 +293,47 @@ function StaffLayout() {
       <main className="main-content">
         <header className="main-header">
           <h1>Welcome, {fullName}</h1>
-          <div className="staff-menu-dropdown">
-            <button className="staff-menu-toggle" onClick={toggleStaffMenu}>
+          <div className="header-actions">
+            {/* Theme Toggle Button */}
+            <button 
+              className="theme-toggle-btn" 
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? (
+                // Moon icon for dark mode
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="currentColor"/>
+                </svg>
+              ) : (
+                // Sun icon for light mode
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" fill="currentColor"/>
+                  <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              )}
+            </button>
+            
+            <div className="staff-menu-dropdown">
+              <button className="staff-menu-toggle" onClick={toggleStaffMenu}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.96C6.04 13.98 10 12.9 12 12.9C13.99 12.9 17.96 13.98 18 15.96C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor" />
               </svg>
-            </button>
-            {showStaffMenu && (
-              <div className="staff-dropdown-content">
-                <a href="#" onClick={handleProfileClick}>Profile</a>
-                <a href="#" onClick={handleSignOut}>Sign out</a>
-              </div>
-            )}
+              </button>
+              {showStaffMenu && (
+                <div className="staff-dropdown-content">
+                  <a href="#" onClick={handleProfileClick}>Profile</a>
+                  <a href="#" onClick={handleSignOut}>Sign out</a>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
