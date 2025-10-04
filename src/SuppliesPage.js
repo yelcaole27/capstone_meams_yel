@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import html2pdf from 'html2pdf.js';
 import SuppliesAPI from './suppliesApi'; // Import the API service
+import DocumentViewer from './DocumentViewer';
 import supplyThresholdManager from './SupplyThresholdManager'; // Import threshold manager
 import './SuppliesPage.css';
 
@@ -43,6 +44,10 @@ function SuppliesPage() {
     issue: '',
     balance: ''
   });
+
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [documentFiles, setDocumentFiles] = useState([]);
+  const [docDragActive, setDocDragActive] = useState(false);
 
   // NEW: State for Edit Item Modal
   const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
@@ -301,6 +306,48 @@ function SuppliesPage() {
     return pageNumbers;
   };
 
+  const handleDocDrag = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.type === "dragenter" || e.type === "dragover") {
+    setDocDragActive(true);
+  } else if (e.type === "dragleave") {
+    setDocDragActive(false);
+  }
+};
+
+const handleDocDrop = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setDocDragActive(false);
+  
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    const files = Array.from(e.dataTransfer.files);
+    setDocumentFiles(prev => [...prev, ...files]);
+  }
+};
+
+const handleDocFileChange = (e) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const files = Array.from(e.target.files);
+    setDocumentFiles(prev => [...prev, ...files]);
+  }
+};
+
+const removeDocumentFile = (index) => {
+  setDocumentFiles(prev => prev.filter((_, i) => i !== index));
+};
+
+const handleViewDocuments = () => {
+  if (selectedItem) {
+    setIsDocumentViewerOpen(true);
+  }
+};
+
+const handleCloseDocumentViewer = () => {
+  setIsDocumentViewerOpen(false);
+};
+
   // QR Code generation function - UPDATED to include new fields
   const generateQRCode = async (item) => {
   try {
@@ -517,6 +564,7 @@ const handleCloseStockCard = () => {
         date: '',
         itemPicture: null
       });
+      setDocumentFiles([]);
     }
   };
 
@@ -603,17 +651,14 @@ const handleCloseStockCard = () => {
       console.log("Base64 image preview:", imageBase64.substring(0, 100));
     }
 
-    // Create temporary item to calculate status
     const tempItem = {
       itemName: newItem.itemName,
       category: newItem.category,
       quantity: parseInt(newItem.quantity)
     };
 
-    // Calculate status based on thresholds
     const calculatedStatus = supplyThresholdManager.calculateStatus(tempItem);
 
-    // Initialize transaction history for new item
     const initialTransactionHistory = [{
       date: newItem.date || new Date().toISOString().slice(0, 10),
       receipt: parseInt(newItem.quantity),
@@ -630,7 +675,7 @@ const handleCloseStockCard = () => {
       unit_price: 0,
       supplier: newItem.stockNo || '',
       location: newItem.location,
-      status: calculatedStatus, // Use calculated status instead of manual selection
+      status: calculatedStatus,
       unit: newItem.unit,
       date: newItem.date,
       itemPicture: imageBase64,
@@ -638,9 +683,25 @@ const handleCloseStockCard = () => {
     };
 
     const response = await SuppliesAPI.addSupply(supplyData);
-    const savedSupply = response;
+    let savedSupply = response;
 
-    // Use savedSupply data to update local state
+    // Upload documents if any were selected
+    if (documentFiles.length > 0) {
+      console.log(`📤 Uploading ${documentFiles.length} documents...`);
+      for (const file of documentFiles) {
+        try {
+          await SuppliesAPI.uploadSupplyDocument(savedSupply._id, file);
+          console.log(`✅ Uploaded: ${file.name}`);
+        } catch (err) {
+          console.error(`❌ Failed to upload ${file.name}:`, err);
+        }
+      }
+      
+      // Reload supply to get documents
+      const updatedSupply = await SuppliesAPI.getSupplyById(savedSupply._id);
+      savedSupply = updatedSupply;
+    }
+
     const newSupplyItem = {
       _id: savedSupply._id,
       itemCode: savedSupply.itemCode || newItem.itemCode || `GEN-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
@@ -651,20 +712,23 @@ const handleCloseStockCard = () => {
       description: newItem.description,
       unit: newItem.unit,
       location: newItem.location,
-      status: calculatedStatus, // Use calculated status
+      status: calculatedStatus,
       date: newItem.date,
       has_image: !!savedSupply.image_data,
-      image_data: savedSupply.image_data
+      image_data: savedSupply.image_data,
+      documents: savedSupply.documents || [],
+      transactionHistory: savedSupply.transactionHistory || []
     };
 
     setSuppliesData([...suppliesData, newSupplyItem]);
     
-    // Update statistics
     const updatedSupplies = [...suppliesData, newSupplyItem];
     const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
     setStatusStats(stats);
     
-    alert(`Supply added successfully!\nStatus: ${calculatedStatus}`);
+    alert(`Supply added successfully!\nStatus: ${calculatedStatus}\nDocuments uploaded: ${documentFiles.length}`);
+    
+    setDocumentFiles([]);
     handleOverlayToggle();
 
   } catch (error) {
@@ -1554,26 +1618,75 @@ const handleRemoveImage = async (supplyId) => {
             </div>
 
             <div className="upload-section">
-              <h4>UPLOAD FILES (DOCUMENTS)</h4>
-              <div 
-                className={`file-drop-zone ${dragActive ? 'drag-active' : ''}`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('fileInput').click()}
-              >
-                <div className="upload-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <p>Drag and Drop files here or <span className="choose-file-link">Choose file</span></p>
-                <small>Supported formats: PDF, DOCX, JPEG, PNG</small>
-                <small>Maximum size: 25MB</small>
-              </div>
-            </div>
+  <h4>UPLOAD FILES (DOCUMENTS)</h4>
+  <div 
+    className={`file-drop-zone ${docDragActive ? 'drag-active' : ''}`}
+    onDragEnter={handleDocDrag}
+    onDragLeave={handleDocDrag}
+    onDragOver={handleDocDrag}
+    onDrop={handleDocDrop}
+    onClick={() => document.getElementById('docFileInput').click()}
+  >
+    <input 
+      type="file" 
+      id="docFileInput"
+      onChange={handleDocFileChange}
+      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+      multiple
+      style={{ display: 'none' }}
+    />
+    <div className="upload-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+    <p>Drag and Drop files here or <span className="choose-file-link">Choose file</span></p>
+    <small>Supported formats: PDF, DOCX, JPEG, PNG</small>
+    <small>Maximum size: 25MB</small>
+  </div>
+  
+  {documentFiles.length > 0 && (
+    <div className="selected-docs-list" style={{ marginTop: '15px' }}>
+      <h5 style={{ fontSize: '14px', color: '#fff', marginBottom: '10px' }}>Selected Documents ({documentFiles.length}):</h5>
+      {documentFiles.map((file, index) => (
+        <div key={index} style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          background: '#2a2a2a',
+          marginBottom: '8px',
+          borderRadius: '4px',
+          border: '1px solid #444'
+        }}>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '12px', color: '#fff', display: 'block' }}>{file.name}</span>
+            <span style={{ fontSize: '10px', color: '#888' }}>
+              {(file.size / 1024).toFixed(2)} KB
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => removeDocumentFile(index)}
+            style={{
+              background: '#dc2626',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: '500'
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
             <div className="form-actions">
               <button 
@@ -1709,15 +1822,18 @@ const handleRemoveImage = async (supplyId) => {
                 View Stock Card ▦
               </button>
               
-              <button className="action-btn view-docs-btn">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                View Documents ⌕
-              </button>
+              <button 
+  className="action-btn view-docs-btn"
+  onClick={handleViewDocuments}  // ADD THIS LINE
+>
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+  View Documents ⌕
+</button>
               
               <button 
                 className="action-btn qr-code-btn"
@@ -2787,6 +2903,13 @@ const handleRemoveImage = async (supplyId) => {
     </div>
   </div>
 )}
+
+<DocumentViewer 
+  item={selectedItem}
+  isOpen={isDocumentViewerOpen}
+  onClose={handleCloseDocumentViewer}
+/>
+
     </div>
   );
 }
