@@ -13,22 +13,24 @@ def equipment_helper(equipment) -> dict:
     """Format equipment data"""
     return {
         "_id": str(equipment["_id"]),
-        "name": equipment.get("name", equipment.get("description", "")),
-        "description": equipment.get("description", equipment.get("name", "")),
-        "category": equipment.get("category", "General"),
-        "quantity": equipment.get("quantity", 1),
-        "usefulLife": equipment.get("usefulLife", 1),
+        "itemCode": equipment.get("itemCode", ""),
+        "name": equipment.get("name", ""),
+        "description": equipment.get("description", ""),
+        "category": equipment.get("category", ""),
+        "quantity": equipment.get("quantity", 0),
+        "usefulLife": equipment.get("usefulLife", 0),
         "amount": equipment.get("amount", 0.0),
         "location": equipment.get("location", ""),
-        "status": equipment.get("status", "Operational"),
-        "itemCode": equipment.get("itemCode", equipment.get("item_code", "")),
+        "status": equipment.get("status", "Within-Useful-Life"),
+        "unit_price": equipment.get("unit_price", 0.0),
         "supplier": equipment.get("supplier", ""),
         "date": equipment.get("date", ""),
+        "reportDate": equipment.get("reportDate", ""),
+        "reportDetails": equipment.get("reportDetails", ""),
+        "repairHistory": equipment.get("repairHistory", []),  # ADD THIS LINE
         "image_data": equipment.get("image_data"),
         "image_filename": equipment.get("image_filename"),
-        "image_content_type": equipment.get("image_content_type"),
-        "created_at": equipment.get("created_at", datetime.utcnow()),
-        "updated_at": equipment.get("updated_at", datetime.utcnow())
+        "image_content_type": equipment.get("image_content_type")
     }
 
 def get_all_equipment() -> List[Dict]:
@@ -121,3 +123,46 @@ async def add_equipment_image(equipment_id: str, image: UploadFile) -> Dict:
     )
     
     return equipment_helper(collection.find_one({"_id": ObjectId(equipment_id)}))
+
+def update_equipment_repair(equipment_id: str, repair_data: dict) -> Dict:
+    """Update equipment with repair information and add to repair history"""
+    collection = get_equipment_collection()
+    
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    # Validate required fields
+    if not repair_data.get("repairDate"):
+        raise HTTPException(status_code=400, detail="Repair date is required")
+    
+    if not repair_data.get("repairDetails") or not repair_data.get("repairDetails").strip():
+        raise HTTPException(status_code=400, detail="Repair details are required")
+    
+    if repair_data.get("amountUsed") is None or float(repair_data.get("amountUsed", 0)) < 0:
+        raise HTTPException(status_code=400, detail="Amount used must be a valid number")
+    
+    # Create new repair entry
+    new_repair_entry = {
+        "repairDate": repair_data.get("repairDate"),
+        "repairDetails": repair_data.get("repairDetails").strip(),
+        "amountUsed": float(repair_data.get("amountUsed", 0)),
+        "completedAt": datetime.utcnow().isoformat()
+    }
+    
+    # Use $push to add to repairHistory array (this preserves existing entries)
+    collection.update_one(
+        {"_id": ObjectId(equipment_id)},
+        {
+            "$push": {"repairHistory": new_repair_entry},
+            "$set": {
+                "status": "Within-Useful-Life",  # Reset status after repair
+                "reportDate": "",  # Clear report date
+                "reportDetails": "",  # Clear report details
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    updated_equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    return equipment_helper(updated_equipment)
