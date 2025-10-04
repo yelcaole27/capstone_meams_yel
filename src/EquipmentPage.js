@@ -37,11 +37,8 @@ function EquipmentPage() {
 const [showReportRepairModal, setShowReportRepairModal] = useState(false);
 const [showUpdateEquipmentModal, setShowUpdateEquipmentModal] = useState(false);
 const [repairData, setRepairData] = useState({
-  repairDate: '',
-  repairDetails: '',
-  repairAmount: '',
-  repairedBy: '',
-  repairStatus: 'In Progress'
+  reportDate: '',      
+  reportDetails: ''    
 });
 const [updateData, setUpdateData] = useState({
   name: '',
@@ -91,11 +88,8 @@ const handlePrintStockCard = () => {
 const handleReportRepair = () => {
   setShowReportRepairModal(true);
   setRepairData({
-    repairDate: new Date().toISOString().split('T')[0],
-    repairDetails: '',
-    repairAmount: '',
-    repairedBy: '',
-    repairStatus: 'In Progress'
+    reportDate: new Date().toISOString().split('T')[0],
+    reportDetails: ''
   });
 };
 
@@ -103,13 +97,11 @@ const handleUpdateEquipment = () => {
   setShowUpdateEquipmentModal(true);
   // Pre-populate form with current equipment data
   setUpdateData({
-    name: selectedEquipment.name || '',
-    description: selectedEquipment.description || '',
-    category: selectedEquipment.category || '',
-    location: selectedEquipment.location || '',
-    status: selectedEquipment.status || '',
-    usefulLife: selectedEquipment.usefulLife || '',
-    amount: selectedEquipment.amount || ''
+    itemCode: selectedEquipment.itemCode || '',  // Auto-filled
+    description: selectedEquipment.description || '',  // Auto-filled
+    repairDate: '',  // User input
+    repairDetails: '',  // User input
+    amountUsed: ''  // User input
   });
 };
 
@@ -123,85 +115,138 @@ const handleUpdateDataChange = (e) => {
   setUpdateData(prev => ({ ...prev, [name]: value }));
 };
 
+// Updated submitRepairReport function - replace in your EquipmentPage.js
+
 const submitRepairReport = async () => {
   try {
-    // Validate repair form
-    if (!repairData.repairDetails.trim()) {
-      alert('Please enter repair details');
+    // Validate inputs
+    if (!repairData.reportDetails || !repairData.reportDetails.trim()) {
+      alert('Please enter report details');
       return;
     }
     
-    if (!repairData.repairedBy.trim()) {
-      alert('Please enter who performed the repair');
+    if (!repairData.reportDate) {
+      alert('Please enter report date');
       return;
     }
 
-    // Here you would typically call your API to save the repair record
-    // await EquipmentAPI.addRepairRecord(selectedEquipment._id, repairData);
-    
-    console.log('Repair reported:', repairData);
-    alert('Repair report submitted successfully!');
-    setShowReportRepairModal(false);
-    
-    // Optionally update equipment status if repair is completed
-    if (repairData.repairStatus === 'Completed') {
-      // Update equipment status to 'Within-Useful-Life' or appropriate status
-      const updatedEquipment = { ...selectedEquipment, status: 'Within-Useful-Life' };
-      setSelectedEquipment(updatedEquipment);
-      
-      // Update in the main equipment list
-      setEquipmentData(prevData => 
-        prevData.map(item => 
-          item._id === selectedEquipment._id 
-            ? { ...item, status: 'Within-Useful-Life' }
-            : item
-        )
-      );
+    console.log('=== SUBMITTING REPAIR REPORT ===');
+    console.log('Equipment ID:', selectedEquipment._id);
+    console.log('Report Date:', repairData.reportDate);
+    console.log('Report Details:', repairData.reportDetails);
+
+    // Call API to update equipment with report
+    const updatedEquipment = await EquipmentAPI.addEquipmentReport(
+      selectedEquipment._id,
+      {
+        reportDate: repairData.reportDate,
+        reportDetails: repairData.reportDetails
+      }
+    );
+
+    console.log('=== REPORT SUBMITTED SUCCESSFULLY ===');
+    console.log('Updated Equipment:', updatedEquipment);
+
+    // Verify the data was saved
+    if (!updatedEquipment.reportDate || !updatedEquipment.reportDetails) {
+      console.error('Warning: Report data not found in response!');
+      console.log('Response structure:', updatedEquipment);
     }
+
+    alert('Repair report submitted successfully! The equipment status has been set to Maintenance.');
+    
+    // Close modal
+    setShowReportRepairModal(false);
+
+    // Update the selected equipment with new data
+    setSelectedEquipment(updatedEquipment);
+
+    // Update equipment list - completely replace the equipment object
+    setEquipmentData(prevData =>
+      prevData.map(item =>
+        item._id === selectedEquipment._id ? updatedEquipment : item
+      )
+    );
+
+    // Reset form
+    setRepairData({
+      reportDate: '',
+      reportDetails: ''
+    });
+    
+    console.log('=== STATE UPDATED ===');
     
   } catch (error) {
-    console.error('Error submitting repair report:', error);
-    alert('Failed to submit repair report. Please try again.');
+    console.error('=== ERROR SUBMITTING REPAIR REPORT ===');
+    console.error('Error details:', error);
+    console.error('Error message:', error.message);
+    console.error('Error response:', error.response);
+    
+    alert(`Failed to submit repair report: ${error.message}`);
   }
 };
 
 const submitEquipmentUpdate = async () => {
   try {
     // Validate update form
-    if (!updateData.name.trim()) {
-      alert('Equipment name is required');
+    if (!updateData.repairDate) {
+      alert('Repair date is required');
       return;
     }
     
-    if (!updateData.description.trim()) {
-      alert('Description is required');
+    if (!updateData.repairDetails.trim()) {
+      alert('Repair details are required');
+      return;
+    }
+    
+    if (!updateData.amountUsed || parseFloat(updateData.amountUsed) < 0) {
+      alert('Amount used must be a valid number');
       return;
     }
 
-    // FIX: Actually call the API to update the database
-    await EquipmentAPI.updateEquipment(selectedEquipment._id, updateData);
+    console.log('Submitting repair update:', {
+      repairDate: updateData.repairDate,
+      repairDetails: updateData.repairDetails,
+      amountUsed: parseFloat(updateData.amountUsed)
+    });
+
+    // Call API to update the database
+    const response = await EquipmentAPI.updateEquipmentRepair(selectedEquipment._id, {
+      repairDate: updateData.repairDate,
+      repairDetails: updateData.repairDetails,
+      amountUsed: parseFloat(updateData.amountUsed)
+    });
     
-    console.log('Equipment updated:', updateData);
+    console.log('Equipment repair updated:', response);
     
-    // Update the selected equipment with new data
-    const updatedEquipment = { ...selectedEquipment, ...updateData };
-    setSelectedEquipment(updatedEquipment);
+    // The backend now handles adding to repairHistory, so we just need to update state
+    // with the response data
+    setSelectedEquipment(response);
     
     // Update in the main equipment list
     setEquipmentData(prevData => 
       prevData.map(item => 
         item._id === selectedEquipment._id 
-          ? { ...item, ...updateData }
+          ? response
           : item
       )
     );
     
-    alert('Equipment updated successfully!');
+    alert('Equipment repair completed successfully!');
     setShowUpdateEquipmentModal(false);
     
+    // Reset form
+    setUpdateData({
+      itemCode: '',
+      description: '',
+      repairDate: '',
+      repairDetails: '',
+      amountUsed: ''
+    });
+    
   } catch (error) {
-    console.error('Error updating equipment:', error);
-    alert('Failed to update equipment. Please try again.');
+    console.error('Error updating equipment repair:', error);
+    alert('Failed to update equipment repair. Please try again.');
   }
 };
 
@@ -243,9 +288,10 @@ const submitEquipmentUpdate = async () => {
   unit_price: item.unit_price || 0,
   date: item.date || '',  // NEW FIELD: Date field
   has_image: item.image_data ? true : false,
-image_data: item.image_data || null,
-image_filename: item.image_filename || null,
-image_content_type: item.image_content_type || null,
+  image_data: item.image_data || null,
+  image_filename: item.image_filename || null,
+  image_content_type: item.image_content_type || null,
+  repairHistory: item.repairHistory || [],  // NEW FIELD: Repair history array
 }));
 setEquipmentData(transformedEquipment);
       console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
@@ -1408,94 +1454,51 @@ const equipmentData = {
   <div className="overlay" onClick={() => setShowReportRepairModal(false)}>
     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
       <h3>Report Repair - {selectedEquipment.name}</h3>
-      
+
       <div className="repair-form">
         <div className="form-group">
           <label>Equipment Code:</label>
-          <input 
-            type="text" 
-            value={selectedEquipment.itemCode} 
-            disabled 
+          <input
+            type="text"
+            value={selectedEquipment.itemCode}
+            disabled
             className="disabled-input"
           />
         </div>
 
         <div className="form-group">
-          <label>Repair Date: *</label>
-          <input 
-            type="date" 
-            name="repairDate"
-            value={repairData.repairDate}
+          <label>Report Date: *</label>
+          <input
+            type="date"
+            name="reportDate"
+            value={repairData.reportDate}
             onChange={handleRepairDataChange}
             required
           />
         </div>
 
         <div className="form-group">
-          <label>Repair Details: *</label>
-          <textarea 
-            name="repairDetails"
-            value={repairData.repairDetails}
+          <label>Report Details: *</label>
+          <textarea
+            name="reportDetails"
+            value={repairData.reportDetails}
             onChange={handleRepairDataChange}
-            placeholder="Describe the repair work performed..."
+            placeholder="Describe the issue or repair needed..."
             rows="4"
             required
           />
         </div>
-
-        <div className="form-group">
-          <label>Repair Amount:</label>
-          <div className="amount-container">
-            <span className="currency-symbol">₱</span>
-            <input 
-              type="number" 
-              name="repairAmount"
-              value={repairData.repairAmount}
-              onChange={handleRepairDataChange}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Repaired By: *</label>
-          <input 
-            type="text" 
-            name="repairedBy"
-            value={repairData.repairedBy}
-            onChange={handleRepairDataChange}
-            placeholder="Enter technician/repair person name"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Repair Status: *</label>
-          <select 
-            name="repairStatus"
-            value={repairData.repairStatus}
-            onChange={handleRepairDataChange}
-            required
-          >
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="Pending Parts">Pending Parts</option>
-            <option value="On Hold">On Hold</option>
-          </select>
-        </div>
       </div>
 
       <div className="modal-actions">
-        <button 
-          className="submit-btn" 
+        <button
+          className="submit-btn"
           onClick={submitRepairReport}
         >
           Submit Repair Report
         </button>
-        <button 
-          className="cancel-btn" 
+        <button
+          className="cancel-btn"
           onClick={() => setShowReportRepairModal(false)}
         >
           Cancel
@@ -1509,99 +1512,65 @@ const equipmentData = {
 {showUpdateEquipmentModal && selectedEquipment && (
   <div className="overlay" onClick={() => setShowUpdateEquipmentModal(false)}>
     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-      <h3>Update Equipment - {selectedEquipment.itemCode}</h3>
+      <h3>Update Equipment Repair - {selectedEquipment.name}</h3>
       
       <div className="update-form">
         <div className="form-group">
-          <label>Equipment Name: *</label>
+          <label>Item Code:</label>
           <input 
             type="text" 
-            name="name"
-            value={updateData.name}
+            value={selectedEquipment.itemCode}
+            disabled
+            className="disabled-input"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description:</label>
+          <textarea 
+            value={selectedEquipment.description}
+            disabled
+            className="disabled-input"
+            rows="2"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Repair Date: *</label>
+          <input 
+            type="date" 
+            name="repairDate"
+            value={updateData.repairDate}
             onChange={handleUpdateDataChange}
-            placeholder="Enter equipment name"
             required
           />
         </div>
 
         <div className="form-group">
-          <label>Description: *</label>
+          <label>Repair Details: *</label>
           <textarea 
-            name="description"
-            value={updateData.description}
+            name="repairDetails"
+            value={updateData.repairDetails}
             onChange={handleUpdateDataChange}
-            placeholder="Enter equipment description"
+            placeholder="Describe what was repaired..."
             rows="3"
             required
           />
         </div>
 
         <div className="form-group">
-          <label>Category:</label>
-          <select 
-            name="category"
-            value={updateData.category}
-            onChange={handleUpdateDataChange}
-          >
-            <option value="">Select Category</option>
-            {equipmentCategories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Location:</label>
-          <input 
-            type="text" 
-            name="location"
-            value={updateData.location}
-            onChange={handleUpdateDataChange}
-            placeholder="Enter location"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Status:</label>
-          <select 
-            name="status"
-            value={updateData.status}
-            onChange={handleUpdateDataChange}
-          >
-            {equipmentStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Useful Life:</label>
-          <div className="useful-life-container">
-            <input 
-              type="number" 
-              name="usefulLife"
-              value={updateData.usefulLife}
-              onChange={handleUpdateDataChange}
-              placeholder="Enter years"
-              min="1"
-              max="50"
-            />
-            <span className="useful-life-unit">years</span>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Amount:</label>
+          <label>Amount Used: *</label>
           <div className="amount-container">
             <span className="currency-symbol">₱</span>
             <input 
               type="number" 
-              name="amount"
-              value={updateData.amount}
+              name="amountUsed"
+              value={updateData.amountUsed}
               onChange={handleUpdateDataChange}
               placeholder="0.00"
               min="0"
               step="0.01"
+              required
             />
           </div>
         </div>
@@ -1612,7 +1581,7 @@ const equipmentData = {
           className="submit-btn" 
           onClick={submitEquipmentUpdate}
         >
-          Update Equipment
+          Complete Repair
         </button>
         <button 
           className="cancel-btn" 
@@ -1662,33 +1631,46 @@ const equipmentData = {
       </div>
       
       <div className="modal-table-container">
-        <table className="modal-repair-table">
-          <thead>
-            <tr>
-              <th className="quantity-header" colSpan="2">Quantity</th>
-              <th className="repair-header" colSpan="3">Repair</th>
-            </tr>
-            <tr>
-              <th className="receipt-col">Receipt</th>
-              <th className="unit-col">Unit</th>
-              <th className="date-repair-col">Date of Last Repair</th>
-              <th className="details-col">Details</th>
-              <th className="amount-col">Amount Used</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: 12 }, (_, index) => (
-              <tr key={index}>
-                <td className="receipt-cell"></td>
-                <td className="unit-cell"></td>
-                <td className="date-repair-cell"></td>
-                <td className="details-cell"></td>
-                <td className="amount-cell"></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  <table className="modal-repair-table">
+    <thead>
+      <tr>
+        <th className="date-repair-col">Repair Date</th>
+        <th className="details-col">Repair Details</th>
+        <th className="amount-col">Amount Used</th>
+      </tr>
+    </thead>
+    <tbody>
+  {selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 ? (
+    <>
+      {selectedEquipment.repairHistory.map((repair, index) => (
+        <tr key={index}>
+          <td className="date-repair-cell">{repair.repairDate}</td>
+          <td className="details-cell">{repair.repairDetails}</td>
+          <td className="amount-cell">₱{parseFloat(repair.amountUsed || 0).toFixed(2)}</td>
+        </tr>
+      ))}
+      {/* Fill remaining rows */}
+      {Array.from({ length: Math.max(0, 11 - selectedEquipment.repairHistory.length) }, (_, index) => (
+        <tr key={`empty-${index}`}>
+          <td className="date-repair-cell"></td>
+          <td className="details-cell"></td>
+          <td className="amount-cell"></td>
+        </tr>
+      ))}
+    </>
+  ) : (
+    /* Show empty rows if no repair history */
+    Array.from({ length: 11 }, (_, index) => (
+      <tr key={index}>
+        <td className="date-repair-cell"></td>
+        <td className="details-cell"></td>
+        <td className="amount-cell"></td>
+      </tr>
+    ))
+  )}
+</tbody>
+  </table>
+</div>
       
       <div className="modal-print-section">
         <button 
@@ -1794,6 +1776,13 @@ const equipmentData = {
                       font-weight: bold;
                       background: #e9ecef;
                     }
+                      .print-table .details-col {
+                       width: 50%;
+                       text-align: center;
+                    }
+                      .print-table .date-col { width: 25%; }
+                      .print-table .amount-col { width: 25%; }
+
                     @media print {
                       body { padding: 0; }
                       .print-container { 
@@ -1816,46 +1805,45 @@ const equipmentData = {
                     <div class="print-divider"></div>
                     
                     <table class="print-info-table">
-                      <tr>
-                        <td class="print-info-label">Equipment Name:</td>
-                        <td class="print-info-value">${selectedEquipment.name || 'N/A'}</td>
-                        <td class="print-info-label">Item Code:</td>
-                        <td class="print-info-value">${selectedEquipment.itemCode || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td class="print-info-label">Description:</td>
-                        <td class="print-info-value">${selectedEquipment.description || 'N/A'}</td>
-                        <td class="print-info-label">PAR No.:</td>
-                        <td class="print-info-value"></td>
-                      </tr>
-                    </table>
-                    
-                    <table class="print-table">
-                      <thead>
-                        <tr>
-                          <th colspan="2" class="quantity-header">Quantity</th>
-                          <th colspan="3" class="repair-header">Repair</th>
-                        </tr>
-                        <tr>
-                          <th class="receipt-col">Receipt</th>
-                          <th class="unit-col">Unit</th>
-                          <th class="date-col">Date of Last Repair</th>
-                          <th class="details-col">Details</th>
-                          <th class="amount-col">Amount Used</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${Array.from({ length: 20 }, () => `
-                          <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                          </tr>
-                        `).join('')}
-                      </tbody>
-                    </table>
+  <tr>
+    <td class="print-info-label">Equipment Name:</td>
+    <td class="print-info-value">${selectedEquipment.name || 'N/A'}</td>
+    <td class="print-info-label">Item Code:</td>
+    <td class="print-info-value">${selectedEquipment.itemCode || 'N/A'}</td>
+  </tr>
+  <tr>
+    <td class="print-info-label">Description:</td>
+    <td class="print-info-value" colspan="3">${selectedEquipment.description || 'N/A'}</td>
+  </tr>
+</table>
+
+<table class="print-table">
+  <thead>
+    <tr>
+      <th class="date-col">Repair Date</th>
+      <th class="details-col">Repair Details</th>
+      <th class="amount-col">Amount Used</th>
+    </tr>
+  </thead>
+  <tbody>
+  ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
+    ? selectedEquipment.repairHistory.map(repair => `
+      <tr>
+        <td>${repair.repairDate}</td>
+        <td>${repair.repairDetails}</td>
+        <td>₱${parseFloat(repair.amountUsed || 0).toFixed(2)}</td>
+      </tr>
+    `).join('') 
+    : ''}
+  ${Array.from({ length: 20 }, () => `
+    <tr>
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
+    </tr>
+  `).join('')}
+</tbody>
+</table>
                   </div>
                 </body>
               </html>
@@ -1873,7 +1861,7 @@ const equipmentData = {
             <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.21071 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Print Stock Card
+          Print Repair History
         </button>
       </div>
     </div>
