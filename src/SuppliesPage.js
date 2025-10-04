@@ -1211,7 +1211,7 @@ const handleRemoveImage = async (supplyId) => {
         }}>
           <div className="status-stats" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
             <div className="stat-item" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffffff' }}>{statusStats.total}</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#6366f1' }}>{statusStats.total}</div>
               <div style={{ fontSize: '12px', color: '#888888' }}>Total Items</div>
             </div>
             <div className="stat-item" style={{ textAlign: 'center' }}>
