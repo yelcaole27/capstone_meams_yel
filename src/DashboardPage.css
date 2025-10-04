@@ -12,13 +12,12 @@
   display: grid;
   width: 100%;
   gap: 10px;
-  /* Updated grid-template-areas: tables-row now spans 2 columns */
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: auto auto auto;
   grid-template-areas:
     "line1 line2"
     "pie1 pie2"
-    "tables-row tables-row"; /* The new row for tables spans both columns */
+    "tables-row tables-row";
 }
 
 /* Assign grid areas */
@@ -26,17 +25,17 @@
 .line-graph-2 { grid-area: line2; }
 .pie-graph-1 { grid-area: pie1; }
 .pie-graph-2 { grid-area: pie2; }
-.dashboard-tables-row { grid-area: tables-row; } /* Assign the new row */
+.dashboard-tables-row { grid-area: tables-row; }
 
 /* Common styles for all cards (graphs and tables) */
 .graph-card, .table-card {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 15px;
   padding: 15px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  color: #ffffff;
+  color: var(--text-primary);
   min-height: 0;
 }
 
@@ -48,14 +47,14 @@
 }
 
 .graph-placeholder {
-  background: #333333;
+  background: var(--hover-bg);
   border-radius: 8px;
   min-height: 150px;
   flex-grow: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888888;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -83,7 +82,7 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
   height: fit-content;
   display: flex;
   flex-direction: column;
@@ -93,7 +92,7 @@
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -101,7 +100,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
-  color: #fff;
+  color: var(--text-primary);
   table-layout: fixed;
   flex: 1;
 }
@@ -112,8 +111,8 @@
   text-align: left;
   font-weight: 600;
   font-size: 11px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  color: #cccccc;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -133,7 +132,7 @@
 
 .status-table td {
   padding: 6px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
   font-size: 11px;
   vertical-align: middle;
 }
@@ -144,21 +143,21 @@
 
 .status-table td:nth-child(2) {
   text-align: center;
-  color: #e0e0e0;
+  color: var(--text-secondary);
 }
 
 .status-table td:nth-child(3) {
   text-align: right;
-  color: #e0e0e0;
+  color: var(--text-secondary);
 }
 
 .status-table .total-row {
-  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid var(--border-color);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .status-table .total-row td {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: bold;
   padding: 10px;
   font-size: 13px;
@@ -206,20 +205,20 @@
 .table-card th, .table-card td {
   padding: 8px 10px;
   text-align: left;
-  border-bottom: 1px solid #333333;
-  color: #cccccc;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
   font-size: 12px;
   width: 25%;
   box-sizing: border-box;
 }
 
 .table-card th {
-  color: #888888;
+  color: var(--text-secondary);
   font-weight: 500;
   text-transform: uppercase;
   position: sticky;
   top: 0;
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   z-index: 1;
 }
 
@@ -228,8 +227,8 @@
 }
 
 .table-card .generate-button {
-  background: #ffffff;
-  color: #000000;
+  background: var(--text-primary);
+  color: var(--background);
   border: none;
   border-radius: 18px;
   padding: 8px 15px;
@@ -242,7 +241,7 @@
 }
 
 .table-card .generate-button:hover {
-  background: #f0f0f0;
+  background: var(--text-secondary);
   transform: translateY(-1px);
 }
 
