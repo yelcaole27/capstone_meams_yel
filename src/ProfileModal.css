@@ -1,4 +1,4 @@
-/* ProfileModal.css */
+/* ProfileModal.css - Updated with theme variables */
 .profile-modal-overlay {
   position: fixed;
   top: 0;
@@ -14,14 +14,14 @@
 }
 
 .profile-modal-content {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 12px;
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .profile-modal-header {
@@ -29,13 +29,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px 24px 0 24px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 20px;
   margin-bottom: 24px;
 }
 
 .profile-modal-header h2 {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 24px;
   font-weight: 600;
   margin: 0;
@@ -51,7 +51,7 @@
 .profile-modal-close {
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
@@ -62,8 +62,8 @@
 }
 
 .profile-modal-close:hover {
-  color: #ffffff;
-  background-color: #374151;
+  color: var(--text-primary);
+  background-color: var(--hover-bg);
 }
 
 .profile-message {
@@ -96,13 +96,13 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #374151;
+  border: 3px solid var(--hover-bg);
   border-top: 3px solid #4ade80;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -120,9 +120,9 @@
   gap: 20px;
   margin-bottom: 32px;
   padding: 24px;
-  background: #262626;
+  background: var(--background);
   border-radius: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .profile-avatar-large {
@@ -138,7 +138,7 @@
 }
 
 .profile-user-info h3 {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
@@ -153,7 +153,7 @@
 }
 
 .profile-department {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 14px;
   margin: 0;
 }
@@ -170,27 +170,27 @@
 }
 
 .profile-field label {
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
 }
 
 .profile-field p {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 16px;
   margin: 0;
   padding: 12px 16px;
-  background: #262626;
+  background: var(--background);
   border-radius: 8px;
-  border: 1px solid #374151;
+  border: 1px solid var(--border-color);
 }
 
 .profile-input {
-  background: #262626;
-  border: 1px solid #374151;
+  background: var(--background);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px 16px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 16px;
   transition: all 0.2s ease;
 }
@@ -202,13 +202,13 @@
 }
 
 .profile-input.disabled {
-  background: #1a1a1a;
-  color: #9ca3af;
+  background: var(--hover-bg);
+  color: var(--text-secondary);
   cursor: not-allowed;
 }
 
 .profile-field-note {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 12px;
   font-style: italic;
   margin-top: 4px;
@@ -217,13 +217,13 @@
 .password-change-section {
   margin-top: 32px;
   padding: 24px;
-  background: #262626;
+  background: var(--background);
   border-radius: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .password-change-section h4 {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 20px 0;
@@ -238,7 +238,7 @@
 
 .profile-modal-footer {
   padding: 0 24px 24px 24px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-color);
   padding-top: 24px;
   margin-top: 24px;
 }
@@ -273,27 +273,28 @@
 }
 
 .btn-primary:disabled {
-  background: #374151;
-  color: #9ca3af;
+  background: var(--hover-bg);
+  color: var(--text-secondary);
   cursor: not-allowed;
   transform: none;
 }
 
 .btn-secondary {
-  background: #374151;
-  color: #d1d5db;
-  border: 1px solid #4b5563;
+  background: var(--hover-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #4b5563;
-  color: #ffffff;
+  background: var(--active-bg);
+  color: var(--text-primary);
 }
 
 .btn-secondary:disabled {
-  background: #1f2937;
-  color: #6b7280;
+  background: var(--background);
+  color: var(--text-secondary);
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* Responsive design */
@@ -330,14 +331,14 @@
 }
 
 .profile-modal-content::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
 }
 
 .profile-modal-content::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: var(--hover-bg);
   border-radius: 3px;
 }
 
 .profile-modal-content::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: var(--active-bg);
 }
