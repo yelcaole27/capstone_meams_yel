@@ -1,5 +1,13 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+
+class DocumentSchema(BaseModel):
+    """Schema for embedded documents"""
+    filename: str
+    file_data: str  # Base64 encoded
+    content_type: str
+    file_size: int
+    uploaded_at: str
 
 class SupplyCreate(BaseModel):
     name: str
@@ -9,11 +17,14 @@ class SupplyCreate(BaseModel):
     supplier: Optional[str] = ""
     location: Optional[str] = ""
     status: Optional[str] = "available"
+    unit: Optional[str] = "piece"
     itemCode: Optional[str] = ""
     date: Optional[str] = ""
     itemPicture: Optional[str] = None
     image_filename: Optional[str] = None
     image_content_type: Optional[str] = None
+    transactionHistory: Optional[List[dict]] = []
+    documents: Optional[List[dict]] = []  # NEW: Document storage
 
 class SupplyUpdate(BaseModel):
     name: Optional[str] = None
@@ -23,8 +34,18 @@ class SupplyUpdate(BaseModel):
     supplier: Optional[str] = None
     location: Optional[str] = None
     status: Optional[str] = None
+    unit: Optional[str] = None
     itemCode: Optional[str] = None
     date: Optional[str] = None
     image_data: Optional[str] = None
     image_filename: Optional[str] = None
     image_content_type: Optional[str] = None
+    transactionHistory: Optional[List[dict]] = None
+    documents: Optional[List[dict]] = None  # NEW: Document updates
+
+class DocumentUpload(BaseModel):
+    """Schema for document upload"""
+    filename: str
+    file_data: str  # Base64 encoded
+    content_type: str
+    file_size: int
