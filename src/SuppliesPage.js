@@ -4,9 +4,11 @@ import html2pdf from 'html2pdf.js';
 import SuppliesAPI from './suppliesApi'; // Import the API service
 import DocumentViewer from './DocumentViewer';
 import supplyThresholdManager from './SupplyThresholdManager'; // Import threshold manager
+import { useTheme } from './ThemeContext'; // Import useTheme
 import './SuppliesPage.css';
 
 function SuppliesPage() {
+  const { theme } = useTheme(); // Get current theme
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1197,7 +1199,7 @@ const handleRemoveImage = async (supplyId) => {
       {/* NEW: Real-time Status Dashboard */}
       {statusStats.total > 0 && (
         <div className="status-dashboard" style={{
-          background: '#1a1a1a',
+          background: theme === 'light' ? '#ffffff' : '#1a1a1a',
           borderRadius: '10px',
           padding: '20px',
           marginBottom: '20px',
