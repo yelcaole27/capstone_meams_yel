@@ -4,9 +4,12 @@ import SuppliesAPI from './suppliesApi';
 import EquipmentAPI from './EquipmentApi';
 import './DashboardPage.css';
 import { useAuth } from './AuthContext'; // NEW: Import useAuth
+import { useTheme } from './ThemeContext'; // Import useTheme for chart colors
 
 function DashboardPage() {
   const { authToken, isAuthenticated, loading: authLoading } = useAuth(); // NEW: Get authToken and auth status
+  const { getChartColors } = useTheme(); // Get theme-aware chart colors
+  const chartColors = getChartColors();
   const [suppliesData, setSuppliesData] = useState([]);
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -358,11 +361,11 @@ function DashboardPage() {
       const data = payload[0];
       return (
         <div style={{
-          backgroundColor: '#333',
+          backgroundColor: chartColors.tooltipBg,
           padding: '10px',
-          border: 'none',
+          border: `1px solid ${chartColors.tooltipBorder}`,
           borderRadius: '4px',
-          color: 'white',
+          color: chartColors.tooltipText,
           fontSize: '12px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}>
@@ -391,17 +394,17 @@ function DashboardPage() {
     if (active && payload && payload.length) {
       return (
         <div style={{
-          backgroundColor: '#333',
+          backgroundColor: chartColors.tooltipBg,
           padding: '10px',
-          border: 'none',
+          border: `1px solid ${chartColors.tooltipBorder}`,
           borderRadius: '4px',
-          color: 'white',
+          color: chartColors.tooltipText,
           fontSize: '12px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}>
-          <p className="label">{`Date: ${label}`}</p>
+          <p className="label" style={{ color: chartColors.tooltipText }}>{`Date: ${label}`}</p>
           {payload.map((entry, index) => (
-            <p key={`item-${index}`} style={{ color: entry.color }}>
+            <p key={`item-${index}`} style={{ color: entry.color, margin: '4px 0' }}>
               {`${entry.name}: ${entry.value.toFixed(2)}`}
             </p>
           ))}
@@ -429,9 +432,9 @@ function DashboardPage() {
                   data={suppliesForecastData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                  <XAxis dataKey="date" stroke="#888888" tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
-                  <YAxis stroke="#888888" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis dataKey="date" stroke={chartColors.axis} tick={{ fill: chartColors.text }} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
+                  <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
                   <Tooltip content={renderLineTooltip} />
                   <Legend />
                   <Line
@@ -477,9 +480,9 @@ function DashboardPage() {
                   data={equipmentForecastData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                  <XAxis dataKey="date" stroke="#888888" tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
-                  <YAxis stroke="#888888" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis dataKey="date" stroke={chartColors.axis} tick={{ fill: chartColors.text }} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
+                  <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
                   <Tooltip content={renderLineTooltip} />
                   <Legend />
                   <Line
