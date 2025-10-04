@@ -1,4 +1,4 @@
-/* Document Viewer Overlay */
+/* DocumentViewer.css - Updated with theme variables */
 .document-viewer-overlay {
   position: fixed;
   top: 0;
@@ -13,7 +13,7 @@
 }
 
 .document-viewer-modal {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 12px;
   padding: 30px;
   max-width: 900px;
@@ -21,18 +21,18 @@
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .document-viewer-modal h3 {
   margin: 0 0 5px 0;
   font-size: 24px;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .doc-item-code {
   font-size: 14px;
-  color: #888;
+  color: var(--text-secondary);
   margin: 0 0 25px 0;
 }
 
@@ -43,63 +43,63 @@
   background: none;
   border: none;
   font-size: 32px;
-  color: #888;
+  color: var(--text-secondary);
   cursor: pointer;
   line-height: 1;
   transition: color 0.2s;
 }
 
 .doc-modal-close-btn:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 /* Upload Section */
 .doc-upload-section {
   margin-bottom: 30px;
   padding-bottom: 30px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .doc-upload-section h4 {
   margin: 0 0 15px 0;
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .doc-drop-zone {
-  border: 2px dashed #444;
+  border: 2px dashed var(--border-color);
   border-radius: 8px;
   padding: 40px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #222;
+  background: var(--background);
 }
 
 .doc-drop-zone:hover {
   border-color: #10b981;
-  background: #252525;
+  background: var(--hover-bg);
 }
 
 .doc-drop-zone.drag-active {
   border-color: #10b981;
-  background: #1a3a2e;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .doc-drop-zone .upload-icon {
   margin-bottom: 15px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .doc-drop-zone p {
   margin: 10px 0;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .doc-drop-zone small {
   display: block;
   margin: 5px 0;
-  color: #888;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .selected-file-info {
-  background: #2a2a2a;
+  background: var(--hover-bg);
   padding: 15px;
   border-radius: 6px;
   margin-top: 10px;
@@ -118,11 +118,11 @@
 
 .selected-file-info p {
   margin: 5px 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .selected-file-info small {
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .upload-actions {
@@ -173,24 +173,25 @@
 .doc-list-section h4 {
   margin: 0 0 20px 0;
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .doc-loading, .doc-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .doc-empty p {
   margin: 0 0 10px 0;
   font-size: 16px;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .doc-empty small {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
+  opacity: 0.7;
 }
 
 .doc-grid {
@@ -200,19 +201,19 @@
 }
 
 .doc-card {
-  background: #2a2a2a;
+  background: var(--hover-bg);
   border-radius: 8px;
   padding: 15px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   transition: all 0.2s;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .doc-card:hover {
-  background: #333;
-  border-color: #444;
+  background: var(--active-bg);
+  border-color: var(--border-color);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -231,7 +232,7 @@
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -240,7 +241,7 @@
 .doc-size, .doc-date {
   margin: 4px 0;
   font-size: 12px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .doc-actions {
@@ -248,24 +249,24 @@
   gap: 8px;
   justify-content: center;
   padding-top: 10px;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
 }
 
 .doc-action-btn {
   padding: 8px;
-  background: #374151;
+  background: var(--hover-bg);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .doc-action-btn:hover {
-  background: #4b5563;
+  background: var(--active-bg);
   transform: scale(1.1);
 }
 
@@ -296,19 +297,19 @@
 }
 
 .doc-preview-modal {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 12px;
   padding: 30px;
   max-width: 90%;
   max-height: 90vh;
   position: relative;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .doc-preview-modal h4 {
   margin: 0 0 20px 0;
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text-primary);
   padding-right: 40px;
 }
 
@@ -319,14 +320,14 @@
   background: none;
   border: none;
   font-size: 32px;
-  color: #888;
+  color: var(--text-secondary);
   cursor: pointer;
   line-height: 1;
   transition: color 0.2s;
 }
 
 .preview-close-btn:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .preview-content {
@@ -345,18 +346,18 @@
 
 .document-viewer-modal::-webkit-scrollbar-track,
 .preview-content::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
 }
 
 .document-viewer-modal::-webkit-scrollbar-thumb,
 .preview-content::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 .document-viewer-modal::-webkit-scrollbar-thumb:hover,
 .preview-content::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: var(--text-secondary);
 }
 
 /* Responsive Design */
