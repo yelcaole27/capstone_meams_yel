@@ -1,4 +1,4 @@
-/* SettingsPage.css */
+/* SettingsPage.css - Updated with theme variables */
 
 .settings-page-container {
   flex-grow: 1;
@@ -6,8 +6,8 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - 60px);
-  background: #000000;
-  color: white;
+  background: var(--background);
+  color: var(--text-primary);
 }
 
 .settings-header {
@@ -17,7 +17,7 @@
 .settings-title {
   font-size: 32px;
   font-weight: bold;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: 2px;
 }
@@ -30,7 +30,7 @@
 }
 
 .settings-section {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 10px;
   padding: 25px;
   min-width: 300px;
@@ -40,14 +40,14 @@
 .section-title {
   font-size: 18px;
   font-weight: bold;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0 0 20px 0;
   letter-spacing: 1px;
 }
 
 .section-subtitle {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0 0 15px 0;
   font-weight: 500;
 }
@@ -58,7 +58,7 @@
 }
 
 .import-drop-zone {
-  border: 2px dashed #555555;
+  border: 2px dashed var(--border-color);
   border-radius: 8px;
   padding: 40px 20px;
   text-align: center;
@@ -104,8 +104,8 @@
 }
 
 .selected-file {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
   padding: 10px 15px;
   border-radius: 5px;
   margin-bottom: 15px;

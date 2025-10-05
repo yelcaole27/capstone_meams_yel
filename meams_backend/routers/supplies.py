@@ -1,11 +1,8 @@
 """
-Supplies router - handles all supply-related endpoints
+Supplies router - handles all supply-related endpoints including documents
 """
-from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from bson import ObjectId
-from typing import Optional
-import base64
-
 from models.supply import SupplyCreate, SupplyUpdate
 from services.supply_service import (
     get_all_supplies,
@@ -15,7 +12,12 @@ from services.supply_service import (
     delete_supply,
     add_supply_image,
     get_supply_image,
-    delete_supply_image
+    delete_supply_image,
+    # NEW: Document functions
+    add_supply_document,
+    get_supply_documents,
+    get_supply_document,
+    delete_supply_document
 )
 from services.auth_service import verify_token
 from services.log_service import create_log_entry
@@ -114,6 +116,8 @@ async def remove_supply(
     
     return {"success": True, "message": "Supply deleted successfully"}
 
+# IMAGE ENDPOINTS
+
 @router.post("/{supply_id}/image")
 async def upload_image(
     supply_id: str,
@@ -172,3 +176,92 @@ async def remove_image(
     )
     
     return {"success": True, "message": "Image deleted successfully", "data": updated_supply}
+
+# NEW: DOCUMENT ENDPOINTS
+
+@router.post("/{supply_id}/documents")
+async def upload_document(
+    supply_id: str,
+    file: UploadFile = File(...),
+    request: Request = None,
+    token: str = Depends(get_current_user)
+):
+    """Upload document for supply"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    if not ObjectId.is_valid(supply_id):
+        raise HTTPException(status_code=400, detail="Invalid supply ID format")
+    
+    updated_supply = await add_supply_document(supply_id, file)
+    
+    await create_log_entry(
+        username,
+        "Uploaded supply document.",
+        f"Uploaded document '{file.filename}' for supply: {updated_supply['name']} ({updated_supply['itemCode']})",
+        client_ip
+    )
+    
+    return {
+        "success": True, 
+        "message": f"Document '{file.filename}' uploaded successfully",
+        "data": updated_supply
+    }
+
+@router.get("/{supply_id}/documents")
+async def list_documents(supply_id: str, token: str = Depends(get_current_user)):
+    """Get all documents for a supply"""
+    if not ObjectId.is_valid(supply_id):
+        raise HTTPException(status_code=400, detail="Invalid supply ID format")
+    
+    documents = get_supply_documents(supply_id)
+    
+    return {
+        "success": True,
+        "message": f"Found {len(documents)} documents",
+        "data": documents
+    }
+
+@router.get("/{supply_id}/documents/{document_index}")
+async def download_document(
+    supply_id: str, 
+    document_index: int,
+    token: str = Depends(get_current_user)
+):
+    """Download a specific document"""
+    if not ObjectId.is_valid(supply_id):
+        raise HTTPException(status_code=400, detail="Invalid supply ID format")
+    
+    return get_supply_document(supply_id, document_index)
+
+@router.delete("/{supply_id}/documents/{document_index}")
+async def remove_document(
+    supply_id: str,
+    document_index: int,
+    request: Request = None,
+    token: str = Depends(get_current_user)
+):
+    """Delete a specific document"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    if not ObjectId.is_valid(supply_id):
+        raise HTTPException(status_code=400, detail="Invalid supply ID format")
+    
+    updated_supply = delete_supply_document(supply_id, document_index)
+    
+    await create_log_entry(
+        username,
+        "Deleted supply document.",
+        f"Deleted document for supply: {updated_supply['name']} ({updated_supply['itemCode']})",
+        client_ip
+    )
+    
+    return {
+        "success": True,
+        "message": "Document deleted successfully",
+        "data": updated_supply
+
+    }

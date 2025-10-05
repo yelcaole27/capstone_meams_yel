@@ -1,4 +1,4 @@
-/* ManageAccountsPage.css - FIXED VERSION WITH PROFILE PICTURE SUPPORT AND EXIT OPTIONS */
+/* ManageAccountsPage.css - Updated with theme variables */
 
 .manage-accounts-page-container {
   flex-grow: 1;
@@ -6,7 +6,6 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - 60px);
-  /* Add overflow visible to prevent clipping */
   overflow: visible;
 }
 
@@ -19,7 +18,7 @@
 
 .page-title {
   font-size: 28px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 700;
   margin: 0;
 }
@@ -48,7 +47,7 @@
 }
 
 .account-card {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 15px;
   padding: 20px;
   display: flex;
@@ -67,22 +66,21 @@
 .account-avatar {
   width: 80px;
   height: 80px;
-  background: #333333;
+  background: var(--hover-bg);
   border-radius: 50%;
   margin-bottom: 15px;
-  border: 2px solid #555555;
+  border: 2px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* NEW: Ensure image is properly contained */
+  overflow: hidden;
   position: relative;
 }
 
 .account-avatar svg {
-  color: #888888;
+  color: var(--text-secondary);
 }
 
-/* NEW: Style for profile picture images in account cards */
 .account-avatar-image {
   width: 100%;
   height: 100%;
@@ -91,39 +89,40 @@
 }
 
 .account-name {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 5px;
 }
 
 .account-role {
-  color: #888888;
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 10px;
 }
 
 .account-card.inactive .account-name {
-  color: #666666;
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .account-card.inactive .account-role {
-  color: #555555;
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 .accounts-table-section {
   flex-grow: 1;
-  /* CRITICAL FIX: Allow overflow to be visible */
   overflow: visible;
 }
 
 .accounts-table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 10px;
-  overflow: visible; /* CRITICAL FIX: Changed from hidden to visible */
-  position: relative; /* CRITICAL FIX: Add relative positioning */
+  overflow: visible;
+  position: relative;
 }
 
 .accounts-table th,
@@ -131,15 +130,14 @@
   padding: 15px 20px;
   text-align: left;
   font-size: 14px;
-  color: #e0e0e0;
-  border-bottom: 1px solid #333333;
-  /* CRITICAL FIX: Add position relative to td elements */
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
   position: relative;
 }
 
 .accounts-table th {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
@@ -151,19 +149,18 @@
 }
 
 .accounts-table tr:hover {
-  background-color: #242424;
+  background-color: var(--hover-bg);
 }
 
-/* Clickable Name Styles */
 .clickable-name {
-  color: #e0e0e0;
+  color: var(--text-secondary);
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.2s ease;
 }
 
 .clickable-name:hover {
-  color: #ffffff;
+  color: var(--text-primary);
   text-decoration: underline;
 }
 
@@ -212,7 +209,6 @@ input:checked + .slider:before {
   transform: translateX(26px);
 }
 
-/* CRITICAL DROPDOWN FIXES */
 .manage-dropdown {
   position: relative;
   display: inline-block;
@@ -229,7 +225,6 @@ input:checked + .slider:before {
   cursor: pointer;
   position: relative;
   transition: background-color 0.2s ease;
-  /* CRITICAL FIX: Ensure button has enough space */
   min-width: 90px;
 }
 
@@ -250,26 +245,24 @@ input:checked + .slider:before {
   transform: translateY(-50%);
 }
 
-/* CRITICAL FIX: Enhanced dropdown menu positioning and z-index */
 .manage-dropdown-menu {
   position: absolute;
-  top: calc(100% + 2px); /* CRITICAL FIX: Better positioning */
+  top: calc(100% + 2px);
   right: 0;
-  background: #ffffff; /* CRITICAL FIX: Change to white for better visibility */
+  background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   min-width: 140px;
-  z-index: 9999; /* CRITICAL FIX: Very high z-index */
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* CRITICAL FIX: Better shadow */
+  z-index: 9999;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: visible;
-  /* CRITICAL FIX: Prevent any clipping */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
 
 .manage-dropdown-item {
   padding: 12px 16px;
-  color: #374151; /* CRITICAL FIX: Dark text on white background */
+  color: #374151;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s ease;
@@ -304,18 +297,15 @@ input:checked + .slider:before {
   color: #b91c1c;
 }
 
-/* CRITICAL FIX: Ensure table cells with dropdowns can overflow */
 .accounts-table td:last-child {
   overflow: visible;
   position: relative;
 }
 
-/* CRITICAL FIX: Ensure table rows can overflow */
 .accounts-table tr {
   position: relative;
 }
 
-/* CRITICAL FIX: Add click outside handler support */
 .manage-dropdown.active {
   z-index: 1000;
 }
@@ -364,7 +354,6 @@ input:checked + .slider:before {
   flex: 1;
 }
 
-/* NEW: Modal Close Button Styles */
 .modal-close-button {
   background: transparent;
   border: none;
@@ -609,15 +598,14 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   color: #999999;
-  border-radius: 8px; /* NEW: Add border radius for consistency */
-  overflow: hidden; /* NEW: Ensure image is properly contained */
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .edit-image-placeholder svg {
   color: #cccccc;
 }
 
-/* NEW: Style for profile picture images in edit modal */
 .edit-profile-image {
   width: 100%;
   height: 100%;
@@ -689,7 +677,7 @@ input:checked + .slider:before {
   background: #333333;
 }
 
-/* Account Overview Modal Styles - FIXED CLOSE BUTTON */
+/* Account Overview Modal Styles */
 .account-overview-modal {
   background: #f0f0f0;
   border-radius: 12px;
@@ -718,7 +706,6 @@ input:checked + .slider:before {
   flex: 1;
 }
 
-/* FIXED CLOSE BUTTON STYLES */
 .close-button {
   background: transparent;
   border: none;
@@ -752,7 +739,6 @@ input:checked + .slider:before {
   transform: translateY(-50%) scale(0.95);
 }
 
-/* Ensure the X symbol is visible */
 .close-button::before {
   content: '×';
   font-size: 28px;
@@ -782,7 +768,7 @@ input:checked + .slider:before {
   justify-content: center;
   background: #ffffff;
   color: #999999;
-  overflow: hidden; /* NEW: Ensure image is properly contained */
+  overflow: hidden;
 }
 
 .account-image-placeholder svg {
@@ -796,7 +782,6 @@ input:checked + .slider:before {
   font-weight: 500;
 }
 
-/* NEW: Style for profile picture images in overview modal */
 .overview-profile-image {
   width: 100%;
   height: 100%;
@@ -858,14 +843,12 @@ input:checked + .slider:before {
   border: 1px solid #9ae6b4;
 }
 
-/* Loading spinner */
 .loading-spinner {
   text-align: center;
   padding: 20px;
   color: #666;
 }
 
-/* Modal error/success messages */
 .modal-error {
   background-color: #fee;
   color: #c53030;
@@ -884,7 +867,6 @@ input:checked + .slider:before {
   border: 1px solid #9ae6b4;
 }
 
-/* Password notice in add modal */
 .password-notice {
   background-color: #e6f3ff;
   padding: 15px;
@@ -898,7 +880,6 @@ input:checked + .slider:before {
   color: #2d3748;
 }
 
-/* Form improvements */
 .form-input, select.form-input {
   width: 100%;
   padding: 10px 12px;
@@ -914,7 +895,6 @@ input:checked + .slider:before {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Disabled button states */
 .submit-button:disabled,
 .save-changes-button:disabled {
   opacity: 0.6;
@@ -943,7 +923,6 @@ input:checked + .slider:before {
     min-width: 80px;
   }
   
-  /* CRITICAL FIX: Mobile dropdown positioning */
   .manage-dropdown-menu {
     right: 0;
     left: auto;

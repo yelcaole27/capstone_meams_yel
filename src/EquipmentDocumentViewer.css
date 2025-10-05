@@ -1,0 +1,376 @@
+/* Document Viewer Overlay */
+.document-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.document-viewer-modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  color: #ffffff;
+}
+
+.document-viewer-modal h3 {
+  margin: 0 0 5px 0;
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.doc-item-code {
+  font-size: 14px;
+  color: #888;
+  margin: 0 0 25px 0;
+}
+
+.doc-modal-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.doc-modal-close-btn:hover {
+  color: #ffffff;
+}
+
+/* Upload Section */
+.doc-upload-section {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #333;
+}
+
+.doc-upload-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.doc-drop-zone {
+  border: 2px dashed #444;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #222;
+}
+
+.doc-drop-zone:hover {
+  border-color: #10b981;
+  background: #252525;
+}
+
+.doc-drop-zone.drag-active {
+  border-color: #10b981;
+  background: #1a3a2e;
+}
+
+.doc-drop-zone .upload-icon {
+  margin-bottom: 15px;
+  color: #888;
+}
+
+.doc-drop-zone p {
+  margin: 10px 0;
+  color: #ccc;
+}
+
+.doc-drop-zone small {
+  display: block;
+  margin: 5px 0;
+  color: #888;
+  font-size: 12px;
+}
+
+.doc-drop-zone .choose-file-link {
+  color: #10b981;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.selected-file-info {
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.selected-file-info p {
+  margin: 5px 0;
+  color: #fff;
+}
+
+.selected-file-info small {
+  color: #888;
+}
+
+.upload-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.upload-btn, .cancel-upload-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn {
+  background: #10b981;
+  color: white;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.upload-btn:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+}
+
+.cancel-upload-btn {
+  background: #374151;
+  color: white;
+}
+
+.cancel-upload-btn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+/* Documents List */
+.doc-list-section {
+  margin-top: 25px;
+}
+
+.doc-list-section h4 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.doc-loading, .doc-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+}
+
+.doc-empty p {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #aaa;
+}
+
+.doc-empty small {
+  color: #666;
+  font-size: 14px;
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.doc-card {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s;
+  border: 1px solid #333;
+}
+
+.doc-card:hover {
+  background: #333;
+  border-color: #444;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.doc-icon {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.doc-info {
+  flex: 1;
+}
+
+.doc-filename {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-size, .doc-date {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.doc-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 10px;
+  border-top: 1px solid #444;
+}
+
+.doc-action-btn {
+  padding: 8px;
+  background: #374151;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doc-action-btn:hover {
+  background: #4b5563;
+  transform: scale(1.1);
+}
+
+.doc-action-btn.preview-btn:hover {
+  background: #6366f1;
+}
+
+.doc-action-btn.download-btn:hover {
+  background: #10b981;
+}
+
+.doc-action-btn.delete-btn:hover {
+  background: #dc2626;
+}
+
+/* Preview Modal */
+.doc-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.doc-preview-modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 90%;
+  max-height: 90vh;
+  position: relative;
+  color: #ffffff;
+}
+
+.doc-preview-modal h4 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #ffffff;
+  padding-right: 40px;
+}
+
+.preview-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.preview-close-btn:hover {
+  color: #ffffff;
+}
+
+.preview-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+/* Scrollbar Styling */
+.document-viewer-modal::-webkit-scrollbar,
+.preview-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.document-viewer-modal::-webkit-scrollbar-track,
+.preview-content::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.document-viewer-modal::-webkit-scrollbar-thumb,
+.preview-content::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.document-viewer-modal::-webkit-scrollbar-thumb:hover,
+.preview-content::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .document-viewer-modal {
+    width: 95%;
+    padding: 20px;
+  }
+
+  .doc-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-modal-close-btn {
+    font-size: 28px;
+  }
+}

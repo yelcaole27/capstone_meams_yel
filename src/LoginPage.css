@@ -1,6 +1,5 @@
-/* LoginPage.css - Complete fixed version */
 
-/* Reset default margins and padding */
+/* LoginPage.css - Updated with theme variables */
 @import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
 
 * {
@@ -9,19 +8,18 @@
   box-sizing: border-box;
 }
 
-/* Ensure full screen coverage */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  background: #2a2a2a;
+  background: var(--background);
 }
 
 #root {
   width: 100%;
   height: 100%;
-  background: #2a2a2a;
+  background: var(--background);
 }
 
 .login-container {
@@ -30,12 +28,12 @@ html, body {
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  background: #2a2a2a;
+  background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .login-form {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 30px;
   padding: 40px;
   width: 400px;
@@ -54,7 +52,7 @@ html, body {
 .logo-text {
   font-family: 'Koulen', cursive;
   font-size: 60px !important;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 400;
   letter-spacing: 3px !important;
   text-align: center;
@@ -76,18 +74,18 @@ html, body {
 .input-icon {
   position: absolute;
   left: 15px;
-  color: #888888;
+  color: var(--text-secondary);
   z-index: 1;
   pointer-events: none;
 }
 
 .login-input {
   width: 100%;
-  background: #333333;
+  background: var(--hover-bg);
   border: none;
   border-radius: 25px;
   padding: 15px 20px 15px 45px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   box-sizing: border-box;
   outline: none;
@@ -95,21 +93,20 @@ html, body {
 }
 
 .login-input::placeholder {
-  color: #888888;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .login-input:focus {
-  background: #444444;
+  background: var(--active-bg);
 }
 
-/* Password toggle button styles */
 .password-toggle {
   position: absolute;
   right: 15px;
   background: none;
   border: none;
-  color: #888888;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 5px;
   display: flex;
@@ -121,7 +118,7 @@ html, body {
 }
 
 .password-toggle:hover {
-  color: #ffffff;
+  color: var(--text-primary);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -165,7 +162,7 @@ html, body {
 }
 
 .forgot-link {
-  color: #888888;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 13px;
   transition: color 0.2s ease;
@@ -175,7 +172,7 @@ html, body {
 }
 
 .forgot-link:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 /* Overlay Styles */
@@ -195,7 +192,7 @@ html, body {
 }
 
 .forgot-modal {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 20px;
   padding: 30px;
   width: 400px;
@@ -226,7 +223,7 @@ html, body {
 }
 
 .modal-header h2 {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 24px;
   font-weight: 600;
   margin: 0;
@@ -236,7 +233,7 @@ html, body {
 .close-btn {
   background: none;
   border: none;
-  color: #888888;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 5px;
   border-radius: 5px;
@@ -244,12 +241,12 @@ html, body {
 }
 
 .close-btn:hover {
-  color: #ffffff;
-  background: #333333;
+  color: var(--text-primary);
+  background: var(--hover-bg);
 }
 
 .modal-description {
-  color: #cccccc;
+  color: var(--text-secondary);
   margin-bottom: 25px;
   line-height: 1.5;
   font-size: 14px;
@@ -305,11 +302,7 @@ html, body {
   cursor: not-allowed;
 }
 
-/* =================================== */
-/* CRITICAL FIX: Modal Input Interactions */
-/* =================================== */
-
-/* Ensure modal form and inputs are fully interactive */
+/* Modal Input Interactions */
 .forgot-modal form {
   position: relative;
   z-index: 1002;
@@ -333,7 +326,6 @@ html, body {
   align-items: center;
 }
 
-/* Critical fix: Ensure all input types are interactive */
 .forgot-modal input,
 .forgot-modal .login-input,
 .forgot-modal input[type="password"],
@@ -348,11 +340,11 @@ html, body {
   -moz-user-select: text !important;
   -ms-user-select: text !important;
   width: 100%;
-  background: #333333;
+  background: var(--hover-bg);
   border: none;
   border-radius: 25px;
   padding: 15px 20px 15px 45px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   box-sizing: border-box;
   outline: none;
@@ -361,20 +353,20 @@ html, body {
 
 .forgot-modal input::placeholder,
 .forgot-modal .login-input::placeholder {
-  color: #888888;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .forgot-modal input:focus,
 .forgot-modal .login-input:focus {
-  background: #444444 !important;
+  background: var(--active-bg) !important;
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2) !important;
 }
 
 .forgot-modal input:hover,
 .forgot-modal .login-input:hover {
-  background: #3a3a3a;
+  background: var(--active-bg);
 }
 
 .forgot-modal .password-toggle {
@@ -385,7 +377,7 @@ html, body {
   cursor: pointer !important;
   background: none;
   border: none;
-  color: #888888;
+  color: var(--text-secondary);
   padding: 5px;
   display: flex;
   align-items: center;
@@ -395,19 +387,18 @@ html, body {
 }
 
 .forgot-modal .password-toggle:hover {
-  color: #ffffff;
+  color: var(--text-primary);
   background: rgba(255, 255, 255, 0.1);
 }
 
 .forgot-modal .input-icon {
   position: absolute;
   left: 15px;
-  color: #888888;
+  color: var(--text-secondary);
   z-index: 1007;
   pointer-events: none;
 }
 
-/* Ensure buttons are clickable */
 .forgot-modal button,
 .forgot-modal .reset-button,
 .forgot-modal .close-btn {
@@ -416,7 +407,6 @@ html, body {
   z-index: 1008;
 }
 
-/* Remove any potential blocking elements */
 .overlay * {
   pointer-events: auto;
 }

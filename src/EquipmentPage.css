@@ -1,4 +1,4 @@
-/* EquipmentPage.css - Fixed dropdown and form styling issues */
+/* EquipmentPage.css - Updated with theme variables */
 
 .supplies-page-container {
   flex-grow: 1;
@@ -17,7 +17,7 @@
 
 .page-title {
   font-size: 28px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 700;
   margin: 0;
 }
@@ -49,11 +49,11 @@
 }
 
 .search-input {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px 15px 12px 40px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   width: 100%;
 }
@@ -63,13 +63,13 @@
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .equipment-table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -79,25 +79,24 @@
   padding: 15px 20px;
   text-align: left;
   font-size: 15px;
-  color: #e0e0e0;
-  border-bottom: 1px solid #333333;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
-/* Updated column widths to accommodate Action column */
 .equipment-table th:nth-child(1),
-.equipment-table td:nth-child(1) { width: 20%; } /* Item Code */
+.equipment-table td:nth-child(1) { width: 20%; }
 .equipment-table th:nth-child(2),
-.equipment-table td:nth-child(2) { width: 12%; } /* Quantity */
+.equipment-table td:nth-child(2) { width: 12%; }
 .equipment-table th:nth-child(3),
-.equipment-table td:nth-child(3) { width: 12%; } /* Unit */
+.equipment-table td:nth-child(3) { width: 12%; }
 .equipment-table th:nth-child(4),
-.equipment-table td:nth-child(4) { width: 40%; } /* Description */
+.equipment-table td:nth-child(4) { width: 40%; }
 .equipment-table th:nth-child(5),
-.equipment-table td:nth-child(5) { width: 16%; } /* Action */
+.equipment-table td:nth-child(5) { width: 16%; }
 
 .equipment-table th {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover-bg);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 16px;
 }
@@ -107,22 +106,20 @@
 }
 
 .equipment-table tr:hover {
-  background-color: #242424;
+  background-color: var(--hover-bg);
 }
 
-/* Clickable description styling */
 .description-clickable {
   cursor: pointer;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .description-clickable:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
-/* Action buttons container */
 .action-buttons-container {
   display: flex;
   gap: 10px;
@@ -143,7 +140,7 @@
 }
 
 .view-icon-btn {
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .view-icon-btn:hover {
@@ -152,7 +149,7 @@
 }
 
 .delete-icon-btn {
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .delete-icon-btn:hover {
@@ -177,7 +174,6 @@
   background: #218838;
 }
 
-/* Enhanced Overlay Styling */
 .overlay {
   position: fixed;
   top: 0;
@@ -192,7 +188,6 @@
   backdrop-filter: blur(5px);
 }
 
-/* FIXED: Modal Overlay for Repair and Update Forms */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -207,10 +202,9 @@
   backdrop-filter: blur(5px);
 }
 
-/* FIXED: Dark Modal Content for Repair and Update Forms */
 .modal-content {
-  background: #2d2d2d !important;
-  color: #ffffff !important;
+  background: var(--sidebar-bg) !important;
+  color: var(--text-primary) !important;
   border-radius: 12px;
   width: 500px;
   max-width: 90vw;
@@ -219,26 +213,24 @@
   padding: 30px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
   position: relative;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
 }
 
-/* FIXED: Modal Header Styling */
 .modal-content h2 {
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 25px;
   text-align: left;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 15px;
 }
 
-/* FIXED: Form Labels */
 .modal-content label,
 .repair-form label,
 .update-form label {
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   font-weight: 500;
   font-size: 14px;
   letter-spacing: 0.3px;
@@ -246,7 +238,6 @@
   display: block;
 }
 
-/* FIXED: Form Inputs Styling */
 .modal-content input,
 .modal-content textarea,
 .modal-content select,
@@ -256,9 +247,9 @@
 .update-form input,
 .update-form textarea,
 .update-form select {
-  background: #1a1a1a !important;
-  color: #ffffff !important;
-  border: 1px solid #555 !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 8px;
   padding: 12px 15px;
   font-size: 14px;
@@ -274,42 +265,25 @@
   outline: none;
   border-color: #4a9eff !important;
   box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
-  background: #222 !important;
+  background: var(--hover-bg) !important;
 }
 
-/* Enhanced Form Styling and Improvements */
-
-/* Better focus states for all form inputs */
-.modal-content input:focus,
-.modal-content textarea:focus,
-.modal-content select:focus {
-  outline: none;
-  border-color: #4a9eff !important;
-  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
-  background: #222 !important;
-  transform: translateY(-1px);
-  transition: all 0.3s ease;
-}
-
-/* Enhanced select dropdown hover state */
 .modal-content select:hover {
-  border-color: #777 !important;
-  background-color: #222 !important;
+  border-color: var(--border-color) !important;
+  background-color: var(--hover-bg) !important;
   transition: all 0.3s ease;
 }
 
-/* Improved textarea styling */
 .modal-content textarea {
   resize: vertical;
   min-height: 120px;
   max-height: 300px;
   font-family: inherit;
   line-height: 1.6;
-  background: #1a1a1a !important;
-  color: #ffffff !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
 }
 
-/* Better input validation styling */
 .modal-content input:invalid,
 .modal-content select:invalid,
 .modal-content textarea:invalid {
@@ -323,29 +297,25 @@
   border-color: #28a745 !important;
 }
 
-/* Required field indicator */
 .modal-content label::after {
   content: " *";
   color: #dc3545;
   font-weight: bold;
 }
 
-/* Optional field styling */
 .modal-content .optional-field label::after {
   content: " (optional)";
-  color: #888;
+  color: var(--text-secondary);
   font-weight: normal;
   font-size: 12px;
 }
 
-/* Form field animations */
 .modal-content input,
 .modal-content textarea,
 .modal-content select {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Loading state for buttons */
 .submit-btn:disabled,
 .cancel-btn:disabled {
   opacity: 0.6;
@@ -353,14 +323,12 @@
   pointer-events: none;
 }
 
-/* Better button focus states */
 .submit-btn:focus,
 .cancel-btn:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.3);
 }
 
-/* Improved modal backdrop */
 .modal-overlay {
   backdrop-filter: blur(8px);
   animation: fadeIn 0.3s ease-out;
@@ -375,7 +343,6 @@
   }
 }
 
-/* Modal content animation */
 .modal-content {
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -391,39 +358,36 @@
   }
 }
 
-/* Better scroll styling for modal content */
 .modal-content::-webkit-scrollbar {
   width: 8px;
 }
 
 .modal-content::-webkit-scrollbar-track {
-  background: #333;
+  background: var(--hover-bg);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb {
-  background: #666;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover {
-  background: #777;
+  background: var(--text-secondary);
 }
 
-/* FIXED: Disabled Input Styling */
 .disabled-input {
-  background: #333 !important;
-  color: #999 !important;
+  background: var(--hover-bg) !important;
+  color: var(--text-secondary) !important;
   cursor: not-allowed !important;
   opacity: 0.7;
-  border-color: #444 !important;
+  border-color: var(--border-color) !important;
 }
 
-/* FIXED: Select Dropdown Styling - This was the main issue */
 .modal-content select {
-  background-color: #1a1a1a !important;
-  color: #ffffff !important;
-  border: 1px solid #555 !important;
+  background-color: var(--background) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 8px;
   padding: 12px 40px 12px 15px;
   font-size: 14px;
@@ -443,18 +407,16 @@
   outline: none;
   border-color: #4a9eff !important;
   box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
-  background-color: #222 !important;
+  background-color: var(--hover-bg) !important;
 }
 
-/* FIXED: Select Options Styling */
 .modal-content select option {
-  background: #1a1a1a !important;
-  color: #ffffff !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
   padding: 10px;
   border: none;
 }
 
-/* FIXED: Amount Container with Currency Symbol */
 .amount-container {
   position: relative;
 }
@@ -464,7 +426,7 @@
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   font-weight: bold;
   z-index: 2;
   pointer-events: none;
@@ -475,7 +437,6 @@
   padding-left: 35px !important;
 }
 
-/* Useful Life Container */
 .useful-life-container {
   position: relative;
 }
@@ -485,7 +446,7 @@
   right: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   font-size: 12px;
   pointer-events: none;
   z-index: 2;
@@ -496,34 +457,30 @@
   padding-right: 50px !important;
 }
 
-/* Form Group Spacing */
 .modal-content .form-group,
 .repair-form .form-group,
 .update-form .form-group {
   margin-bottom: 20px;
 }
 
-/* FIXED: Textarea Styling */
 .modal-content textarea {
   resize: vertical;
   min-height: 100px;
   font-family: inherit;
   line-height: 1.5;
-  background: #1a1a1a !important;
-  color: #ffffff !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
 }
 
-/* FIXED: Modal Actions */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 30px;
   padding-top: 20px;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
 }
 
-/* FIXED: Button Styling */
 .submit-btn,
 .cancel-btn,
 .modal-content button[type="submit"],
@@ -559,14 +516,13 @@
   box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
 }
 
-/* FIXED: Date Input Specific Styling */
 .date-input {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #555;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: #1a1a1a !important;
-  color: #ffffff !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
   font-size: 14px;
   font-family: inherit;
   transition: border-color 0.3s ease;
@@ -594,7 +550,6 @@
   transform: scale(1.1);
 }
 
-/* FIXED: Close Button */
 .modal-close-btn {
   position: absolute;
   top: 15px;
@@ -603,7 +558,7 @@
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #888;
+  color: var(--text-secondary);
   width: 30px;
   height: 30px;
   display: flex;
@@ -614,11 +569,11 @@
 }
 
 .modal-close-btn:hover {
-  background-color: #444;
-  color: #fff;
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
 }
 
-/* Add Equipment Modal - Following SuppliesPage theme */
+/* Add Equipment Modal - Light theme for forms */
 .add-equipment-content {
   background: #e8e8e8;
   padding: 30px;
@@ -682,7 +637,6 @@
   font-style: italic;
 }
 
-/* Item Code Container */
 .item-code-container {
   display: flex;
   gap: 10px;
@@ -708,7 +662,6 @@
   background: #0056b3;
 }
 
-/* FIXED: Category Dropdown for Add Equipment Modal */
 .form-group select {
   appearance: none;
   -webkit-appearance: none;
@@ -738,7 +691,6 @@
   padding: 8px;
 }
 
-/* File Input */
 .file-input-container {
   display: flex;
   align-items: center;
@@ -765,7 +717,6 @@
   font-style: italic;
 }
 
-/* Upload Section */
 .upload-section {
   margin-top: 25px;
   margin-bottom: 25px;
@@ -819,7 +770,6 @@
   margin: 2px 0;
 }
 
-/* Form Actions */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -963,7 +913,6 @@
   background: #0056b3;
 }
 
-/* Specific colors for different buttons */
 .view-stock-btn {
   background: #17a2b8;
 }
@@ -1136,7 +1085,6 @@
   letter-spacing: 0.5px;
   font-weight: 600;
   transition: background-color 0.3s ease;
-  min-width: auto;
 }
 
 .qr-action-btn:hover {
@@ -1217,7 +1165,6 @@
   padding: 40px;
 }
 
-/* Modal Header */
 .modal-header {
   display: flex;
   align-items: center;
@@ -1248,13 +1195,11 @@
   margin: 2px 0 0 0;
 }
 
-/* Modal Divider */
 .modal-divider {
   border-top: 2px solid #333;
   margin: 20px 0;
 }
 
-/* Modal Info Table */
 .modal-info-table {
   margin-bottom: 25px;
   border: 2px solid #333;
@@ -1291,7 +1236,6 @@
   width: 35%;
 }
 
-/* Modal Table Container */
 .modal-table-container {
   border: 2px solid #333;
   border-radius: 8px;
@@ -1299,7 +1243,6 @@
   margin-bottom: 25px;
 }
 
-/* Modal Repair Table */
 .modal-repair-table {
   width: 100%;
   border-collapse: collapse;
@@ -1323,27 +1266,11 @@
   height: 35px;
 }
 
-/* Table Column Widths */
-.receipt-col {
-  width: 18%;
-}
-
-.unit-col {
-  width: 18%;
-}
-
-.date-repair-col {
-  width: 20%;
-}
-
-.details-col {
-  width: 28%;
-  text-align: left !important;
-}
-
-.amount-col {
-  width: 16%;
-}
+.receipt-col { width: 18%; }
+.unit-col { width: 18%; }
+.date-repair-col { width: 20%; }
+.details-col { width: 28%; text-align: center !important; }
+.amount-col { width: 16%; }
 
 .quantity-header,
 .repair-header {
@@ -1352,7 +1279,6 @@
   font-style: italic;
 }
 
-/* Table Cells */
 .receipt-cell,
 .unit-cell,
 .date-repair-cell,
@@ -1361,11 +1287,10 @@
 }
 
 .details-cell {
-  text-align: left;
-  padding-left: 12px;
+  text-align: center;
+  padding-left: 0px;
 }
 
-/* Modal Print Section */
 .modal-print-section {
   display: flex;
   justify-content: center;
@@ -1502,4 +1427,11 @@
     font-size: 12px;
   }
 
+  .modal-repair-table .details-col {
+    text-align: center;
+  }
+
+  .modal-repair-table .details-cell {
+    text-align: center;
+  }
 }

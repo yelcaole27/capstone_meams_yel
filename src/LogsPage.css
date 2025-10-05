@@ -1,4 +1,4 @@
-/* LogsPage.css */
+/* LogsPage.css - Updated with theme variables */
 
 .logs-page-container {
   flex-grow: 1;
@@ -23,7 +23,7 @@
 
 .page-title {
   font-size: 28px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 700;
   margin: 0;
 }
@@ -57,11 +57,11 @@
 }
 
 .search-input {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px 15px 12px 40px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   width: 100%;
 }
@@ -76,7 +76,7 @@
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .logs-filters {
@@ -94,17 +94,17 @@
 }
 
 .date-filter-label {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
 }
 
 .date-input {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 12px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
 }
@@ -124,11 +124,11 @@
 }
 
 .dropdown-toggle {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 30px 8px 12px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   min-width: 120px;
@@ -152,8 +152,8 @@
   position: absolute;
   top: 100%;
   left: 0;
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   min-width: 120px;
   z-index: 10;
@@ -164,13 +164,13 @@
 
 .dropdown-item {
   padding: 8px 12px;
-  color: #ffffff;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
 }
 
 .dropdown-item:hover {
-  background: #333333;
+  background: var(--hover-bg);
 }
 
 .export-button {
@@ -211,14 +211,14 @@
   justify-content: center;
   gap: 15px;
   padding: 40px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .loading-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid #333333;
+  border: 2px solid var(--border-color);
   border-top: 2px solid #007bff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -234,7 +234,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  color: #cccccc;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -256,30 +256,30 @@
 .table-container {
   flex: 1;
   overflow-y: auto;
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
   border-radius: 10px;
-  border: 1px solid #333333;
+  border: 1px solid var(--border-color);
 }
 
 .logs-table {
   width: 100%;
-  border-collapse: separate; /* Changed from collapse to separate for spacing */
-  border-spacing: 0 8px; /* Added vertical spacing between rows */
-  background: #1a1a1a;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  background: var(--sidebar-bg);
 }
 
 .logs-table th,
 .logs-table td {
-  padding: 16px 20px; /* Increased padding from 12px 16px */
+  padding: 16px 20px;
   text-align: left;
   font-size: 14px;
-  color: #e0e0e0;
-  background: #1a1a1a; /* Added background to prevent spacing issues */
+  color: var(--text-secondary);
+  background: var(--sidebar-bg);
 }
 
 .logs-table th {
-  background: #2a2a2a !important; /* Important to override the general background */
-  color: #ffffff;
+  background: var(--hover-bg) !important;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 14px;
   text-transform: uppercase;
@@ -287,34 +287,33 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  border-bottom: none; /* Remove bottom border since we're using spacing */
+  border-bottom: none;
 }
 
 .logs-table td {
-  background: #1a1a1a;
-  border-bottom: none; /* Remove bottom borders since we're using row spacing */
+  background: var(--sidebar-bg);
+  border-bottom: none;
 }
 
 .logs-table tbody tr {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
 }
 
 .logs-table tbody tr:hover {
-  background-color: #242424;
+  background-color: var(--hover-bg);
 }
 
 .logs-table tbody tr:hover td {
-  background-color: #242424; /* Ensure hover applies to all cells */
+  background-color: var(--hover-bg);
 }
 
 .logs-table .no-data {
   text-align: center;
-  color: #888888;
+  color: var(--text-secondary);
   font-style: italic;
   padding: 40px 20px;
 }
 
-/* Column specific styles */
 .logs-table th:first-child,
 .logs-table td:first-child {
   width: 180px;
@@ -389,19 +388,18 @@
   
   .logs-table {
     font-size: 12px;
-    border-spacing: 0 6px; /* Slightly reduce spacing on mobile */
+    border-spacing: 0 6px;
   }
   
   .logs-table th,
   .logs-table td {
-    padding: 12px 16px; /* Reduce padding on mobile */
+    padding: 12px 16px;
   }
 
   .search-input-wrapper {
     width: 100%;
   }
 
-  /* Make table columns more responsive on mobile */
   .logs-table th:first-child,
   .logs-table td:first-child {
     width: 140px;
@@ -427,12 +425,12 @@
 
   .logs-table {
     font-size: 11px;
-    border-spacing: 0 4px; /* Further reduce spacing on small mobile */
+    border-spacing: 0 4px;
   }
 
   .logs-table th,
   .logs-table td {
-    padding: 10px 12px; /* Reduce padding further on small mobile */
+    padding: 10px 12px;
   }
 
   .logs-table th:first-child,
@@ -448,20 +446,19 @@
   }
 }
 
-/* Dark scrollbar for table container */
 .table-container::-webkit-scrollbar {
   width: 8px;
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: var(--sidebar-bg);
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #444444;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: #666666;
+  background: var(--text-secondary);
 }

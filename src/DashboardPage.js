@@ -4,9 +4,12 @@ import SuppliesAPI from './suppliesApi';
 import EquipmentAPI from './EquipmentApi';
 import './DashboardPage.css';
 import { useAuth } from './AuthContext'; // NEW: Import useAuth
+import { useTheme } from './ThemeContext'; // Import useTheme for chart colors
 
 function DashboardPage() {
   const { authToken, isAuthenticated, loading: authLoading } = useAuth(); // NEW: Get authToken and auth status
+  const { getChartColors } = useTheme(); // Get theme-aware chart colors
+  const chartColors = getChartColors();
   const [suppliesData, setSuppliesData] = useState([]);
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,13 +49,14 @@ function DashboardPage() {
   };
 
   const getEquipmentMaintenanceData = () => {
-    return equipmentData.filter(equipment => {
-      const status = equipment.status || '';
-      return status.toLowerCase().includes('maintenance') || 
-             status.toLowerCase().includes('repair') ||
-             status.toLowerCase().includes('service');
-    });
-  };
+  return equipmentData.filter(equipment => {
+    // Show equipment that has a reportDate OR status is Maintenance
+    return equipment.reportDate || 
+           equipment.status?.toLowerCase().includes('maintenance') || 
+           equipment.status?.toLowerCase().includes('repair') ||
+           equipment.status?.toLowerCase().includes('service');
+  });
+};
   const getEquipmentPurchaseData = () => {
     return equipmentData.filter(equipment => {
       const status = equipment.status || '';
@@ -230,27 +234,27 @@ function DashboardPage() {
 
   // NEW: Get purchase form data (equipment beyond useful life)
   const getPurchaseFormData = () => {
-    const purchaseItems = getEquipmentPurchaseData();
-    
-    return purchaseItems.map(item => ({
-      stockNo: item.itemCode || item.id || 'N/A',
-      unit: item.unit || 'pcs',
-      description: item.name || 'N/A',
-      quantity: 1, // Default quantity for replacement
-      amount: '' // Empty for user input
-    }));
-  };
+  const purchaseItems = getEquipmentPurchaseData();
+  
+  return purchaseItems.map(item => ({
+    itemCode: item.itemCode || item.id || 'N/A',
+    unit: item.unit || 'pcs',
+    equipmentName: item.name || 'N/A',
+    description: item.description || item.category || 'N/A',  // ✅ FIXED - now uses description field
+    quantity: 1,
+    amount: ''
+  }));
+};
 
   // NEW: Get repair form data (equipment needing maintenance)
   const getRepairFormData = () => {
     const repairItems = getEquipmentMaintenanceData();
     
     return repairItems.map(item => ({
-      stockNo: item.itemCode || item.id || 'N/A',
-      unit: item.unit || 'pcs',
-      description: item.name || 'N/A',
-      quantity: 1, // Usually 1 for repair
-      amount: '' // Empty for user input
+      itemCode: item.itemCode || item.id || 'N/A',
+      equipmentName: item.name || 'N/A',
+      reportDetails: item.reportDetails || 'N/A',
+      amount: ''
     }));
   };
 
@@ -357,11 +361,11 @@ function DashboardPage() {
       const data = payload[0];
       return (
         <div style={{
-          backgroundColor: '#333',
+          backgroundColor: chartColors.tooltipBg,
           padding: '10px',
-          border: 'none',
+          border: `1px solid ${chartColors.tooltipBorder}`,
           borderRadius: '4px',
-          color: 'white',
+          color: chartColors.tooltipText,
           fontSize: '12px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}>
@@ -390,17 +394,17 @@ function DashboardPage() {
     if (active && payload && payload.length) {
       return (
         <div style={{
-          backgroundColor: '#333',
+          backgroundColor: chartColors.tooltipBg,
           padding: '10px',
-          border: 'none',
+          border: `1px solid ${chartColors.tooltipBorder}`,
           borderRadius: '4px',
-          color: 'white',
+          color: chartColors.tooltipText,
           fontSize: '12px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
         }}>
-          <p className="label">{`Date: ${label}`}</p>
+          <p className="label" style={{ color: chartColors.tooltipText }}>{`Date: ${label}`}</p>
           {payload.map((entry, index) => (
-            <p key={`item-${index}`} style={{ color: entry.color }}>
+            <p key={`item-${index}`} style={{ color: entry.color, margin: '4px 0' }}>
               {`${entry.name}: ${entry.value.toFixed(2)}`}
             </p>
           ))}
@@ -428,31 +432,34 @@ function DashboardPage() {
                   data={suppliesForecastData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                  <XAxis dataKey="date" stroke="#888888" tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
-                  <YAxis stroke="#888888" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis dataKey="date" stroke={chartColors.axis} tick={{ fill: chartColors.text }} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
+                  <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
                   <Tooltip content={renderLineTooltip} />
                   <Legend />
                   <Line
                     type="monotone"
                     dataKey="quantity"
-                    stroke="#82ca9d"
-                    activeDot={{ r: 8 }}
+                    stroke={chartColors.primaryLine || '#2e7d32'} // darker green for visibility
+                    strokeWidth={2.5}
+                    activeDot={{ r: 7 }}
                     name="Forecasted Quantity"
                   />
                   <Line
                     type="monotone"
                     dataKey="lower_bound"
-                    stroke="#8884d8"
+                    stroke={chartColors.secondaryLine || '#1565c0'} // strong blue
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Lower Bound"
                     dot={false}
                   />
                   <Line
                     type="monotone"
                     dataKey="upper_bound"
-                    stroke="#ffc658"
+                    stroke={chartColors.accentLine || '#ef6c00'} // orange
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Upper Bound"
                     dot={false}
                   />
@@ -476,31 +483,34 @@ function DashboardPage() {
                   data={equipmentForecastData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                  <XAxis dataKey="date" stroke="#888888" tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
-                  <YAxis stroke="#888888" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis dataKey="date" stroke={chartColors.axis} tick={{ fill: chartColors.text }} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
+                  <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
                   <Tooltip content={renderLineTooltip} />
                   <Legend />
                   <Line
                     type="monotone"
                     dataKey="quantity"
-                    stroke="#82ca9d"
-                    activeDot={{ r: 8 }}
+                    stroke={chartColors.primaryLine || '#2e7d32'} // darker green for visibility
+                    strokeWidth={2.5}
+                    activeDot={{ r: 7 }}
                     name="Forecasted Quantity"
                   />
                   <Line
                     type="monotone"
                     dataKey="lower_bound"
-                    stroke="#8884d8"
+                    stroke={chartColors.secondaryLine || '#1565c0'} // strong blue
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Lower Bound"
                     dot={false}
                   />
                   <Line
                     type="monotone"
                     dataKey="upper_bound"
-                    stroke="#ffc658"
+                    stroke={chartColors.accentLine || '#ef6c00'} // orange
                     strokeDasharray="5 5"
+                    strokeWidth={2}
                     name="Upper Bound"
                     dot={false}
                   />
@@ -511,7 +521,7 @@ function DashboardPage() {
             )}
           </div>
         </div>
-
+            
         {/* Middle Row: Pie Charts with Status Tables */}
         <div className="graph-card pie-graph-1">
           <h3>Supply Status Distribution</h3>
@@ -561,8 +571,15 @@ function DashboardPage() {
             {/* Status Table */}
             <div style={{ flex: '0 0 250px' }}>
               <div className="status-table-container">
-                <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>
-                  Supply Status Summary
+                <h4
+                  style={{
+                    margin: '0 0 15px 0',
+                    color: chartColors.text,
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                   Supply Status Summary
                 </h4>
                 <table className="status-table">
                   <thead>
@@ -646,7 +663,14 @@ function DashboardPage() {
             {/* Status Table */}
             <div style={{ flex: '0 0 250px' }}>
               <div className="status-table-container">
-                <h4 style={{ margin: '0 0 15px 0', color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>
+                <h4
+                  style={{
+                    margin: '0 0 15px 0',
+                    color: chartColors.text,
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                >
                   Equipment Status Summary
                 </h4>
                 <table className="status-table">
@@ -724,6 +748,46 @@ function DashboardPage() {
             </button>
           </div>
 
+          {/* New Equipment Maintenance Table */}
+          <div className="table-card equipment-maintenance-table" style={{ margin: '0 20px' }}>
+  <h3>Equipment Maintenance</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Item Code</th>
+        <th>Equipment Name</th>
+        <th>Report Details</th>
+        <th>Report Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {getEquipmentMaintenanceData().length > 0 ? (
+        getEquipmentMaintenanceData().map((item, index) => (
+          <tr key={index}>
+            <td>{item.itemCode || item.id || 'N/A'}</td>
+            <td>{item.name || 'N/A'}</td>
+            <td>{item.reportDetails || 'N/A'}</td>
+            <td>{item.reportDate || 'N/A'}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan="4" style={{textAlign: 'center', color: '#888'}}>
+            {loading ? 'Loading...' : 'No equipment maintenance records found'}
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+  <button
+    className="generate-button"
+    onClick={() => setShowRepairForm(true)}
+    style={{ cursor: 'pointer' }}
+  >
+    Generate Repair Form
+  </button>
+</div>
+
           <div className="table-card equipment-life-table">
             <h3>Equipment Beyond Useful Life!</h3>
             <table>
@@ -754,13 +818,13 @@ function DashboardPage() {
                 )}
               </tbody>
             </table>
-            <button
-              className="generate-button"
-              onClick={handleGenerateRepair}
-              style={{ cursor: 'pointer' }}
-            >
-              Generate Repair Form
-            </button>
+          <button
+            className="generate-button"
+            onClick={() => setShowPurchaseForm(true)}
+            style={{ cursor: 'pointer' }}
+          >
+            Generate Purchase Form
+          </button>
           </div>
         </div>
 
@@ -867,36 +931,6 @@ function DashboardPage() {
               SELECT REPAIR FORM TO GENERATE
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                onClick={() => handleRepairChoice('PURCHASE')}
-                style={{
-                  backgroundColor: '#000',
-                  color: 'white',
-                  padding: '12px 24px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
-                PURCHASE
-              </button>
-              <button
-                onClick={() => handleRepairChoice('REPAIR REQUEST')}
-                style={{
-                  backgroundColor: '#000',
-                  color: 'white',
-                  padding: '12px 24px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
-                REPAIR 
-              </button>
             </div>
             <button
               onClick={closeModal}
@@ -1017,28 +1051,36 @@ function DashboardPage() {
 
         /* Print-specific styles */
         @media print {
-          .print-hidden {
-            display: none !important;
-          }
-          .requisition-form-modal {
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 20px !important;
-            width: 100% !important;
-            max-width: none !important;
-            max-height: none !important;
-            overflow: visible !important;
-          }
-          .requisition-form-modal .requisition-input-filled {
-            background-color: transparent !important;
-          }
-          body {
-            background: white !important;
-          }
-          .requisition-form-modal input {
-            background-color: transparent !important;
-          }
-        }
+  .print-hidden {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .requisition-form-modal, .requisition-form-modal * {
+    visibility: visible !important;
+  }
+  .requisition-form-modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  .requisition-form-modal .requisition-input-filled {
+    background-color: transparent !important;
+  }
+  .requisition-form-modal input {
+    background-color: transparent !important;
+    border: none !important;
+  }
+}
       `}</style>
       
       {/* Form Header */}
@@ -1408,28 +1450,36 @@ function DashboardPage() {
 
         /* Print-specific styles */
         @media print {
-          .print-hidden {
-            display: none !important;
-          }
-          .requisition-form-modal {
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 20px !important;
-            width: 100% !important;
-            max-width: none !important;
-            max-height: none !important;
-            overflow: visible !important;
-          }
-          .requisition-form-modal .requisition-input-filled {
-            background-color: transparent !important;
-          }
-          body {
-            background: white !important;
-          }
-          .requisition-form-modal input {
-            background-color: transparent !important;
-          }
-        }
+  .print-hidden {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .requisition-form-modal, .requisition-form-modal * {
+    visibility: visible !important;
+  }
+  .requisition-form-modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  .requisition-form-modal .requisition-input-filled {
+    background-color: transparent !important;
+  }
+  .requisition-form-modal input {
+    background-color: transparent !important;
+    border: none !important;
+  }
+}
       `}</style>
       
       {/* Form Header */}
@@ -1698,7 +1748,7 @@ function DashboardPage() {
   </div>
 )}
 
-    {/* NEW: Purchase Form Modal */}
+      {/* NEW: Purchase Form Modal */}
       {showPurchaseForm && (
         <div 
           style={{
@@ -1796,28 +1846,37 @@ function DashboardPage() {
               }
 
               @media print {
-                .print-hidden {
-                  display: none !important;
-                }
-                .purchase-repair-form-modal {
-                  box-shadow: none !important;
-                  border-radius: 0 !important;
-                  padding: 20px !important;
-                  width: 100% !important;
-                  max-width: none !important;
-                  max-height: none !important;
-                  overflow: visible !important;
-                }
-                .purchase-repair-form-modal .form-input-filled {
-                  background-color: transparent !important;
-                }
-                body {
-                  background: white !important;
-                }
-                .purchase-repair-form-modal input {
-                  background-color: transparent !important;
-                }
-              }
+  .print-hidden {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .purchase-repair-form-modal, .purchase-repair-form-modal * {
+    visibility: visible !important;
+  }
+  .purchase-repair-form-modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  .purchase-repair-form-modal .form-input-filled {
+    background-color: transparent !important;
+  }
+  .purchase-repair-form-modal input {
+    background-color: transparent !important;
+    border: none !important;
+  }
+    
+}
             `}</style>
 
             {/* Form Header */}
@@ -1828,48 +1887,8 @@ function DashboardPage() {
                 fontSize: '18px',
                 fontWeight: 'bold'
               }}>
-                PURCHASE/REPAIR FORM
+                PURCHASE FORM
               </h2>
-            </div>
-
-            {/* Checkboxes - Purchase is checked */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              margin: '20px 0',
-              paddingLeft: '50px',
-              paddingRight: '50px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '15px',
-                  backgroundColor: 'black',
-                  display: 'inline-block',
-                  position: 'relative'
-                }}>
-                  <span style={{
-                    color: 'white',
-                    fontSize: '12px',
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    fontWeight: 'bold'
-                  }}>✓</span>
-                </div>
-                <span style={{ fontSize: '14px' }}>Purchase</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '15px',
-                  border: '2px solid black',
-                  display: 'inline-block'
-                }}></div>
-                <span style={{ fontSize: '14px' }}>Repair</span>
-              </div>
             </div>
 
             {/* Place and Date of Delivery */}
@@ -1936,113 +1955,138 @@ function DashboardPage() {
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
-                    width: '15%'
-                  }}>STOCK NO.</th>
+                    width: '10%'
+                  }}>Qty.</th>
                   <th style={{
                     border: '1px solid black',
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '10%'
-                  }}>UNIT</th>
+                  }}>Unit</th>
                   <th style={{
                     border: '1px solid black',
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '40%'
-                  }}>DESCRIPTION</th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    width: '15%'
-                  }}>QUANTITY</th>
+                  }}>Equipment Name</th>
                   <th style={{
                     border: '1px solid black',
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '20%'
-                  }}>AMOUNT</th>
+                  }}>Description</th>
+                  <th style={{
+                    border: '1px solid black',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    width: '20%'
+                  }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {(() => {
-                  const purchaseData = getPurchaseFormData();
-                  const totalRows = 12;
+  {(() => {
+    const purchaseData = getPurchaseFormData();
+    const totalRows = 12;
 
-                  return [...Array(totalRows)].map((_, index) => {
-                    const itemData = index < purchaseData.length ? purchaseData[index] : null;
+    return [...Array(totalRows)].map((_, index) => {
+      const itemData = index < purchaseData.length ? purchaseData[index] : null;
 
-                    return (
-                      <tr key={index}>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.stockNo : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.unit : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.description : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.quantity : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.amount : ''}
-                            placeholder=""
-                          />
-                        </td>
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
+      return (
+        <tr key={index}>
+          <td style={{
+  border: '1px solid black',
+  padding: '6px',
+  height: '30px',
+  verticalAlign: 'middle'
+}}>
+            <input
+  type="text"
+  className={`${itemData ? 'form-input-filled' : ''}`}
+  defaultValue={itemData ? itemData.quantity : ''}
+  placeholder=""
+  style={{
+    border: 'none',
+    borderBottom: 'none'
+  }}
+/>
+          </td>
+          <td style={{
+  border: '1px solid black',
+  padding: '6px',
+  height: '30px',
+  verticalAlign: 'middle'
+}}>
+            <input
+  type="text"
+  className={`${itemData ? 'form-input-filled' : ''}`}
+  defaultValue={itemData ? itemData.unit : ''}
+  placeholder=""
+  style={{
+    border: 'none',
+    borderBottom: 'none'
+  }}
+/>
+          </td>
+          <td style={{
+  border: '1px solid black',
+  padding: '6px',
+  height: '30px',
+  verticalAlign: 'middle'
+}}>
+            <input
+  type="text"
+  className={`${itemData ? 'form-input-filled' : ''}`}
+  defaultValue={itemData ? itemData.equipmentName : ''}
+  placeholder=""
+  style={{
+    border: 'none',
+    borderBottom: 'none'
+  }}
+/>
+          </td>
+          <td style={{
+  border: '1px solid black',
+  padding: '6px',
+  height: '30px',
+  verticalAlign: 'middle'
+}}>
+  <input
+  type="text"
+  className={`${itemData ? 'form-input-filled' : ''}`}
+  defaultValue={itemData ? (itemData.description || itemData.category || 'N/A') : ''}  // ✅ FIXED - showing description
+  placeholder=""
+  style={{
+    border: 'none',
+    borderBottom: 'none'
+  }}
+/>
+</td>
+          <td style={{
+  border: '1px solid black',
+  padding: '6px',
+  height: '30px',
+  verticalAlign: 'middle'
+}}>
+            <input
+  type="text"
+  className={`${itemData ? 'form-input-filled' : ''}`}
+  defaultValue={itemData ? itemData.amount : ''}
+  placeholder=""
+  style={{
+    border: 'none',
+    borderBottom: 'none'
+  }}
+/>
+          </td>
+        </tr>
+      );
+    });
+  })()}
+</tbody>
             </table>
 
             {/* Footer Note */}
@@ -2058,7 +2102,7 @@ function DashboardPage() {
             {/* Signature Section */}
             <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-start',
               alignItems: 'flex-start',
               marginTop: '30px'
             }}>
@@ -2112,7 +2156,7 @@ function DashboardPage() {
                   gap: '8px'
                 }}
               >
-                Print Purchase Form
+                🖨️ Print Purchase Form
               </button>
             </div>
           </div>
@@ -2217,28 +2261,36 @@ function DashboardPage() {
               }
 
               @media print {
-                .print-hidden {
-                  display: none !important;
-                }
-                .purchase-repair-form-modal {
-                  box-shadow: none !important;
-                  border-radius: 0 !important;
-                  padding: 20px !important;
-                  width: 100% !important;
-                  max-width: none !important;
-                  max-height: none !important;
-                  overflow: visible !important;
-                }
-                .purchase-repair-form-modal .form-input-filled {
-                  background-color: transparent !important;
-                }
-                body {
-                  background: white !important;
-                }
-                .purchase-repair-form-modal input {
-                  background-color: transparent !important;
-                }
-              }
+  .print-hidden {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .purchase-repair-form-modal, .purchase-repair-form-modal * {
+    visibility: visible !important;
+  }
+  .purchase-repair-form-modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  .purchase-repair-form-modal .form-input-filled {
+    background-color: transparent !important;
+  }
+  .purchase-repair-form-modal input {
+    background-color: transparent !important;
+    border: none !important;
+  }
+}
             `}</style>
 
             {/* Form Header */}
@@ -2249,48 +2301,8 @@ function DashboardPage() {
                 fontSize: '18px',
                 fontWeight: 'bold'
               }}>
-                PURCHASE/REPAIR FORM
+                REPAIR FORM
               </h2>
-            </div>
-
-            {/* Checkboxes - Repair is checked */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              margin: '20px 0',
-              paddingLeft: '50px',
-              paddingRight: '50px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '15px',
-                  border: '2px solid black',
-                  display: 'inline-block'
-                }}></div>
-                <span style={{ fontSize: '14px' }}>Purchase</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '20px',
-                  height: '15px',
-                  backgroundColor: 'black',
-                  display: 'inline-block',
-                  position: 'relative'
-                }}>
-                  <span style={{
-                    color: 'white',
-                    fontSize: '12px',
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    fontWeight: 'bold'
-                  }}>✓</span>
-                </div>
-                <span style={{ fontSize: '14px' }}>Repair</span>
-              </div>
             </div>
 
             {/* Place and Date of Delivery */}
@@ -2358,112 +2370,93 @@ function DashboardPage() {
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '15%'
-                  }}>STOCK NO.</th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    width: '10%'
-                  }}>UNIT</th>
+                  }}>Item Code</th>
                   <th style={{
                     border: '1px solid black',
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '40%'
-                  }}>DESCRIPTION</th>
+                  }}>Equipment Name</th>
                   <th style={{
                     border: '1px solid black',
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
-                    width: '15%'
-                  }}>QUANTITY</th>
+                    width: '25%'
+                  }}>Report Details</th>
                   <th style={{
                     border: '1px solid black',
                     padding: '8px',
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '20%'
-                  }}>AMOUNT</th>
+                  }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {(() => {
-                  const repairData = getRepairFormData();
-                  const totalRows = 12;
+  {(() => {
+    const repairData = getRepairFormData();
+    const totalRows = 12;
 
-                  return [...Array(totalRows)].map((_, index) => {
-                    const itemData = index < repairData.length ? repairData[index] : null;
+    return [...Array(totalRows)].map((_, index) => {
+      const itemData = index < repairData.length ? repairData[index] : null;
 
-                    return (
-                      <tr key={index}>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.stockNo : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.unit : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.description : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.quantity : ''}
-                            placeholder=""
-                          />
-                        </td>
-                        <td style={{
-                          border: '1px solid black',
-                          padding: '6px',
-                          height: '30px'
-                        }}>
-                          <input
-                            type="text"
-                            className={`${itemData ? 'form-input-filled' : ''}`}
-                            defaultValue={itemData ? itemData.amount : ''}
-                            placeholder=""
-                          />
-                        </td>
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
+      return (
+        <tr key={index}>
+          <td style={{
+            border: '1px solid black',
+            padding: '6px',
+            height: '30px'
+          }}>
+            <input
+              type="text"
+              className={`${itemData ? 'form-input-filled' : ''}`}
+              defaultValue={itemData ? itemData.itemCode : ''}
+              placeholder=""
+            />
+          </td>
+          <td style={{
+            border: '1px solid black',
+            padding: '6px',
+            height: '30px'
+          }}>
+            <input
+              type="text"
+              className={`${itemData ? 'form-input-filled' : ''}`}
+              defaultValue={itemData ? itemData.equipmentName : ''}
+              placeholder=""
+            />
+          </td>
+          <td style={{
+            border: '1px solid black',
+            padding: '6px',
+            height: '30px'
+          }}>
+            <input
+              type="text"
+              className={`${itemData ? 'form-input-filled' : ''}`}
+              defaultValue={itemData ? itemData.reportDetails : ''}
+              placeholder=""
+            />
+          </td>
+          <td style={{
+            border: '1px solid black',
+            padding: '6px',
+            height: '30px'
+          }}>
+            <input
+              type="text"
+              className={`${itemData ? 'form-input-filled' : ''}`}
+              defaultValue={itemData ? itemData.amount : ''}
+              placeholder=""
+            />
+          </td>
+        </tr>
+      );
+    });
+  })()}
+</tbody>
             </table>
 
             {/* Footer Note */}
@@ -2479,7 +2472,7 @@ function DashboardPage() {
             {/* Signature Section */}
             <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-start',
               alignItems: 'flex-start',
               marginTop: '30px'
             }}>
@@ -2533,13 +2526,12 @@ function DashboardPage() {
                   gap: '8px'
                 }}
               >
-                Print Repair Form
+                🖨️ Print Repair Form
               </button>
             </div>
           </div>
         </div>
       )}
-
     </section>
   );
 }
