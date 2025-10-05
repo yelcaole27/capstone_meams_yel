@@ -263,4 +263,5 @@ async def remove_document(
         "success": True,
         "message": "Document deleted successfully",
         "data": updated_supply
+
     }
