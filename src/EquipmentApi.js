@@ -416,6 +416,119 @@ async uploadEquipmentImage(equipmentId, imageFile) {
     throw error;
   }
 },
+
+// ========================================
+  // DOCUMENT MANAGEMENT METHODS
+  // ========================================
+
+  // Upload document to equipment
+  async uploadEquipmentDocument(equipmentId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = getAuthToken();
+      if (!token) throw new Error('No authentication token found.');
+
+      console.log(`📤 Uploading document "${file.name}" to equipment ${equipmentId}`);
+
+      const response = await fetch(`${API_BASE_URL}/api/equipment/${equipmentId}/documents`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Document uploaded successfully');
+      return result.data;
+    } catch (error) {
+      console.error('Failed to upload document:', error);
+      throw error;
+    }
+  },
+
+  // Get all documents for equipment
+  async getEquipmentDocuments(equipmentId) {
+    try {
+      console.log(`📥 Fetching documents for equipment ${equipmentId}`);
+      const response = await apiClient.get(`/api/equipment/${equipmentId}/documents`);
+      console.log(`✅ Found ${response.data.data.length} documents`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch documents:', error);
+      throw error;
+    }
+  },
+
+  // Get document URL for viewing/downloading
+  getEquipmentDocumentUrl(equipmentId, documentIndex) {
+    const token = getAuthToken();
+    return `${API_BASE_URL}/api/equipment/${equipmentId}/documents/${documentIndex}?token=${encodeURIComponent(token)}`;
+  },
+
+  // Download specific document
+  async downloadEquipmentDocument(equipmentId, documentIndex, filename) {
+    try {
+      const token = getAuthToken();
+      if (!token) throw new Error('No authentication token found.');
+
+      console.log(`📥 Downloading document: ${filename}`);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/equipment/${equipmentId}/documents/${documentIndex}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      console.log('✅ Document downloaded successfully');
+    } catch (error) {
+      console.error('Failed to download document:', error);
+      throw error;
+    }
+  },
+
+  // Delete document
+  async deleteEquipmentDocument(equipmentId, documentIndex) {
+    try {
+      console.log(`🗑️ Deleting document at index ${documentIndex} from equipment ${equipmentId}`);
+
+      const response = await apiClient.delete(
+        `/api/equipment/${equipmentId}/documents/${documentIndex}`
+      );
+
+      console.log('✅ Document deleted successfully');
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      throw error;
+    }
+  },
+  
   // Method to check if user is authenticated
   isAuthenticated() {
     return !!getAuthToken();
