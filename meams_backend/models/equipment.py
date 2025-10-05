@@ -8,7 +8,6 @@ class EquipmentCreate(BaseModel):
     name: str
     description: str
     category: str
-    quantity: int
     usefulLife: int
     amount: float
     location: Optional[str] = ""
@@ -24,7 +23,6 @@ class EquipmentUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
-    quantity: Optional[int] = None
     usefulLife: Optional[int] = None
     amount: Optional[float] = None
     location: Optional[str] = None

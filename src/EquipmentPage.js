@@ -65,9 +65,8 @@ const handleCloseEquipmentDocumentViewer = () => {
   const [isAddEquipmentOverlayOpen, setIsAddEquipmentOverlayOpen] = useState(false);
   const [newEquipment, setNewEquipment] = useState({
     itemCode: '',
-    name: '',        // Equipment name (what displays in table)
-    quantity: '',
-    description: '', // Separate description field
+    name: '',        
+    description: '', 
     category: '',
     location: '',
     status: 'Within-Useful-Life',
@@ -324,7 +323,6 @@ const submitEquipmentUpdate = async () => {
        const transformedEquipment = equipment.map(item => ({
   _id: item._id || item.id,
   itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-  quantity: item.quantity || 1,
   usefulLife: item.usefulLife || 1,
   amount: item.amount || 0.0,
   name: item.name || 'Unknown Equipment',
@@ -421,7 +419,6 @@ setEquipmentData(transformedEquipment);
       setNewEquipment({
         itemCode: '',
         name: '',          
-        quantity: '',
         description: '',   
         category: '',
         location: '',
@@ -520,10 +517,6 @@ setEquipmentData(transformedEquipment);
       errors.push('Description is required');
     }
     
-    if (!newEquipment.quantity || parseInt(newEquipment.quantity) <= 0) {
-      errors.push('Quantity must be a positive number');
-    }
-    
     if (!newEquipment.usefulLife || parseInt(newEquipment.usefulLife) <= 0) {
     errors.push('Useful life must be a positive number');
   }
@@ -562,7 +555,6 @@ const equipmentData = {
       name: newEquipment.name.trim(),
       description: newEquipment.description.trim(),
       category: newEquipment.category,
-      quantity: parseInt(newEquipment.quantity),
       usefulLife: parseInt(newEquipment.usefulLife), 
       amount: parseFloat(newEquipment.amount),       
       location: newEquipment.location.trim() || '',
@@ -603,7 +595,6 @@ if (equipmentDocumentFiles.length > 0) {
       _id: savedEquipment._id || savedEquipment.id,
       itemCode: equipmentData.itemCode,
       name: newEquipment.name.trim(),
-      quantity: parseInt(newEquipment.quantity),
       usefulLife: parseInt(newEquipment.usefulLife), 
       amount: parseFloat(newEquipment.amount),       
       description: newEquipment.description.trim(),
@@ -671,7 +662,6 @@ if (equipmentDocumentFiles.length > 0) {
         itemCode: equipment.itemCode,
         name: equipment.name,
         description: equipment.description,
-        quantity: equipment.quantity,
         usefulLife: equipment.usefulLife,
         amount: equipment.amount,
         category: equipment.category,
@@ -948,61 +938,84 @@ if (equipmentDocumentFiles.length > 0) {
           )}
         </div>
       ) : (
-        <table className="equipment-table">
-          <thead>
-            <tr>
-              <th>ITEM CODE</th>
-              <th>QUANTITY</th>
-              <th>USEFUL LIFE</th>
-              <th>EQUIPMENT NAME</th>
-              <th>AMOUNT</th>
-              <th>ACTION</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedEquipment.map((equipment, index) => (
-              <tr key={equipment._id || index}>
-                <td>{equipment.itemCode}</td>
-                <td>{equipment.quantity}</td>
-                <td>{equipment.usefulLife ? `${equipment.usefulLife} years` : 'N/A'}</td>
-                <td>
-                  <span 
-                    className="description-clickable"
-                    onClick={() => handleEquipmentClick(equipment)}
-                    title="Click to view details"
-                  >
-                    {equipment.name}
-                  </span>
-                </td>
-                <td>₱{equipment.amount ? parseFloat(equipment.amount).toFixed(2) : '0.00'}</td>
-                <td>
-  <div className="action-buttons-container">
-    <button 
-      className="view-icon-btn"
-      onClick={() => handleEquipmentClick(equipment)}
-      title="View equipment details"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    </button>
-    <button 
-      className="delete-icon-btn"
-      onClick={() => handleDeleteEquipment(equipment._id, equipment.name)}
-      title="Delete equipment"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    </button>
-  </div>
-</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        // UPDATES FOR EquipmentPage.js
+
+// 1. UPDATE TABLE STRUCTURE - Remove USEFUL LIFE column
+// Replace the table section (around line 685-740) with this:
+
+// Update the table structure in EquipmentPage.js to stretch full width
+
+// Update the table structure in EquipmentPage.js to stretch full width
+
+// Update the table structure in EquipmentPage.js to include STATUS column
+
+// Update the table structure in EquipmentPage.js to include STATUS column
+
+// Update the table structure in EquipmentPage.js to include STATUS column
+
+<table className="equipment-table">
+  <thead>
+    <tr>
+      <th style={{ width: '20%' }}>ITEM CODE</th>
+      <th style={{ width: '30%' }}>EQUIPMENT NAME</th>
+      <th style={{ width: '20%' }}>STATUS</th>
+      <th style={{ width: '20%' }}>AMOUNT</th>
+      <th style={{ width: '10%' }}>ACTION</th>
+    </tr>
+  </thead>
+  <tbody>
+    {paginatedEquipment.map((equipment, index) => (
+      <tr key={equipment._id || index}>
+        <td style={{ width: '20%' }}>{equipment.itemCode}</td>
+        <td style={{ width: '30%' }}>
+          <span 
+            className="description-clickable"
+            onClick={() => handleEquipmentClick(equipment)}
+            title="Click to view details"
+          >
+            {equipment.name}
+          </span>
+        </td>
+        <td style={{ width: '20%' }}>
+          <span style={{
+            color: equipment.status === 'Within-Useful-Life' ? '#10b981' : 
+                   equipment.status === 'Maintenance' ? '#f59e0b' :
+                   equipment.status === 'Beyond-Useful-Life' ? '#ef4444' : '#ef4444',
+            fontWeight: '500'
+          }}>
+            {equipment.status}
+          </span>
+        </td>
+        <td style={{ width: '20%' }}>₱{equipment.amount ? parseFloat(equipment.amount).toFixed(2) : '0.00'}</td>
+        <td style={{ width: '10%', padding: '12px 30px 12px 20px' }}>
+          <div className="action-buttons-container" style={{ display: 'flex', gap: '8px', justifyContent: 'center', width: '100%' }}>
+            <button 
+              className="view-icon-btn"
+              onClick={() => handleEquipmentClick(equipment)}
+              title="View equipment details"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button 
+              className="delete-icon-btn"
+              onClick={() => handleDeleteEquipment(equipment._id, equipment.name)}
+              title="Delete equipment"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
       )}
 
       {/* NEW: Pagination Controls */}
@@ -1092,19 +1105,6 @@ if (equipmentDocumentFiles.length > 0) {
                   value={newEquipment.name} 
                   onChange={handleEquipmentInputChange}
                   placeholder="Enter equipment name (e.g., 'PC', 'Microscope')"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>QUANTITY: *</label>
-                <input 
-                  type="number" 
-                  name="quantity" 
-                  value={newEquipment.quantity} 
-                  onChange={handleEquipmentInputChange}
-                  placeholder="Enter quantity"
-                  min="1"
                   required
                 />
               </div>
@@ -1365,10 +1365,6 @@ if (equipmentDocumentFiles.length > 0) {
                   <span className="detail-value">{selectedEquipment.category}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="detail-label">Quantity:</span>
-                  <span className="detail-value">{selectedEquipment.quantity} {selectedEquipment.unit}</span>
-                </div>
-                <div className="detail-row">
                   <span className="detail-label">Location:</span>
                   <span className="detail-value">{selectedEquipment.location || 'Not specified'}</span>
                 </div>
@@ -1505,11 +1501,6 @@ if (equipmentDocumentFiles.length > 0) {
                 <div className="qr-detail-row">
                   <span className="qr-detail-label">Status:</span>
                   <span className="qr-detail-value">{qrCodeEquipment.status}</span>
-                </div>
-
-                <div className="qr-detail-row">
-                  <span className="qr-detail-label">Quantity:</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.quantity} {qrCodeEquipment.unit}</span>
                 </div>
               </div>
             </div>

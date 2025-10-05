@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Dict
 from fastapi import HTTPException, UploadFile, Response
 import base64
-
 from database import get_equipment_collection
 
 def equipment_helper(equipment) -> dict:
@@ -17,7 +16,6 @@ def equipment_helper(equipment) -> dict:
         "name": equipment.get("name", ""),
         "description": equipment.get("description", ""),
         "category": equipment.get("category", ""),
-        "quantity": equipment.get("quantity", 0),
         "usefulLife": equipment.get("usefulLife", 0),
         "amount": equipment.get("amount", 0.0),
         "location": equipment.get("location", ""),
@@ -27,7 +25,7 @@ def equipment_helper(equipment) -> dict:
         "date": equipment.get("date", ""),
         "reportDate": equipment.get("reportDate", ""),
         "reportDetails": equipment.get("reportDetails", ""),
-        "repairHistory": equipment.get("repairHistory", []),  # ADD THIS LINE
+        "repairHistory": equipment.get("repairHistory", []),
         "documents": equipment.get("documents", []),
         "image_data": equipment.get("image_data"),
         "image_filename": equipment.get("image_filename"),
@@ -121,6 +119,160 @@ async def add_equipment_image(equipment_id: str, image: UploadFile) -> Dict:
             "image_content_type": image.content_type,
             "updated_at": datetime.utcnow()
         }}
+    )
+    
+    return equipment_helper(collection.find_one({"_id": ObjectId(equipment_id)}))
+
+def update_equipment_repair(equipment_id: str, repair_data: dict) -> Dict:
+    """Update equipment with repair information and add to repair history"""
+    collection = get_equipment_collection()
+    
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    # Validate repair data
+    if not repair_data.get("repairDate"):
+        raise HTTPException(status_code=400, detail="Repair date is required")
+    
+    if not repair_data.get("repairDetails"):
+        raise HTTPException(status_code=400, detail="Repair details are required")
+    
+    if not repair_data.get("amountUsed"):
+        raise HTTPException(status_code=400, detail="Amount used is required")
+    
+    # Create repair history entry
+    repair_entry = {
+        "repairDate": repair_data.get("repairDate"),
+        "repairDetails": repair_data.get("repairDetails"),
+        "amountUsed": float(repair_data.get("amountUsed")),
+        "timestamp": datetime.utcnow()
+    }
+    
+    # Update equipment: add to repair history, clear report fields, set status to Within-Useful-Life
+    collection.update_one(
+        {"_id": ObjectId(equipment_id)},
+        {
+            "$push": {"repairHistory": repair_entry},
+            "$set": {
+                "reportDate": "",
+                "reportDetails": "",
+                "status": "Within-Useful-Life",
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    return equipment_helper(collection.find_one({"_id": ObjectId(equipment_id)}))
+
+async def add_equipment_document(equipment_id: str, file: UploadFile) -> Dict:
+    """Add document to equipment"""
+    collection = get_equipment_collection()
+    
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    # Validate file
+    allowed_types = ['application/pdf', 'application/msword', 
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'image/jpeg', 'image/png', 'image/jpg', 'image/gif']
+    
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type")
+    
+    contents = await file.read()
+    if len(contents) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 25MB)")
+    
+    file_base64 = base64.b64encode(contents).decode('utf-8')
+    
+    document = {
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "data": file_base64,
+        "uploaded_at": datetime.utcnow()
+    }
+    
+    collection.update_one(
+        {"_id": ObjectId(equipment_id)},
+        {
+            "$push": {"documents": document},
+            "$set": {"updated_at": datetime.utcnow()}
+        }
+    )
+    
+    return equipment_helper(collection.find_one({"_id": ObjectId(equipment_id)}))
+
+def get_equipment_documents(equipment_id: str) -> List[Dict]:
+    """Get all documents for equipment"""
+    collection = get_equipment_collection()
+    
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    documents = equipment.get("documents", [])
+    
+    # Return documents without the base64 data (just metadata)
+    return [
+        {
+            "index": idx,
+            "filename": doc.get("filename"),
+            "content_type": doc.get("content_type"),
+            "uploaded_at": doc.get("uploaded_at")
+        }
+        for idx, doc in enumerate(documents)
+    ]
+
+def get_equipment_document(equipment_id: str, document_index: int) -> Response:
+    """Get specific document for download"""
+    collection = get_equipment_collection()
+    
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    documents = equipment.get("documents", [])
+    
+    if document_index < 0 or document_index >= len(documents):
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    document = documents[document_index]
+    file_data = base64.b64decode(document.get("data"))
+    
+    return Response(
+        content=file_data,
+        media_type=document.get("content_type"),
+        headers={
+            "Content-Disposition": f'attachment; filename="{document.get("filename")}"'
+        }
+    )
+
+def delete_equipment_document(equipment_id: str, document_index: int) -> Dict:
+    """Delete specific document from equipment"""
+    collection = get_equipment_collection()
+    
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    documents = equipment.get("documents", [])
+    
+    if document_index < 0 or document_index >= len(documents):
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Remove document at index
+    documents.pop(document_index)
+    
+    collection.update_one(
+        {"_id": ObjectId(equipment_id)},
+        {
+            "$set": {
+                "documents": documents,
+                "updated_at": datetime.utcnow()
+            }
+        }
     )
     
     return equipment_helper(collection.find_one({"_id": ObjectId(equipment_id)}))

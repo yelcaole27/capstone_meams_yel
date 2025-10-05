@@ -123,16 +123,12 @@ const EquipmentAPI = {
     if (!equipmentData.category?.trim()) {
       throw new Error('Equipment category is required');
     }
-    if (!equipmentData.quantity || equipmentData.quantity <= 0) {
-      throw new Error('Equipment quantity must be greater than 0');
-    }
 
     // Prepare data to send, including image fields
     const processedData = {
   name: equipmentData.name.trim(),
   description: equipmentData.description.trim(),
   category: equipmentData.category.trim(),
-  quantity: parseInt(equipmentData.quantity) || 0,
   usefulLife: parseInt(equipmentData.usefulLife) || 0,
   amount: parseFloat(equipmentData.amount) || 0,
   location: equipmentData.location?.trim() || '',
