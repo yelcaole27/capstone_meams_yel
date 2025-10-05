@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import EquipmentAPI from './EquipmentApi'; // Import the API service
+import EquipmentDocumentViewer from './EquipmentDocumentViewer';
 import './EquipmentPage.css';
 
 function EquipmentPage() {
@@ -10,6 +11,51 @@ function EquipmentPage() {
   const [equipmentData, setEquipmentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEquipmentDocumentViewerOpen, setIsEquipmentDocumentViewerOpen] = useState(false);
+  const [equipmentDocumentFiles, setEquipmentDocumentFiles] = useState([]);
+  const [equipmentDocDragActive, setEquipmentDocDragActive] = useState(false);
+
+  const handleEquipmentDocDrag = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.type === "dragenter" || e.type === "dragover") {
+    setEquipmentDocDragActive(true);
+  } else if (e.type === "dragleave") {
+    setEquipmentDocDragActive(false);
+  }
+};
+
+const handleEquipmentDocDrop = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setEquipmentDocDragActive(false);
+  
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    const files = Array.from(e.dataTransfer.files);
+    setEquipmentDocumentFiles(prev => [...prev, ...files]);
+  }
+};
+
+const handleEquipmentDocFileChange = (e) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const files = Array.from(e.target.files);
+    setEquipmentDocumentFiles(prev => [...prev, ...files]);
+  }
+};
+
+const removeEquipmentDocumentFile = (index) => {
+  setEquipmentDocumentFiles(prev => prev.filter((_, i) => i !== index));
+};
+
+const handleViewEquipmentDocuments = () => {
+  if (selectedEquipment) {
+    setIsEquipmentDocumentViewerOpen(true);
+  }
+};
+
+const handleCloseEquipmentDocumentViewer = () => {
+  setIsEquipmentDocumentViewerOpen(false);
+};
 
   // NEW: Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -271,6 +317,8 @@ const submitEquipmentUpdate = async () => {
       setError(null);
       
       const equipment = await EquipmentAPI.getAllEquipment();
+
+  
       
       // Transform database data to match your current structure
        const transformedEquipment = equipment.map(item => ({
@@ -385,6 +433,7 @@ setEquipmentData(transformedEquipment);
       });
       setError(null);
     }
+    setEquipmentDocumentFiles([]);
   };
 
   const handleEquipmentInputChange = (e) => {
@@ -532,6 +581,23 @@ const equipmentData = {
 
     const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
 
+    // Upload documents if any were selected
+if (equipmentDocumentFiles.length > 0) {
+  console.log(`📤 Uploading ${equipmentDocumentFiles.length} documents...`);
+  for (const file of equipmentDocumentFiles) {
+    try {
+      await EquipmentAPI.uploadEquipmentDocument(savedEquipment._id || savedEquipment.id, file);
+      console.log(`✅ Uploaded: ${file.name}`);
+    } catch (err) {
+      console.error(`❌ Failed to upload ${file.name}:`, err);
+    }
+  }
+  
+  // Reload equipment to get documents
+  const updatedEquipment = await EquipmentAPI.getEquipmentById(savedEquipment._id || savedEquipment.id);
+  savedEquipment.documents = updatedEquipment.documents;
+}
+
     // Add new equipment to state including image data
     const newEquipmentItem = {
       _id: savedEquipment._id || savedEquipment.id,
@@ -547,6 +613,7 @@ const equipmentData = {
       itemPicture: savedEquipment.image_data,  
       image_data: savedEquipment.image_data,
       image_filename: savedEquipment.image_filename,
+      documents: savedEquipment.documents || [],
       image_content_type: savedEquipment.image_content_type,
       supplier: '',
       unit_price: parseFloat(newEquipment.amount), 
@@ -554,9 +621,9 @@ const equipmentData = {
     };
     setEquipmentData(prevData => [...prevData, newEquipmentItem]);
 
-    alert(`Equipment "${newEquipment.name}" added successfully!`);
-    handleAddEquipmentToggle();
-
+    alert(`Equipment "${newEquipment.name}" added successfully!\nDocuments uploaded: ${equipmentDocumentFiles.length}`);
+    setEquipmentDocumentFiles([]);
+    
   } catch (error) {
     console.error('❌ Error adding equipment:', error);
     setError(`Failed to add equipment: ${error.message}`);
@@ -1166,26 +1233,75 @@ const equipmentData = {
             </div>
 
             <div className="upload-section">
-              <h4>UPLOAD FILES (DOCUMENTS)</h4>
-              <div 
-                className={`file-drop-zone ${dragActive ? 'drag-active' : ''}`}
-                onDragEnter={handleEquipmentDrag}
-                onDragLeave={handleEquipmentDrag}
-                onDragOver={handleEquipmentDrag}
-                onDrop={handleEquipmentDrop}
-                onClick={() => document.getElementById('equipmentFileInput').click()}
-              >
-                <div className="upload-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <p>Drag and Drop files here or <span className="choose-file-link">Choose file</span></p>
-                <small>Supported formats: PDF, DOCX, JPEG, PNG</small>
-                <small>Maximum size: 25MB</small>
-              </div>
-            </div>
+  <h4>UPLOAD FILES (DOCUMENTS)</h4>
+  <div 
+    className={`file-drop-zone ${equipmentDocDragActive ? 'drag-active' : ''}`}
+    onDragEnter={handleEquipmentDocDrag}
+    onDragLeave={handleEquipmentDocDrag}
+    onDragOver={handleEquipmentDocDrag}
+    onDrop={handleEquipmentDocDrop}
+    onClick={() => document.getElementById('equipmentDocFileInput').click()}
+  >
+    <input 
+      type="file" 
+      id="equipmentDocFileInput"
+      onChange={handleEquipmentDocFileChange}
+      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+      multiple
+      style={{ display: 'none' }}
+    />
+    <div className="upload-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+    <p>Drag and Drop files here or <span className="choose-file-link">Choose file</span></p>
+    <small>Supported formats: PDF, DOCX, JPEG, PNG</small>
+    <small>Maximum size: 25MB</small>
+  </div>
+  
+  {equipmentDocumentFiles.length > 0 && (
+    <div className="selected-docs-list" style={{ marginTop: '15px' }}>
+      <h5 style={{ fontSize: '14px', color: '#fff', marginBottom: '10px' }}>Selected Documents ({equipmentDocumentFiles.length}):</h5>
+      {equipmentDocumentFiles.map((file, index) => (
+        <div key={index} style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          background: '#2a2a2a',
+          marginBottom: '8px',
+          borderRadius: '4px',
+          border: '1px solid #444'
+        }}>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '12px', color: '#fff', display: 'block' }}>{file.name}</span>
+            <span style={{ fontSize: '10px', color: '#888' }}>
+              {(file.size / 1024).toFixed(2)} KB
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => removeEquipmentDocumentFile(index)}
+            style={{
+              background: '#dc2626',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: '500'
+            }}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
             <div className="form-actions">
               <button 
@@ -1307,14 +1423,17 @@ const equipmentData = {
     View Maintenance Log ▪
   </button>
   
-  <button className="action-btn view-docs-btn">
+  <button 
+  className="action-btn view-docs-btn"
+  onClick={handleViewEquipmentDocuments}
+>
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
-    View Documents ◌
+    Documents ⌕
   </button>
   
   <button 
@@ -1867,6 +1986,13 @@ const equipmentData = {
     </div>
   </div>
 )}
+
+{/* Equipment Document Viewer Modal */}
+<EquipmentDocumentViewer 
+  equipment={selectedEquipment}
+  isOpen={isEquipmentDocumentViewerOpen}
+  onClose={handleCloseEquipmentDocumentViewer}
+/>
     </div>
   );
 }
