@@ -293,5 +293,4 @@ const handleUpload = async () => {
     </div>
   );
 }
-
 export default EquipmentDocumentViewer;

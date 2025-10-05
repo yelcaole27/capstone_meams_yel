@@ -339,5 +339,4 @@ function DocumentViewer({ item, isOpen, onClose }) {
     </div>
   );
 }
-
 export default DocumentViewer;

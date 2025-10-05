@@ -1,21 +1,25 @@
 """
-Forecast service - wrapper for forecasting logic with caching
+========================
+OPTIMIZED forecast_service.py
+========================
+KEY FIX: All heavy imports moved to function level
 """
-import pandas as pd
 from typing import List, Dict
 from datetime import datetime, timedelta
 from database import (
     get_historical_supplies_forecast_collection,
     get_historical_equipment_forecast_collection
 )
-from processing import bootstrap_years, generate_sarima_forecast
 
 # Simple cache
 _forecast_cache = {}
 _cache_expiry = {}
 
 def get_supplies_forecast(n_periods: int = 12) -> List[Dict]:
-    """Get supplies forecast with caching"""
+    """Get supplies forecast with caching
+    
+    PERFORMANCE: Heavy imports (pandas, statsmodels) are lazy-loaded
+    """
     cache_key = f"supplies_{n_periods}"
     now = datetime.utcnow()
     
@@ -28,6 +32,10 @@ def get_supplies_forecast(n_periods: int = 12) -> List[Dict]:
     start_time = datetime.utcnow()
     
     try:
+        # 🚀 LAZY IMPORTS - Only load when actually generating forecast
+        import pandas as pd
+        from processing import bootstrap_years, generate_sarima_forecast
+        
         collection = get_historical_supplies_forecast_collection()
         raw_data = list(collection.find({}, {"_id": 0}))
         
@@ -57,7 +65,10 @@ def get_supplies_forecast(n_periods: int = 12) -> List[Dict]:
         return []
 
 def get_equipment_forecast(n_periods: int = 12) -> List[Dict]:
-    """Get equipment forecast with caching"""
+    """Get equipment forecast with caching
+    
+    PERFORMANCE: Heavy imports (pandas, statsmodels) are lazy-loaded
+    """
     cache_key = f"equipment_{n_periods}"
     now = datetime.utcnow()
     
@@ -70,6 +81,10 @@ def get_equipment_forecast(n_periods: int = 12) -> List[Dict]:
     start_time = datetime.utcnow()
     
     try:
+        # 🚀 LAZY IMPORTS - Only load when actually generating forecast
+        import pandas as pd
+        from processing import bootstrap_years, generate_sarima_forecast
+        
         collection = get_historical_equipment_forecast_collection()
         raw_data = list(collection.find({}, {"_id": 0}))
         
@@ -104,3 +119,101 @@ def clear_forecast_cache():
     _forecast_cache.clear()
     _cache_expiry.clear()
     print("[CACHE] Forecast cache cleared")
+
+
+"""
+========================
+OPTIMIZED database.py
+========================
+KEY FIX: Make index creation non-blocking
+"""
+from pymongo import MongoClient, ASCENDING, DESCENDING
+from config import MONGODB_URL, DATABASE_NAME
+import threading
+
+client = None
+db = None
+
+def connect_db():
+    """Initialize database connection"""
+    global client, db
+    try:
+        client = MongoClient(
+            MONGODB_URL,
+            serverSelectionTimeoutMS=5000,  # 5 second timeout
+            connectTimeoutMS=5000,
+            socketTimeoutMS=5000
+        )
+        db = client[DATABASE_NAME]
+        
+        # Quick ping to verify connection
+        client.admin.command('ping')
+        print(f"✓ Connected to MongoDB: {DATABASE_NAME}")
+        
+        # Create indexes in background thread to not block startup
+        threading.Thread(target=create_indexes_async, daemon=True).start()
+        
+        return db
+    except Exception as e:
+        print(f"✗ Failed to connect to MongoDB: {e}")
+        raise
+
+def create_indexes_async():
+    """Create indexes asynchronously in background"""
+    try:
+        print("⏳ Creating database indexes in background...")
+        create_indexes()
+        print("✓ Database indexes created successfully")
+    except Exception as e:
+        print(f"⚠ Warning: Could not create some indexes: {e}")
+
+def create_indexes():
+    """Create database indexes for better performance"""
+    try:
+        # Supplies indexes
+        db.supplies.create_index([("itemCode", ASCENDING)], background=True)
+        db.supplies.create_index([("category", ASCENDING)], background=True)
+        db.supplies.create_index([("status", ASCENDING)], background=True)
+        db.supplies.create_index([("created_at", DESCENDING)], background=True)
+        
+        # Equipment indexes
+        db.equipment.create_index([("itemCode", ASCENDING)], background=True)
+        db.equipment.create_index([("category", ASCENDING)], background=True)
+        db.equipment.create_index([("status", ASCENDING)], background=True)
+        db.equipment.create_index([("created_at", DESCENDING)], background=True)
+        
+        # Accounts indexes
+        db.accounts.create_index([("username", ASCENDING)], unique=True, background=True)
+        db.accounts.create_index([("email", ASCENDING)], unique=True, background=True)
+        
+        # Logs indexes
+        db.logs.create_index([("timestamp", DESCENDING)], background=True)
+        db.logs.create_index([("username", ASCENDING)], background=True)
+        
+    except Exception as e:
+        print(f"Error creating indexes: {e}")
+
+def get_database():
+    """Get database instance"""
+    global db
+    if db is None:
+        db = connect_db()
+    return db
+
+def get_supplies_collection():
+    return get_database().supplies
+
+def get_equipment_collection():
+    return get_database().equipment
+
+def get_accounts_collection():
+    return get_database().accounts
+
+def get_logs_collection():
+    return get_database().logs
+
+def get_historical_supplies_forecast_collection():
+    return get_database().historical_supplies_forecast
+
+def get_historical_equipment_forecast_collection():
+    return get_database().historical_equipment_forecast
