@@ -1834,7 +1834,7 @@ const handleRemoveImage = async (supplyId) => {
     <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
-  View Documents ⌕
+  Documents ⌕
 </button>
               
               <button 
