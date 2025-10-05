@@ -171,10 +171,13 @@ async def update_account(
     if not account_before:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    # Build update data
+    # Build update data - FIXED to handle boolean False properly
     update_data = {}
-    for field, value in account_update.dict().items():
-        if value is not None:
+    update_dict = account_update.dict(exclude_unset=True)  # Only get fields that were actually set
+    
+    for field, value in update_dict.items():
+        # Include the field if it's not None, OR if it's a boolean (including False)
+        if value is not None or isinstance(value, bool):
             update_data[field] = value
     
     if not update_data:
@@ -205,10 +208,14 @@ async def update_account(
     collection.update_one({"_id": ObjectId(account_id)}, {"$set": update_data})
     updated_account = collection.find_one({"_id": ObjectId(account_id)})
     
+    status_change = ""
+    if "status" in update_data:
+        status_change = f" - Status changed to: {'Active' if update_data['status'] else 'Inactive'}"
+    
     await create_log_entry(
         username,
         "Updated account.",
-        f"Updated account: {account_before.get('name', 'Unknown')} ({account_before.get('username')})",
+        f"Updated account: {account_before.get('name', 'Unknown')} ({account_before.get('username')}){status_change}",
         client_ip
     )
     
@@ -331,3 +338,25 @@ async def reset_account_password(
         message += " but failed to send email notification"
     
     return {"success": True, "message": message}
+
+@router.get("/check-status")
+async def check_account_status(token: str = Depends(get_current_user)):
+    """Check if current user's account is still active"""
+    try:
+        payload = verify_token(token)
+        username = payload["username"]
+        
+        collection = get_accounts_collection()
+        user = collection.find_one({"username": username})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return {
+            "success": True,
+            "active": user.get("status", True),
+            "username": username,
+            "role": user.get("role", "staff")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")

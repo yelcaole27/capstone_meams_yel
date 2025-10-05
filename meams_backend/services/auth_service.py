@@ -63,18 +63,29 @@ def authenticate_user(username: str, password: str):
             return {
                 "username": username,
                 "role": HARDCODED_USERS[username]["role"],
-                "first_login": False
+                "first_login": False,
+                "status": True,
+                "_id": "hardcoded"
             }
         return None
     
     # Check database users
     user = accounts_collection.find_one({"username": username})
     if user and verify_password(password, user.get("password_hash", "")):
+        return user  # Return full user object
+    
+    return None
+    
+    # Check database users
+    user = accounts_collection.find_one({"username": username})
+    if user and verify_password(password, user.get("password_hash", "")):
         return {
-            "username": username,
-            "role": user.get("role", "staff"),
-            "first_login": user.get("first_login", True)
-        }
+    "username": username,
+    "role": user.get("role", "staff"),
+    "first_login": user.get("first_login", True),
+    "status": user.get("status", True),  # ADD THIS LINE
+    "_id": user.get("_id")  # Also good to include this
+}
     
     return None
 

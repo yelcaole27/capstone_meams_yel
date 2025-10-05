@@ -39,7 +39,7 @@ class ResetPasswordRequest(BaseModel):
 
 @router.post("/login")
 async def login(credentials: LoginRequest, request: Request):
-    """Login endpoint"""
+    """Login endpoint with account status check"""
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     user = authenticate_user(credentials.username, credentials.password)
@@ -56,6 +56,19 @@ async def login(credentials: LoginRequest, request: Request):
             detail="Invalid username or password"
         )
     
+    # Check if account is active
+    if user.get("status") == False:
+        await create_log_entry(
+            credentials.username,
+            "Failed login attempt.",
+            "Account is deactivated",
+            client_ip
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="Your account has been deactivated. Please contact an administrator."
+        )
+    
     update_last_login(credentials.username)
     
     await create_log_entry(
@@ -66,7 +79,11 @@ async def login(credentials: LoginRequest, request: Request):
     )
     
     access_token = create_access_token(
-        data={"sub": user["username"], "role": user["role"]}
+        data={
+            "sub": user["username"],
+            "role": user["role"],
+            "userId": str(user["_id"])
+        }
     )
     
     return {
@@ -85,7 +102,7 @@ async def logout(request: Request, token: str = Depends(get_current_user)):
     await create_log_entry(username, "Logged out.", "", client_ip)
     return {"message": "Successfully logged out"}
 
-@router.post("/api/change-password")
+@router.post("/change-password")
 async def change_password_api(
     password_data: PasswordChangeRequest,
     request: Request,

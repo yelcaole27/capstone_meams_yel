@@ -1,5 +1,4 @@
-// AuthContext.js - Fixed with proper staff/admin authentication
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const AuthContext = createContext();
 
@@ -14,23 +13,17 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState(null);
 
-  // Helper function to check if token is valid and not expired
   const isTokenValid = (token) => {
-    if (!token || token.trim().length === 0) {
-      return false;
-    }
-
+    if (!token || token.trim().length === 0) return false;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentTime = Math.floor(Date.now() / 1000);
-      
-      // Check if token has expired
       if (payload.exp && payload.exp < currentTime) {
         console.log('Token has expired');
         return false;
       }
-      
       return true;
     } catch (error) {
       console.error('Error validating token:', error);
@@ -38,15 +31,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Helper function to get user info from token
   const getUserFromToken = (token) => {
     if (!token || !isTokenValid(token)) return null;
-    
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
         username: payload.sub,
-        role: payload.role || 'user', // Default to 'user' if no role specified
+        role: payload.role || 'user',
         exp: payload.exp
       };
     } catch (error) {
@@ -55,129 +46,165 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkAccountStatus = async (token) => {
+    if (!token) return false;
+    try {
+      const response = await fetch('http://localhost:8000/api/accounts/check-status', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // If response is not ok, don't treat it as deactivation - could be network error
+      if (!response.ok) {
+        console.warn('Failed to check account status, assuming active');
+        return true; // Changed: assume active on error
+      }
+      
+      const data = await response.json();
+      console.log('Account status check:', data);
+      
+      // Explicitly check for false, not just falsy values
+      return data.active !== false;
+    } catch (error) {
+      console.error('Error checking account status:', error);
+      // On network error, assume account is active to prevent false logouts
+      return true;
+    }
+  };
+
   useEffect(() => {
-    // Check for existing token on app start
     const savedAuthToken = localStorage.getItem('authToken');
-    
-    // Validate token and check expiration
     if (savedAuthToken && isTokenValid(savedAuthToken)) {
       setAuthToken(savedAuthToken);
+      setUserInfo(getUserFromToken(savedAuthToken));
       console.log('Valid token found, user logged in');
     } else {
-      // Remove invalid token
       localStorage.removeItem('authToken');
       console.log('No valid token found');
     }
-    
     setLoading(false);
   }, []);
 
-  // Auto-logout when token expires
   useEffect(() => {
-    if (authToken) {
+    if (!authToken || !userInfo) return;
+
+    const checkStatus = async () => {
       try {
-        const payload = JSON.parse(atob(authToken.split('.')[1]));
+        const isActive = await checkAccountStatus(authToken);
         
-        if (payload.exp) {
-          const expirationTime = payload.exp * 1000; // Convert to milliseconds
-          const currentTime = Date.now();
-          const timeUntilExpiration = expirationTime - currentTime;
-          
-          if (timeUntilExpiration > 0) {
-            // Set timeout to auto-logout when token expires
-            const timeoutId = setTimeout(() => {
-              console.log('Token expired, logging out automatically');
-              logout();
-            }, timeUntilExpiration);
-            
-            return () => clearTimeout(timeoutId);
-          } else {
-            // Token already expired
-            logout();
-          }
+        // Only logout if explicitly deactivated
+        if (isActive === false) {
+          console.log('Account deactivated, logging out...');
+          alert('Your account has been deactivated by an administrator. You will be logged out.');
+          logout();
+          window.location.href = '/login';
         }
       } catch (error) {
-        console.error('Error setting up auto-logout:', error);
+        console.error('Error in status check interval:', error);
+      }
+    };
+
+    // Initial check after 5 seconds (give app time to load)
+    const initialTimeout = setTimeout(checkStatus, 5000);
+    
+    // Then check every 30 seconds
+    const intervalId = setInterval(checkStatus, 30000);
+    
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(intervalId);
+    };
+  }, [authToken, userInfo]);
+
+  useEffect(() => {
+    if (authToken && userInfo?.exp) {
+      const expirationTime = userInfo.exp * 1000;
+      const currentTime = Date.now();
+      const timeUntilExpiration = expirationTime - currentTime;
+      
+      if (timeUntilExpiration > 0) {
+        const timeoutId = setTimeout(() => {
+          console.log('Token expired, logging out automatically');
+          logout();
+        }, timeUntilExpiration);
+        return () => clearTimeout(timeoutId);
+      } else {
+        logout();
       }
     }
-  }, [authToken]);
+  }, [authToken, userInfo]);
 
-  // Universal login function - handles both staff and admin
   const login = (token) => {
     if (isTokenValid(token)) {
-      setAuthToken(token);
-      localStorage.setItem('authToken', token);
-      
       const user = getUserFromToken(token);
+      setAuthToken(token);
+      setUserInfo(user);
+      localStorage.setItem('authToken', token);
       console.log('User logged in:', user);
     } else {
-      console.error('Invalid token provided to login');
       throw new Error('Invalid token provided');
     }
   };
 
-  // Admin login function - same as regular login but with role verification
   const adminLogin = (token) => {
     if (isTokenValid(token)) {
       const user = getUserFromToken(token);
-      
-      // Verify admin role
       if (user && user.role === 'admin') {
         setAuthToken(token);
+        setUserInfo(user);
         localStorage.setItem('authToken', token);
         console.log('Admin logged in:', user);
       } else {
-        console.error('Token does not have admin privileges');
         throw new Error('Admin privileges required');
       }
     } else {
-      console.error('Invalid token provided to adminLogin');
       throw new Error('Invalid token provided');
     }
   };
 
   const logout = () => {
     setAuthToken(null);
+    setUserInfo(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('adminToken');
     console.log('User logged out');
   };
 
-  // Helper function to get current user info from token
-  const getCurrentUser = () => {
-    return getUserFromToken(authToken);
-  };
+  const getCurrentUser = () => userInfo;
 
-  // Check if user is authenticated
-  const isAuthenticated = authToken && isTokenValid(authToken);
+  const isAuthenticated = useMemo(() => 
+    authToken && isTokenValid(authToken), 
+    [authToken]
+  );
 
-  // Check if user is admin
-  const isAdmin = (() => {
-    const user = getCurrentUser();
-    return user && user.role === 'admin';
-  })();
+  const isAdmin = useMemo(() => 
+    userInfo?.role === 'admin',
+    [userInfo]
+  );
 
-  // Check if user is staff
-  const isStaff = (() => {
-    const user = getCurrentUser();
-    return user && (user.role === 'staff' || user.role === 'user');
-  })();
+  const isStaff = useMemo(() => 
+    userInfo && (userInfo.role === 'staff' || userInfo.role === 'user'),
+    [userInfo]
+  );
 
-  const value = {
+  const value = useMemo(() => ({
     authToken,
     login,
     adminLogin,
     logout,
     getCurrentUser,
+    currentUser: userInfo,
     isAuthenticated,
     isAdmin,
     isStaff,
     loading,
-    // Legacy support - keep these for backward compatibility
     adminToken: isAdmin ? authToken : null
-  };
+  }), [authToken, userInfo, isAuthenticated, isAdmin, isStaff, loading]);
 
   if (loading) {
-    return <div>Loading...</div>; // Or your loading component
+    return <div>Loading...</div>;
   }
 
   return (
@@ -186,4 +213,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
