@@ -2546,8 +2546,8 @@ const handleRemoveImage = async (supplyId) => {
 )}
 
 {isStockCardOpen && selectedItem && (
-  <div className="modal-overlay">
-    <div className="repair-card-modal">
+  <div className="modal-overlay" onClick={handleCloseStockCard}>
+    <div className="repair-card-modal" onClick={(e) => e.stopPropagation()}>
       <button className="modal-close-btn" onClick={handleCloseStockCard}>
         ×
       </button>
@@ -2628,10 +2628,22 @@ const handleRemoveImage = async (supplyId) => {
         </table>
       </div>
 
-      <div className="modal-print-section">
-        <button
-          className="modal-print-btn"
-          onClick={() => {
+      <div className="modal-print-section" style={{ 
+  display: 'flex', 
+  gap: '8px', 
+  justifyContent: 'flex-end',
+  marginTop: '20px',
+  padding: '0'
+}}>
+  <button
+    className="modal-print-btn"
+    style={{
+      padding: '8px 16px',
+      fontSize: '14px',
+      minWidth: 'auto',
+      position: 'static'
+    }}
+    onClick={() => {
             const element = document.createElement('div');
             element.innerHTML = `
               <div style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white;">
@@ -2729,9 +2741,15 @@ const handleRemoveImage = async (supplyId) => {
           Download PDF
         </button>
 
-        <button
-          className="modal-print-btn"
-          onClick={() => {
+         <button
+    className="modal-print-btn"
+    style={{
+      padding: '8px 16px',
+      fontSize: '14px',
+      minWidth: 'auto',
+      position: 'static'
+    }}
+    onClick={() => {
             // Create a print-friendly version without opening new tab
             const printWindow = window.open('', '_blank');
             const printContent = `
@@ -2910,7 +2928,7 @@ const handleRemoveImage = async (supplyId) => {
             <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Print
+          Print Stock Card
         </button>
       </div>
     </div>
