@@ -1823,8 +1823,8 @@ function EquipmentPage() {
 )}
 
     {showRepairDocument && selectedEquipment && (
-  <div className="modal-overlay">
-    <div className="repair-card-modal">
+  <div className="modal-overlay" onClick={closeRepairDocument}>
+    <div className="repair-card-modal" onClick={(e) => e.stopPropagation()}>
       <button className="modal-close-btn" onClick={closeRepairDocument}>
         ×
       </button>
@@ -1904,9 +1904,21 @@ function EquipmentPage() {
   </table>
 </div>
       
-      <div className="modal-print-section">
+      <div className="modal-print-section" style={{ 
+  display: 'flex', 
+  gap: '8px', 
+  justifyContent: 'flex-end',
+  marginTop: '20px',
+  padding: '0'
+}}>
   <button
     className="modal-print-btn"
+    style={{
+      padding: '8px 16px',
+      fontSize: '14px',
+      minWidth: 'auto',
+      position: 'static'
+    }}
     onClick={() => {
       const element = document.createElement('div');
       element.innerHTML = `
@@ -1990,8 +2002,14 @@ function EquipmentPage() {
     Download PDF
   </button>
 
-  <button 
+  <button
     className="modal-print-btn"
+    style={{
+      padding: '8px 16px',
+      fontSize: '14px',
+      minWidth: 'auto',
+      position: 'static'
+    }}
     onClick={() => {
       const printWindow = window.open('', '_blank');
       closeRepairDocument();
