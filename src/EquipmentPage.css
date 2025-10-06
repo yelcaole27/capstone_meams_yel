@@ -1596,3 +1596,82 @@
     font-size: 11px;
   }
 }
+
+
+/* Equipment Overview Action Buttons - Gradient Styles */
+.item-overview-actions .action-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* Report Repair Button - Bright Blue Gradient */
+.item-overview-actions .repair-btn {
+  background: linear-gradient(135deg, #2563EB, #3B82F6) !important;
+}
+
+.item-overview-actions .repair-btn:hover {
+  background: linear-gradient(135deg, #1e40af, #2563EB) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* Update Equipment Button - Medium Blue Gradient */
+.item-overview-actions .update-btn {
+  background: linear-gradient(135deg, #1D4ED8, #60A5FA) !important;
+}
+
+.item-overview-actions .update-btn:hover {
+  background: linear-gradient(135deg, #1e3a8a, #1D4ED8) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+}
+
+/* View Maintenance Log Button - Teal Gradient */
+.item-overview-actions .view-stock-btn {
+  background: linear-gradient(135deg, #0D9488, #14B8A6) !important;
+}
+
+.item-overview-actions .view-stock-btn:hover {
+  background: linear-gradient(135deg, #0f766e, #0D9488) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
+}
+
+/* Documents Button - Gray Gradient */
+.item-overview-actions .view-docs-btn {
+  background: linear-gradient(135deg, #4B5563, #6B7280) !important;
+}
+
+.item-overview-actions .view-docs-btn:hover {
+  background: linear-gradient(135deg, #374151, #4B5563) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(75, 85, 99, 0.4);
+}
+
+/* Generate QR-code Button - Orange Gradient */
+.item-overview-actions .qr-code-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+}
+
+.item-overview-actions .qr-code-btn:hover {
+  background: linear-gradient(135deg, #ea580c, #F97316) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+/* SVG Icon Colors */
+.item-overview-actions .action-btn svg {
+  stroke: currentColor;
+  fill: none;
+}
