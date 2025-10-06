@@ -347,3 +347,50 @@
     border-radius: 15px;
   }
 }
+
+
+/* Dashboard Print Button Gradients - Clean Solution */
+
+/* Print Requisition Button - Green/Teal Gradient */
+.requisition-form-modal button[onclick*="print()"],
+.requisition-form-modal .print-hidden button {
+  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #000000 !important;  /* ADD THIS */
+  font-weight: bold !important;  /* ADD THIS */
+}
+
+.requisition-form-modal button[onclick*="print()"]:hover,
+.requisition-form-modal .print-hidden button:hover {
+  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+}
+
+/* Print Purchase Form Button - Orange/Red Gradient */
+.print-btn-purchase {
+  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+  font-weight: bold !important;  /* ADD THIS */
+}
+
+.print-btn-purchase:hover {
+  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+}
+
+/* Print Repair Form Button - Blue/Purple Gradient */
+.print-btn-repair {
+  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+  font-weight: bold !important;  /* ADD THIS */
+}
+
+.print-btn-repair:hover {
+  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+}
