@@ -2,7 +2,7 @@
 Equipment models - Pydantic models for equipment validation
 """
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict
 
 class EquipmentCreate(BaseModel):
     name: str
