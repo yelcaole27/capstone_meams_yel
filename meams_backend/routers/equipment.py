@@ -19,7 +19,8 @@ from services.equipment_service import (
     add_equipment_document,
     get_equipment_documents,
     get_equipment_document,
-    delete_equipment_document
+    delete_equipment_document,
+    calculate_lcc_analysis,  # NEW: Import LCC function - ALIGNED
 )
 
 from services.auth_service import verify_token
@@ -247,6 +248,44 @@ async def update_equipment_repair_route(
         "success": True,
         "message": "Equipment repair completed successfully",
         "data": updated_equipment
+    }
+
+# NEW: LCC ANALYSIS ENDPOINT
+@router.get("/{equipment_id}/lcc-analysis")
+async def get_lcc_analysis(
+    equipment_id: str,
+    request: Request = None,
+    token: str = Depends(get_current_user)
+):
+    """Get Life Cycle Cost analysis for equipment"""
+    payload = verify_token(token)
+    username = payload["username"]
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    if not ObjectId.is_valid(equipment_id):
+        raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+    
+    # Calculate LCC analysis
+    lcc_data = calculate_lcc_analysis(equipment_id)
+    
+    # Log the action
+    await create_log_entry(
+        username,
+        "Viewed LCC analysis.",
+        f"Viewed LCC analysis for equipment: {lcc_data['equipment_name']} - Risk Level: {lcc_data['risk_level']}",
+        client_ip
+    )
+    
+    print(f"📊 LCC Analysis generated for equipment {equipment_id}")
+    print(f"   Equipment: {lcc_data['equipment_name']}")
+    print(f"   Risk Level: {lcc_data['risk_level']}")
+    print(f"   LCC Remarks: {', '.join(lcc_data['lcc_remarks'])}")
+    print(f"   Recommend Replacement: {lcc_data['recommend_replacement']}")
+    
+    return {
+        "success": True,
+        "message": "LCC analysis calculated successfully",
+        "data": lcc_data
     }
 
 # DOCUMENT ENDPOINTS
