@@ -41,12 +41,48 @@ function DashboardPage() {
 
   // Get actual equipment beyond useful life from API data
   const getEquipmentBeyondLifeData = () => {
-    return equipmentData.filter(equipment => {
-      const status = equipment.status || '';
-      return status.toLowerCase() === 'beyond-useful-life' ||
-             status.toLowerCase() === 'beyond useful life';
-    }).slice(0, 10);
-  };
+  // Import the calculateLCCAnalysis function from EquipmentPage
+  // Since it's not available here, we'll replicate the logic
+  return equipmentData.filter(equipment => {
+    const repairHistory = equipment.repairHistory || [];
+    const usefulLife = equipment.usefulLife || 5;
+    const purchasePrice = equipment.amount || 0;
+    const currentDate = new Date();
+    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+
+    const totalRepairs = repairHistory.length;
+    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+    const costThreshold = purchasePrice * 0.5;
+
+    // Determine if equipment should be replaced
+    let recommendReplacement = false;
+
+    if (totalRepairCost >= costThreshold) {
+      recommendReplacement = true;
+    }
+    if (repairFrequency > 3) {
+      recommendReplacement = true;
+    }
+    if (ageInYears >= usefulLife) {
+      recommendReplacement = true;
+    }
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentRepairs = repairHistory.filter(repair => {
+      const repairDate = new Date(repair.repairDate);
+      return repairDate >= sixMonthsAgo;
+    }).length;
+
+    if (recentRepairs >= 3) {
+      recommendReplacement = true;
+    }
+
+    return recommendReplacement;
+  }).slice(0, 10);
+};
 
   const getEquipmentMaintenanceData = () => {
   return equipmentData.filter(equipment => {
@@ -58,16 +94,38 @@ function DashboardPage() {
   });
 };
   const getEquipmentPurchaseData = () => {
-    return equipmentData.filter(equipment => {
-      const status = equipment.status || '';
-      return status.toLowerCase().includes('beyond') || 
-             status.toLowerCase().includes('end') ||
-             status.toLowerCase().includes('obsolete') || 
-             status.toLowerCase().includes('retired') ||
-             status.toLowerCase() === 'beyond-useful-life' ||
-             status.toLowerCase() === 'beyond useful life';
-    });
-  };
+  // Use the same logic as getEquipmentBeyondLifeData to get equipment that should be replaced
+  return equipmentData.filter(equipment => {
+    const repairHistory = equipment.repairHistory || [];
+    const usefulLife = equipment.usefulLife || 5;
+    const purchasePrice = equipment.amount || 0;
+    const currentDate = new Date();
+    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+
+    const totalRepairs = repairHistory.length;
+    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+    const costThreshold = purchasePrice * 0.5;
+
+    let recommendReplacement = false;
+
+    if (totalRepairCost >= costThreshold) recommendReplacement = true;
+    if (repairFrequency > 3) recommendReplacement = true;
+    if (ageInYears >= usefulLife) recommendReplacement = true;
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentRepairs = repairHistory.filter(repair => {
+      const repairDate = new Date(repair.repairDate);
+      return repairDate >= sixMonthsAgo;
+    }).length;
+
+    if (recentRepairs >= 3) recommendReplacement = true;
+
+    return recommendReplacement;
+  });
+};
 
   const understockData = getUnderstockData();
   const equipmentLifeData = getEquipmentBeyondLifeData();
@@ -240,9 +298,10 @@ function DashboardPage() {
     itemCode: item.itemCode || item.id || 'N/A',
     unit: item.unit || 'pcs',
     equipmentName: item.name || 'N/A',
-    description: item.description || item.category || 'N/A',  // ✅ FIXED - now uses description field
+    description: item.description || item.category || 'N/A',
     quantity: 1,
-    amount: ''
+    amount: '',
+    remarks: 'REPLACE' // Add remarks field
   }));
 };
 
@@ -789,35 +848,35 @@ function DashboardPage() {
 </div>
 
           <div className="table-card equipment-life-table">
-            <h3>Equipment Beyond Useful Life!</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Equipment ID</th>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Last Maintained</th>
-                </tr>
-              </thead>
-              <tbody>
-                {equipmentLifeData.length > 0 ? (
-                  equipmentLifeData.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.itemCode || item.id || 'N/A'}</td>
-                      <td>{item.name || 'N/A'}</td>
-                      <td>{item.category || item.department || 'N/A'}</td>
-                      <td>{item.lastMaintained || item.date || 'N/A'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" style={{textAlign: 'center', color: '#888'}}>
-                      {loading ? 'Loading...' : 'No equipment beyond useful life found'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+  <h3>Equipment Beyond Useful Life!</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Item Code</th>
+        <th>Equipment Name</th>
+        <th>Category</th>
+        <th>Remarks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {equipmentLifeData.length > 0 ? (
+        equipmentLifeData.map((item, index) => (
+          <tr key={index}>
+            <td>{item.itemCode || item.id || 'N/A'}</td>
+            <td>{item.name || 'N/A'}</td>
+            <td>{item.category || 'N/A'}</td>
+            <td style={{ color: '#dc3545', fontWeight: 'bold' }}>REPLACE</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan="4" style={{textAlign: 'center', color: '#888'}}>
+            {loading ? 'Loading...' : 'No equipment recommended for replacement'}
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
           <button
             className="generate-button"
             onClick={() => setShowPurchaseForm(true)}
