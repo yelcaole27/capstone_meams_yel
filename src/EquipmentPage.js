@@ -67,7 +67,7 @@ function EquipmentPage() {
     if (ageInYears >= usefulLife) {
       lccRemarks.push('Beyond Useful Life');
       riskLevel = 'High';
-      recommendReplacement = true;
+      recommendReplacement = true; // Flag for replacement if beyond useful life
     }
 
     // Check if approaching useful life (within 1 year)
@@ -208,7 +208,7 @@ function EquipmentPage() {
     description: '', 
     category: '',
     location: '',
-    status: 'Within-Useful-Life',
+    status: '', // Status will be calculated
     usefulLife: '',
     amount: '',
     date: '', // Initialize as empty string, will be handled for null if not set
@@ -313,7 +313,9 @@ function EquipmentPage() {
         selectedEquipment._id,
         {
           reportDate: repairData.reportDate,
-          reportDetails: repairData.reportDetails
+          reportDetails: repairData.reportDetails,
+          // Set status to 'Maintenance' when a repair is reported
+          status: 'Maintenance' 
         }
       );
 
@@ -377,10 +379,21 @@ function EquipmentPage() {
         amountUsed: parseFloat(updateData.amountUsed)
       });
 
+      // Determine new status after repair completion
+      let newStatus = 'Within-Useful-Life';
+      if (selectedEquipment.date && selectedEquipment.usefulLife) {
+        const purchaseDate = new Date(selectedEquipment.date);
+        const usefulLifeEndDate = new Date(purchaseDate.getFullYear() + selectedEquipment.usefulLife, purchaseDate.getMonth(), purchaseDate.getDate());
+        if (new Date() > usefulLifeEndDate) {
+          newStatus = 'Beyond-Useful-Life';
+        }
+      }
+
       const response = await EquipmentAPI.updateEquipmentRepair(selectedEquipment._id, {
         repairDate: updateData.repairDate,
         repairDetails: updateData.repairDetails,
-        amountUsed: parseFloat(updateData.amountUsed)
+        amountUsed: parseFloat(updateData.amountUsed),
+        status: newStatus // Set status back based on useful life
       });
       
       console.log('Equipment repair updated:', response);
@@ -413,7 +426,8 @@ function EquipmentPage() {
   };
 
   const equipmentCategories = ['Sanitary Equipment', 'Office Equipment', 'Construction Equipment', 'Electrical Equipment'];
-  const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
+  // Removed 'Maintenance' from here as it's now dynamically set
+  const equipmentStatuses = ['Within-Useful-Life', 'Beyond-Useful-Life']; 
 
   useEffect(() => {
     loadEquipment();
@@ -526,7 +540,7 @@ function EquipmentPage() {
         description: '',   
         category: '',
         location: '',
-        status: 'Within-Useful-Life',
+        status: '', // Reset status
         usefulLife: '',
         amount: '',
         date: '', // Reset to empty string
@@ -627,9 +641,10 @@ function EquipmentPage() {
       errors.push('Category is required.');
     }
     
-    if (!newEquipment.status) {
-      errors.push('Status is required.');
-    }
+    // Status is now calculated, so no direct validation needed here
+    // if (!newEquipment.status) {
+    //   errors.push('Status is required.');
+    // }
     
     return errors;
   };
@@ -652,6 +667,16 @@ function EquipmentPage() {
         imageBase64 = await convertFileToBase64(newEquipment.itemPicture);
       }
 
+      // Determine initial status based on date and useful life
+      let initialStatus = 'Within-Useful-Life';
+      if (newEquipment.date && newEquipment.usefulLife) {
+        const purchaseDate = new Date(newEquipment.date);
+        const usefulLifeEndDate = new Date(purchaseDate.getFullYear() + parseInt(newEquipment.usefulLife), purchaseDate.getMonth(), purchaseDate.getDate());
+        if (new Date() > usefulLifeEndDate) {
+          initialStatus = 'Beyond-Useful-Life';
+        }
+      }
+
       const equipmentData = {
         name: newEquipment.name.trim(),
         description: newEquipment.description.trim(),
@@ -659,7 +684,7 @@ function EquipmentPage() {
         usefulLife: parseInt(newEquipment.usefulLife), 
         amount: parseFloat(newEquipment.amount),       
         location: newEquipment.location.trim() || '',
-        status: newEquipment.status,
+        status: initialStatus, // Set calculated initial status
         itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
         unit_price: parseFloat(newEquipment.amount), 
         supplier: '',
@@ -698,7 +723,7 @@ function EquipmentPage() {
         description: newEquipment.description.trim(),
         category: newEquipment.category,
         location: newEquipment.location.trim(),
-        status: newEquipment.status,
+        status: initialStatus, // Use the calculated initial status
         itemPicture: savedEquipment.image_data,  
         image_data: savedEquipment.image_data,
         image_filename: savedEquipment.image_filename,
@@ -1272,7 +1297,8 @@ function EquipmentPage() {
                 />
               </div>
 
-              <div className="form-group">
+              {/* Removed direct status input as it's now calculated */}
+              {/* <div className="form-group">
                 <label>STATUS: *</label>
                 <select 
                   name="status" 
@@ -1284,7 +1310,7 @@ function EquipmentPage() {
                     <option key={status} value={status}>{status}</option>
                   ))}
                 </select>
-              </div>
+              </div> */}
 
 
 
@@ -1464,7 +1490,7 @@ function EquipmentPage() {
                   <span className="detail-value" style={{
                     color: selectedEquipment.status === 'Within-Useful-Life' ? '#28a745' : 
                            selectedEquipment.status === 'Maintenance' ? '#ffc107' :
-                           selectedEquipment.status === 'Beyond-Useful-Life' ? '#fd7e14' : '#dc3545'
+                           selectedEquipment.status === 'Beyond-Useful-Life' ? '#ef4444' : '#ef4444'
                   }}>
                     {selectedEquipment.status}
                   </span>
