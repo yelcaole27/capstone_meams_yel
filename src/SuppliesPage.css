@@ -857,7 +857,7 @@
 /* Action Buttons */
 .modal-print-section {
   position: relative;
-  height: 50px;
+  min-height: auto;
 }
 
 .modal-print-btn {
@@ -1306,3 +1306,113 @@
   font-size: 12px;
   letter-spacing: 0.5px;
 }
+
+
+/* Supply Item Overview Action Buttons - Gradient Styles */
+.item-overview-actions .action-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* View Stock Card Button - Green Gradient */
+.item-overview-actions .view-stock-btn {
+  background: linear-gradient(135deg, #059669, #10B981) !important;
+}
+
+.item-overview-actions .view-stock-btn:hover {
+  background: linear-gradient(135deg, #047857, #059669) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+}
+
+/* Documents Button - Gray Gradient */
+.item-overview-actions .view-docs-btn {
+  background: linear-gradient(135deg, #4B5563, #6B7280) !important;
+}
+
+.item-overview-actions .view-docs-btn:hover {
+  background: linear-gradient(135deg, #374151, #4B5563) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(75, 85, 99, 0.4);
+}
+
+/* Generate QR-code Button - Orange Gradient */
+.item-overview-actions .qr-code-btn {
+  background: linear-gradient(135deg, #F97316, #FB923C) !important;
+}
+
+.item-overview-actions .qr-code-btn:hover {
+  background: linear-gradient(135deg, #ea580c, #F97316) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+/* Update Quantity Button - Blue Gradient */
+.item-overview-actions .update-quantity-btn {
+  background: linear-gradient(135deg, #2563EB, #3B82F6) !important;
+}
+
+.item-overview-actions .update-quantity-btn:hover {
+  background: linear-gradient(135deg, #1e40af, #2563EB) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* Edit Item Button - Blue Gradient (Medium Blue) */
+.item-overview-actions .edit-item-btn {
+  background: linear-gradient(135deg, #1D4ED8, #60A5FA) !important;
+}
+
+.item-overview-actions .edit-item-btn:hover {
+  background: linear-gradient(135deg, #1e3a8a, #1D4ED8) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+}
+
+/* SVG Icon Colors */
+.item-overview-actions .action-btn svg {
+  stroke: currentColor;
+  fill: none;
+}
+
+
+
+/* Stock Card and Repair History Modal Button Gradients */
+
+/* Download PDF Button - Green/Teal Gradient */
+.modal-print-section .modal-print-btn:nth-child(1) {
+  background: linear-gradient(135deg, #b84444, #E53935);
+  color: #FFFFFF !important;
+  font-weight: bold !important;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.modal-print-section .modal-print-btn:nth-child(1):hover {
+  background: linear-gradient(135deg, #D32F2F, #B71C1C);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+}
+
+/* Print Button - Blue/Indigo Gradient */
+.modal-print-section .modal-print-btn:nth-child(2) {
+  background: linear-gradient(to bottom, #0a4b8975, #082a99);
+  color: #FFFFFF !important;
+  font-weight: bold !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.modal-print-section .modal-print-btn:nth-child(2):hover {
+  background: linear-gradient(to bottom, #074f89fd, #005bb5) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
