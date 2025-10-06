@@ -276,3 +276,111 @@ def delete_equipment_document(equipment_id: str, document_index: int) -> Dict:
     )
     
     return equipment_helper(collection.find_one({"_id": ObjectId(equipment_id)}))
+
+def calculate_lcc_analysis(equipment_id: str) -> Dict:
+    """
+    Performs Life Cycle Cost (LCC) analysis for a given equipment.
+    """
+    collection = get_equipment_collection()
+    equipment = collection.find_one({"_id": ObjectId(equipment_id)})
+    
+    if not equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    
+    # Use equipment_helper to get a consistent dictionary format
+    formatted_equipment = equipment_helper(equipment)
+
+    repair_history = formatted_equipment.get("repairHistory", [])
+    useful_life = formatted_equipment.get("usefulLife", 5) # Default to 5 years if not specified
+    purchase_price = formatted_equipment.get("amount", 0.0) # Assuming 'amount' is the purchase price
+
+    current_date = datetime.utcnow()
+    
+    # Safely get purchase date, default to current date if not available
+    purchase_date_str = formatted_equipment.get("date")
+    try:
+        purchase_date = datetime.fromisoformat(purchase_date_str) if purchase_date_str else current_date
+    except ValueError:
+        # Handle cases where date might be in a different format or invalid
+        purchase_date = current_date
+
+    age_in_years = (current_date - purchase_date).days / 365.25 if purchase_date != current_date else 0
+
+    # Calculate repair metrics
+    total_repairs = len(repair_history)
+    total_repair_cost = sum(float(repair.get("amountUsed", 0.0)) for repair in repair_history)
+    average_repair_cost = total_repair_cost / total_repairs if total_repairs > 0 else 0.0  # FIXED: Corrected division
+
+    # Calculate repair frequency (repairs per year)
+    repair_frequency = total_repairs / age_in_years if age_in_years > 0 else 0
+
+    # Calculate cost thresholds
+    cost_threshold = purchase_price * 0.5 # 50% of purchase price
+    total_cost_of_ownership = purchase_price + total_repair_cost
+    cost_ratio = (total_repair_cost / purchase_price) * 100 if purchase_price > 0 else 0
+
+    # Determine LCC remarks and risk level
+    lcc_remarks = []
+    risk_level = 'Low'
+    recommend_replacement = False
+
+    if total_repair_cost >= cost_threshold and purchase_price > 0:
+        lcc_remarks.append('Costly Repair')
+        risk_level = 'High'
+        recommend_replacement = True
+
+    if repair_frequency > 2: # More than 2 repairs per year
+        lcc_remarks.append('Frequent Repair')
+        if risk_level != 'High':
+            risk_level = 'Medium'
+        if repair_frequency > 3:
+            recommend_replacement = True
+
+    if age_in_years >= useful_life and useful_life > 0:
+        lcc_remarks.append('Beyond Useful Life')
+        risk_level = 'High'
+        recommend_replacement = True
+    elif age_in_years >= useful_life - 1 and useful_life > 0: # Within 1 year of useful life
+        lcc_remarks.append('Approaching End of Life')
+        if risk_level == 'Low':
+            risk_level = 'Medium'
+
+    # Check for multiple recent repairs (e.g., 3+ repairs in last 6 months)
+    six_months_ago = current_date - datetime.timedelta(days=180)
+    recent_repairs_count = 0
+    for repair in repair_history:
+        try:
+            repair_date = datetime.fromisoformat(repair.get("repairDate", ""))
+            if repair_date >= six_months_ago:
+                recent_repairs_count += 1
+        except ValueError:
+            # Skip invalid dates
+            continue
+    
+    if recent_repairs_count >= 3:
+        lcc_remarks.append('High Recent Repair Activity')
+        risk_level = 'High'
+        recommend_replacement = True
+
+    if not lcc_remarks:
+        lcc_remarks.append('Operational - Within Parameters')
+        risk_level = 'Low'
+
+    return {
+        "equipment_id": str(formatted_equipment["_id"]),
+        "equipment_name": formatted_equipment["name"],
+        "item_code": formatted_equipment["itemCode"],
+        "purchase_price": purchase_price,
+        "useful_life_years": useful_life,
+        "age_in_years": round(age_in_years, 2),
+        "total_repairs": total_repairs,
+        "total_repair_cost": round(total_repair_cost, 2),
+        "average_repair_cost_per_repair": round(average_repair_cost, 2),
+        "repair_frequency_per_year": round(repair_frequency, 2),
+        "total_cost_of_ownership": round(total_cost_of_ownership, 2),
+        "cost_ratio_to_purchase_price_percent": round(cost_ratio, 2),
+        "lcc_remarks": lcc_remarks,
+        "risk_level": risk_level,
+        "recommend_replacement": recommend_replacement,
+        "analysis_date": current_date.isoformat()
+    }
