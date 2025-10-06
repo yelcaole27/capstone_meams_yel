@@ -18,47 +18,183 @@ function EquipmentPage() {
   const [equipmentDocumentFiles, setEquipmentDocumentFiles] = useState([]);
   const [equipmentDocDragActive, setEquipmentDocDragActive] = useState(false);
 
+  // NEW: LCC Analysis State
+  const [showLCCAnalysis, setShowLCCAnalysis] = useState(false);
+  const [lccData, setLccData] = useState(null);
+
+  // NEW: LCC Analysis Function
+  const calculateLCCAnalysis = (equipment) => {
+    const repairHistory = equipment.repairHistory || [];
+    const usefulLife = equipment.usefulLife || 5;
+    const purchasePrice = equipment.amount || 0;
+    const currentDate = new Date();
+    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+
+    // Calculate repair metrics
+    const totalRepairs = repairHistory.length;
+    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+    const averageRepairCost = totalRepairs > 0 ? totalRepairCost / totalRepairs : 0;
+    
+    // Calculate repair frequency (repairs per year)
+    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+
+    // Calculate cost thresholds
+    const costThreshold = purchasePrice * 0.5; // 50% of purchase price
+    const totalCostOfOwnership = purchasePrice + totalRepairCost;
+    const costRatio = purchasePrice > 0 ? totalRepairCost / purchasePrice : 0;
+
+    // Determine LCC remarks based on analysis
+    let lccRemarks = [];
+    let riskLevel = 'Low';
+    let recommendReplacement = false;
+
+    // Check for costly repairs (total repair cost exceeds 50% of purchase price)
+    if (totalRepairCost >= costThreshold) {
+      lccRemarks.push('Costly Repair');
+      riskLevel = 'High';
+      recommendReplacement = true;
+    }
+
+    // Check for frequent repairs (more than 2 repairs per year)
+    if (repairFrequency > 2) {
+      lccRemarks.push('Frequent Repair');
+      riskLevel = riskLevel === 'High' ? 'High' : 'Medium';
+      if (repairFrequency > 3) recommendReplacement = true;
+    }
+
+    // Check if beyond useful life
+    if (ageInYears >= usefulLife) {
+      lccRemarks.push('Beyond Useful Life');
+      riskLevel = 'High';
+      recommendReplacement = true;
+    }
+
+    // Check if approaching useful life (within 1 year)
+    if (ageInYears >= usefulLife - 1 && ageInYears < usefulLife) {
+      lccRemarks.push('Approaching End of Life');
+      riskLevel = riskLevel === 'High' ? 'High' : 'Medium';
+    }
+
+    // Check for multiple recent repairs (3+ repairs in last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentRepairs = repairHistory.filter(repair => {
+      const repairDate = new Date(repair.repairDate);
+      return repairDate >= sixMonthsAgo;
+    }).length;
+
+    if (recentRepairs >= 3) {
+      lccRemarks.push('High Recent Repair Activity');
+      riskLevel = 'High';
+      recommendReplacement = true;
+    }
+
+    // If no issues, set as operational
+    if (lccRemarks.length === 0) {
+      lccRemarks.push('Operational - Within Parameters');
+      riskLevel = 'Low';
+    }
+
+    return {
+      equipment: equipment,
+      totalRepairs,
+      totalRepairCost,
+      averageRepairCost,
+      repairFrequency: repairFrequency.toFixed(2),
+      ageInYears: ageInYears.toFixed(1),
+      usefulLife,
+      purchasePrice,
+      totalCostOfOwnership,
+      costRatio: (costRatio * 100).toFixed(1),
+      lccRemarks,
+      riskLevel,
+      recommendReplacement,
+      analysisDate: new Date().toISOString()
+    };
+  };
+
+  // NEW: Handler to show LCC analysis
+  const handleShowLCCAnalysis = () => {
+    if (selectedEquipment) {
+      const analysis = calculateLCCAnalysis(selectedEquipment);
+      setLccData(analysis);
+      setShowLCCAnalysis(true);
+    }
+  };
+
+  // NEW: Close LCC Analysis modal
+  const handleCloseLCCAnalysis = () => {
+    setShowLCCAnalysis(false);
+    setLccData(null);
+  };
+
+  // NEW: Get LCC badge for equipment list
+  const getLCCBadge = (equipment) => {
+    const analysis = calculateLCCAnalysis(equipment);
+    if (analysis.recommendReplacement) {
+      return {
+        text: 'REPLACE',
+        color: '#dc3545',
+        bgColor: 'rgba(220, 53, 69, 0.1)'
+      };
+    } else if (analysis.riskLevel === 'High') {
+      return {
+        text: 'HIGH RISK',
+        color: '#fd7e14',
+        bgColor: 'rgba(253, 126, 20, 0.1)'
+      };
+    } else if (analysis.riskLevel === 'Medium') {
+      return {
+        text: 'MONITOR',
+        color: '#ffc107',
+        bgColor: 'rgba(255, 193, 7, 0.1)'
+      };
+    }
+    return null;
+  };
+
   const handleEquipmentDocDrag = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  if (e.type === "dragenter" || e.type === "dragover") {
-    setEquipmentDocDragActive(true);
-  } else if (e.type === "dragleave") {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setEquipmentDocDragActive(true);
+    } else if (e.type === "dragleave") {
+      setEquipmentDocDragActive(false);
+    }
+  };
+
+  const handleEquipmentDocDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setEquipmentDocDragActive(false);
-  }
-};
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      setEquipmentDocumentFiles(prev => [...prev, ...files]);
+    }
+  };
 
-const handleEquipmentDocDrop = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  setEquipmentDocDragActive(false);
-  
-  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-    const files = Array.from(e.dataTransfer.files);
-    setEquipmentDocumentFiles(prev => [...prev, ...files]);
-  }
-};
+  const handleEquipmentDocFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setEquipmentDocumentFiles(prev => [...prev, ...files]);
+    }
+  };
 
-const handleEquipmentDocFileChange = (e) => {
-  if (e.target.files && e.target.files.length > 0) {
-    const files = Array.from(e.target.files);
-    setEquipmentDocumentFiles(prev => [...prev, ...files]);
-  }
-};
+  const removeEquipmentDocumentFile = (index) => {
+    setEquipmentDocumentFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
-const removeEquipmentDocumentFile = (index) => {
-  setEquipmentDocumentFiles(prev => prev.filter((_, i) => i !== index));
-};
+  const handleViewEquipmentDocuments = () => {
+    if (selectedEquipment) {
+      setIsEquipmentDocumentViewerOpen(true);
+    }
+  };
 
-const handleViewEquipmentDocuments = () => {
-  if (selectedEquipment) {
-    setIsEquipmentDocumentViewerOpen(true);
-  }
-};
-
-const handleCloseEquipmentDocumentViewer = () => {
-  setIsEquipmentDocumentViewerOpen(false);
-};
+  const handleCloseEquipmentDocumentViewer = () => {
+    setIsEquipmentDocumentViewerOpen(false);
+  };
 
   // NEW: Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,281 +211,250 @@ const handleCloseEquipmentDocumentViewer = () => {
     status: 'Within-Useful-Life',
     usefulLife: '',
     amount: '',
-    date: '',
+    date: '', // Initialize as empty string, will be handled for null if not set
     itemPicture: null
   });
   const [dragActive, setDragActive] = useState(false);
   const [addingEquipment, setAddingEquipment] = useState(false);
 
   // NEW: Report Repair and Update Equipment states
-const [showReportRepairModal, setShowReportRepairModal] = useState(false);
-const [showUpdateEquipmentModal, setShowUpdateEquipmentModal] = useState(false);
-const [repairData, setRepairData] = useState({
-  reportDate: '',      
-  reportDetails: ''    
-});
-const [updateData, setUpdateData] = useState({
-  name: '',
-  description: '',
-  category: '',
-  location: '',
-  status: '',
-  usefulLife: '',
-  amount: ''
-});
+  const [showReportRepairModal, setShowReportRepairModal] = useState(false);
+  const [showUpdateEquipmentModal, setShowUpdateEquipmentModal] = useState(false);
+  const [repairData, setRepairData] = useState({
+    reportDate: '',      
+    reportDetails: ''    
+  });
+  const [updateData, setUpdateData] = useState({
+    name: '',
+    description: '',
+    category: '',
+    location: '',
+    status: '',
+    usefulLife: '',
+    amount: ''
+  });
 
   const convertFileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-  });
-};
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
 
-  
   // QR Code states
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
   const [qrCodeEquipment, setQrCodeEquipment] = useState(null);
 
   // Maintenance
- // Add this state to your existing useState declarations
-const [showRepairDocument, setShowRepairDocument] = useState(false);
+  const [showRepairDocument, setShowRepairDocument] = useState(false);
 
-// Add this function to handle the View Maintenance Log button click
-const handleViewMaintenanceLog = () => {
-  setShowRepairDocument(true);
-};
+  const handleViewMaintenanceLog = () => {
+    setShowRepairDocument(true);
+  };
 
-// Add this function to close the repair document
-const closeRepairDocument = () => {
-  setShowRepairDocument(false);
-};
+  const closeRepairDocument = () => {
+    setShowRepairDocument(false);
+  };
 
-// Add this function to handle printing
-const handlePrintStockCard = () => {
-  window.print();
-};
+  const handlePrintStockCard = () => {
+    window.print();
+  };
 
-// NEW: Report Repair and Update Equipment handlers
-const handleReportRepair = () => {
-  setShowReportRepairModal(true);
-  setRepairData({
-    reportDate: new Date().toISOString().split('T')[0],
-    reportDetails: ''
-  });
-};
-
-const handleUpdateEquipment = () => {
-  setShowUpdateEquipmentModal(true);
-  // Pre-populate form with current equipment data
-  setUpdateData({
-    itemCode: selectedEquipment.itemCode || '',  // Auto-filled
-    description: selectedEquipment.description || '',  // Auto-filled
-    repairDate: '',  // User input
-    repairDetails: '',  // User input
-    amountUsed: ''  // User input
-  });
-};
-
-const handleRepairDataChange = (e) => {
-  const { name, value } = e.target;
-  setRepairData(prev => ({ ...prev, [name]: value }));
-};
-
-const handleUpdateDataChange = (e) => {
-  const { name, value } = e.target;
-  setUpdateData(prev => ({ ...prev, [name]: value }));
-};
-
-// Updated submitRepairReport function - replace in your EquipmentPage.js
-
-const submitRepairReport = async () => {
-  try {
-    // Validate inputs
-    if (!repairData.reportDetails || !repairData.reportDetails.trim()) {
-      alert('Please enter report details');
-      return;
-    }
-    
-    if (!repairData.reportDate) {
-      alert('Please enter report date');
-      return;
-    }
-
-    console.log('=== SUBMITTING REPAIR REPORT ===');
-    console.log('Equipment ID:', selectedEquipment._id);
-    console.log('Report Date:', repairData.reportDate);
-    console.log('Report Details:', repairData.reportDetails);
-
-    // Call API to update equipment with report
-    const updatedEquipment = await EquipmentAPI.addEquipmentReport(
-      selectedEquipment._id,
-      {
-        reportDate: repairData.reportDate,
-        reportDetails: repairData.reportDetails
-      }
-    );
-
-    console.log('=== REPORT SUBMITTED SUCCESSFULLY ===');
-    console.log('Updated Equipment:', updatedEquipment);
-
-    // Verify the data was saved
-    if (!updatedEquipment.reportDate || !updatedEquipment.reportDetails) {
-      console.error('Warning: Report data not found in response!');
-      console.log('Response structure:', updatedEquipment);
-    }
-
-    alert('Repair report submitted successfully! The equipment status has been set to Maintenance.');
-    
-    // Close modal
-    setShowReportRepairModal(false);
-
-    // Update the selected equipment with new data
-    setSelectedEquipment(updatedEquipment);
-
-    // Update equipment list - completely replace the equipment object
-    setEquipmentData(prevData =>
-      prevData.map(item =>
-        item._id === selectedEquipment._id ? updatedEquipment : item
-      )
-    );
-
-    // Reset form
+  const handleReportRepair = () => {
+    setShowReportRepairModal(true);
     setRepairData({
-      reportDate: '',
+      reportDate: new Date().toISOString().split('T')[0],
       reportDetails: ''
     });
-    
-    console.log('=== STATE UPDATED ===');
-    
-  } catch (error) {
-    console.error('=== ERROR SUBMITTING REPAIR REPORT ===');
-    console.error('Error details:', error);
-    console.error('Error message:', error.message);
-    console.error('Error response:', error.response);
-    
-    alert(`Failed to submit repair report: ${error.message}`);
-  }
-};
+  };
 
-const submitEquipmentUpdate = async () => {
-  try {
-    // Validate update form
-    if (!updateData.repairDate) {
-      alert('Repair date is required');
-      return;
-    }
-    
-    if (!updateData.repairDetails.trim()) {
-      alert('Repair details are required');
-      return;
-    }
-    
-    if (!updateData.amountUsed || parseFloat(updateData.amountUsed) < 0) {
-      alert('Amount used must be a valid number');
-      return;
-    }
-
-    console.log('Submitting repair update:', {
-      repairDate: updateData.repairDate,
-      repairDetails: updateData.repairDetails,
-      amountUsed: parseFloat(updateData.amountUsed)
-    });
-
-    // Call API to update the database
-    const response = await EquipmentAPI.updateEquipmentRepair(selectedEquipment._id, {
-      repairDate: updateData.repairDate,
-      repairDetails: updateData.repairDetails,
-      amountUsed: parseFloat(updateData.amountUsed)
-    });
-    
-    console.log('Equipment repair updated:', response);
-    
-    // The backend now handles adding to repairHistory, so we just need to update state
-    // with the response data
-    setSelectedEquipment(response);
-    
-    // Update in the main equipment list
-    setEquipmentData(prevData => 
-      prevData.map(item => 
-        item._id === selectedEquipment._id 
-          ? response
-          : item
-      )
-    );
-    
-    alert('Equipment repair completed successfully!');
-    setShowUpdateEquipmentModal(false);
-    
-    // Reset form
+  const handleUpdateEquipment = () => {
+    setShowUpdateEquipmentModal(true);
     setUpdateData({
-      itemCode: '',
-      description: '',
+      itemCode: selectedEquipment.itemCode || '',
+      description: selectedEquipment.description || '',
       repairDate: '',
       repairDetails: '',
       amountUsed: ''
     });
-    
-  } catch (error) {
-    console.error('Error updating equipment repair:', error);
-    alert('Failed to update equipment repair. Please try again.');
-  }
-};
+  };
 
-  // Equipment categories and statuses
+  const handleRepairDataChange = (e) => {
+    const { name, value } = e.target;
+    setRepairData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateDataChange = (e) => {
+    const { name, value } = e.target;
+    setUpdateData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const submitRepairReport = async () => {
+    try {
+      if (!repairData.reportDetails || !repairData.reportDetails.trim()) {
+        alert('Please enter report details');
+        return;
+      }
+      
+      if (!repairData.reportDate) {
+        alert('Please enter report date');
+        return;
+      }
+
+      console.log('=== SUBMITTING REPAIR REPORT ===');
+      console.log('Equipment ID:', selectedEquipment._id);
+      console.log('Report Date:', repairData.reportDate);
+      console.log('Report Details:', repairData.reportDetails);
+
+      const updatedEquipment = await EquipmentAPI.addEquipmentReport(
+        selectedEquipment._id,
+        {
+          reportDate: repairData.reportDate,
+          reportDetails: repairData.reportDetails
+        }
+      );
+
+      console.log('=== REPORT SUBMITTED SUCCESSFULLY ===');
+      console.log('Updated Equipment:', updatedEquipment);
+
+      // The warning about report data not found in response is still valid if backend doesn't return it.
+      // For now, we assume updatedEquipment contains the latest state including the new report.
+      if (!updatedEquipment.reportDate || !updatedEquipment.reportDetails) {
+        console.warn('Warning: Report data might not be fully reflected in the response. Frontend state might be slightly out of sync until refresh.');
+      }
+
+      alert('Repair report submitted successfully! The equipment status has been set to Maintenance.');
+      
+      setShowReportRepairModal(false);
+      setSelectedEquipment(updatedEquipment);
+
+      setEquipmentData(prevData =>
+        prevData.map(item =>
+          item._id === selectedEquipment._id ? updatedEquipment : item
+        )
+      );
+
+      setRepairData({
+        reportDate: '',
+        reportDetails: ''
+      });
+      
+      console.log('=== STATE UPDATED ===');
+      
+    } catch (error) {
+      console.error('=== ERROR SUBMITTING REPAIR REPORT ===');
+      console.error('Error details:', error);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response);
+      
+      alert(`Failed to submit repair report: ${error.message}`);
+    }
+  };
+
+  const submitEquipmentUpdate = async () => {
+    try {
+      if (!updateData.repairDate) {
+        alert('Repair date is required');
+        return;
+      }
+      
+      if (!updateData.repairDetails.trim()) {
+        alert('Repair details are required');
+        return;
+      }
+      
+      if (!updateData.amountUsed || parseFloat(updateData.amountUsed) < 0) {
+        alert('Amount used must be a valid non-negative number');
+        return;
+      }
+
+      console.log('Submitting repair update:', {
+        repairDate: updateData.repairDate,
+        repairDetails: updateData.repairDetails,
+        amountUsed: parseFloat(updateData.amountUsed)
+      });
+
+      const response = await EquipmentAPI.updateEquipmentRepair(selectedEquipment._id, {
+        repairDate: updateData.repairDate,
+        repairDetails: updateData.repairDetails,
+        amountUsed: parseFloat(updateData.amountUsed)
+      });
+      
+      console.log('Equipment repair updated:', response);
+      
+      setSelectedEquipment(response);
+      
+      setEquipmentData(prevData => 
+        prevData.map(item => 
+          item._id === selectedEquipment._id 
+            ? response
+            : item
+        )
+      );
+      
+      alert('Equipment repair completed successfully!');
+      setShowUpdateEquipmentModal(false);
+      
+      setUpdateData({
+        itemCode: '',
+        description: '',
+        repairDate: '',
+        repairDetails: '',
+        amountUsed: ''
+      });
+      
+    } catch (error) {
+      console.error('Error updating equipment repair:', error);
+      alert('Failed to update equipment repair. Please try again.');
+    }
+  };
+
   const equipmentCategories = ['Sanitary Equipment', 'Office Equipment', 'Construction Equipment', 'Electrical Equipment'];
   const equipmentStatuses = ['Within-Useful-Life', 'Maintenance', 'Beyond-Useful-Life',];
 
-  // Load equipment from database when component mounts
-   useEffect(() => {
+  useEffect(() => {
     loadEquipment();
   }, []);
 
-  // Reset to first page when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Enhanced load equipment function with better error handling
   const loadEquipment = async () => {
     try {
       setLoading(true);
       setError(null);
       
       const equipment = await EquipmentAPI.getAllEquipment();
-
-  
       
-      // Transform database data to match your current structure
-       const transformedEquipment = equipment.map(item => ({
-  _id: item._id || item.id,
-  itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-  usefulLife: item.usefulLife || 1,
-  amount: item.amount || 0.0,
-  name: item.name || 'Unknown Equipment',
-  description: item.description || 'No description available',
-  category: item.category || 'General',
-  location: item.location || 'Unknown',
-  status: item.status || 'Within-Useful-Life',
-  supplier: item.supplier || '',
-  unit_price: item.unit_price || 0,
-  date: item.date || '',  // NEW FIELD: Date field
-  has_image: item.image_data ? true : false,
-  image_data: item.image_data || null,
-  image_filename: item.image_filename || null,
-  image_content_type: item.image_content_type || null,
-  repairHistory: item.repairHistory || [],  // NEW FIELD: Repair history array
-}));
-setEquipmentData(transformedEquipment);
+      const transformedEquipment = equipment.map(item => ({
+        _id: item._id || item.id,
+        itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+        usefulLife: item.usefulLife || 1,
+        amount: item.amount || 0.0,
+        name: item.name || 'Unknown Equipment',
+        description: item.description || 'No description available',
+        category: item.category || 'General',
+        location: item.location || 'Unknown',
+        status: item.status || 'Within-Useful-Life',
+        supplier: item.supplier || '',
+        unit_price: item.unit_price || 0,
+        date: item.date || '',
+        has_image: item.image_data ? true : false,
+        image_data: item.image_data || null,
+        image_filename: item.image_filename || null,
+        image_content_type: item.image_content_type || null,
+        repairHistory: item.repairHistory || [],
+      }));
+      setEquipmentData(transformedEquipment);
       console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
       
     } catch (err) {
       console.error('Failed to load equipment:', err);
       setError(`Failed to load equipment: ${err.message}`);
-      
-      // Fallback to empty array instead of sample data to avoid confusion
       setEquipmentData([]);
     } finally {
       setLoading(false);
@@ -360,24 +465,21 @@ setEquipmentData(transformedEquipment);
     item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    item.serialNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // NEW: Pagination calculations
   const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedEquipment = filteredEquipment.slice(startIndex, endIndex);
 
-  // NEW: Pagination handlers
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
 
   const handleItemsPerPageChange = (e) => {
     setItemsPerPage(parseInt(e.target.value));
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
   };
 
   const generatePageNumbers = () => {
@@ -415,7 +517,6 @@ setEquipmentData(transformedEquipment);
     return pageNumbers;
   };
 
-  // Add Equipment Overlay handlers
   const handleAddEquipmentToggle = () => {
     setIsAddEquipmentOverlayOpen(!isAddEquipmentOverlayOpen);
     if (isAddEquipmentOverlayOpen) {
@@ -428,7 +529,7 @@ setEquipmentData(transformedEquipment);
         status: 'Within-Useful-Life',
         usefulLife: '',
         amount: '',
-        date: '',
+        date: '', // Reset to empty string
         itemPicture: null
       });
       setError(null);
@@ -437,26 +538,18 @@ setEquipmentData(transformedEquipment);
   };
 
   const handleEquipmentInputChange = (e) => {
-  const { name, value } = e.target;
-  if (name === "date" && value) {
-    // Normalize date to YYYY-MM-DD string, e.target.value already normalized for input=date, so likely not required.
+    const { name, value } = e.target;
     setNewEquipment((prev) => ({ ...prev, [name]: value }));
-  } else {
-    setNewEquipment((prev) => ({ ...prev, [name]: value }));
-  }
-};
-
+  };
 
   const handleEquipmentFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (25MB limit)
       if (file.size > 25 * 1024 * 1024) {
         alert('File size must be less than 25MB');
         return;
       }
       
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(file.type)) {
         alert('Please select a valid file type (JPEG, PNG, PDF, DOC, DOCX)');
@@ -485,7 +578,6 @@ setEquipmentData(transformedEquipment);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       
-      // Validate file size and type
       if (file.size > 25 * 1024 * 1024) {
         alert('File size must be less than 25MB');
         return;
@@ -508,126 +600,129 @@ setEquipmentData(transformedEquipment);
     setNewEquipment({ ...newEquipment, itemCode: generatedCode });
   };
 
-  // Enhanced form validation
   const validateEquipmentForm = () => {
     const errors = [];
     
     if (!newEquipment.name.trim()) {
-      errors.push('Equipment name is required');
+      errors.push('Equipment name is required.');
     }
     
     if (!newEquipment.description.trim()) {
-      errors.push('Description is required');
+      errors.push('Description is required.');
     }
     
-    if (!newEquipment.usefulLife || parseInt(newEquipment.usefulLife) <= 0) {
-    errors.push('Useful life must be a positive number');
-  }
+    // Ensure usefulLife is a number and greater than 0
+    const usefulLifeNum = parseInt(newEquipment.usefulLife);
+    if (isNaN(usefulLifeNum) || usefulLifeNum <= 0) {
+      errors.push('Useful life must be a positive number.');
+    }
 
-   if (!newEquipment.amount || parseFloat(newEquipment.amount) < 0) {
-    errors.push('Amount must be a non-negative number');
-  }
+    // Ensure amount is a number and non-negative
+    const amountNum = parseFloat(newEquipment.amount);
+    if (isNaN(amountNum) || amountNum < 0) {
+      errors.push('Amount must be a non-negative number.');
+    }
     
     if (!newEquipment.category) {
-      errors.push('Category is required');
+      errors.push('Category is required.');
     }
     
-    
-    
     if (!newEquipment.status) {
-      errors.push('Status is required');
+      errors.push('Status is required.');
     }
     
     return errors;
   };
 
-  // Enhanced handleAddEquipment with better error handling and validation
   const handleAddEquipment = async () => {
-  // Validate form fields as you already do...
-
-  try {
-    setAddingEquipment(true);
-    setError(null);
-
-    let imageBase64 = null;
-if (newEquipment.itemPicture) {
-  imageBase64 = await convertFileToBase64(newEquipment.itemPicture);
-}
-
-const equipmentData = {
-      name: newEquipment.name.trim(),
-      description: newEquipment.description.trim(),
-      category: newEquipment.category,
-      usefulLife: parseInt(newEquipment.usefulLife), 
-      amount: parseFloat(newEquipment.amount),       
-      location: newEquipment.location.trim() || '',
-      status: newEquipment.status,
-      itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-      unit_price: parseFloat(newEquipment.amount), 
-      supplier: '',
-      date: newEquipment.date,
-      image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
-      image_filename: newEquipment.itemPicture?.name || null,
-      image_content_type: newEquipment.itemPicture?.type || null,
-    };
-
-
-    console.log('📤 Adding new equipment:', equipmentData);
-
-    const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
-
-    // Upload documents if any were selected
-if (equipmentDocumentFiles.length > 0) {
-  console.log(`📤 Uploading ${equipmentDocumentFiles.length} documents...`);
-  for (const file of equipmentDocumentFiles) {
     try {
-      await EquipmentAPI.uploadEquipmentDocument(savedEquipment._id || savedEquipment.id, file);
-      console.log(`✅ Uploaded: ${file.name}`);
-    } catch (err) {
-      console.error(`❌ Failed to upload ${file.name}:`, err);
+      // --- Start of added validation ---
+      const validationErrors = validateEquipmentForm();
+      if (validationErrors.length > 0) {
+        alert('Please correct the following issues:\n' + validationErrors.join('\n'));
+        return; // Stop the function if validation fails
+      }
+      // --- End of added validation ---
+
+      setAddingEquipment(true);
+      setError(null);
+
+      let imageBase64 = null;
+      if (newEquipment.itemPicture) {
+        imageBase64 = await convertFileToBase64(newEquipment.itemPicture);
+      }
+
+      const equipmentData = {
+        name: newEquipment.name.trim(),
+        description: newEquipment.description.trim(),
+        category: newEquipment.category,
+        usefulLife: parseInt(newEquipment.usefulLife), 
+        amount: parseFloat(newEquipment.amount),       
+        location: newEquipment.location.trim() || '',
+        status: newEquipment.status,
+        itemCode: newEquipment.itemCode.trim() || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+        unit_price: parseFloat(newEquipment.amount), 
+        supplier: '',
+        date: newEquipment.date || null, // Send null if date is empty string
+        image_data: imageBase64 ? (imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64) : null,
+        image_filename: newEquipment.itemPicture?.name || null,
+        image_content_type: newEquipment.itemPicture?.type || null,
+      };
+
+      console.log('📤 Adding new equipment:', equipmentData);
+
+      const savedEquipment = await EquipmentAPI.addEquipment(equipmentData);
+
+      if (equipmentDocumentFiles.length > 0) {
+        console.log(`📤 Uploading ${equipmentDocumentFiles.length} documents...`);
+        for (const file of equipmentDocumentFiles) {
+          try {
+            await EquipmentAPI.uploadEquipmentDocument(savedEquipment._id || savedEquipment.id, file);
+            console.log(`✅ Uploaded: ${file.name}`);
+          } catch (err) {
+            console.error(`❌ Failed to upload ${file.name}:`, err);
+          }
+        }
+        
+        // Fetch the updated equipment to get the documents array
+        const updatedEquipmentWithDocs = await EquipmentAPI.getEquipmentById(savedEquipment._id || savedEquipment.id);
+        savedEquipment.documents = updatedEquipmentWithDocs.documents;
+      }
+
+      const newEquipmentItem = {
+        _id: savedEquipment._id || savedEquipment.id,
+        itemCode: equipmentData.itemCode,
+        name: newEquipment.name.trim(),
+        usefulLife: parseInt(newEquipment.usefulLife), 
+        amount: parseFloat(newEquipment.amount),       
+        description: newEquipment.description.trim(),
+        category: newEquipment.category,
+        location: newEquipment.location.trim(),
+        status: newEquipment.status,
+        itemPicture: savedEquipment.image_data,  
+        image_data: savedEquipment.image_data,
+        image_filename: savedEquipment.image_filename,
+        documents: savedEquipment.documents || [],
+        image_content_type: savedEquipment.image_content_type,
+        supplier: '',
+        unit_price: parseFloat(newEquipment.amount), 
+        date: newEquipment.date
+      };
+      setEquipmentData(prevData => [...prevData, newEquipmentItem]);
+
+      alert(`Equipment "${newEquipment.name}" added successfully!\nDocuments uploaded: ${equipmentDocumentFiles.length}`);
+      setEquipmentDocumentFiles([]);
+      handleAddEquipmentToggle();
+      
+    } catch (error) {
+      console.error('❌ Error adding equipment:', error);
+      setError(`Failed to add equipment: ${error.message}`);
+      alert(`Failed to add equipment: ${error.message}`);
+    } finally {
+      setAddingEquipment(false);
     }
-  }
-  
-  // Reload equipment to get documents
-  const updatedEquipment = await EquipmentAPI.getEquipmentById(savedEquipment._id || savedEquipment.id);
-  savedEquipment.documents = updatedEquipment.documents;
-}
+  };
 
-    // Add new equipment to state including image data
-    const newEquipmentItem = {
-      _id: savedEquipment._id || savedEquipment.id,
-      itemCode: equipmentData.itemCode,
-      name: newEquipment.name.trim(),
-      usefulLife: parseInt(newEquipment.usefulLife), 
-      amount: parseFloat(newEquipment.amount),       
-      description: newEquipment.description.trim(),
-      category: newEquipment.category,
-      location: newEquipment.location.trim(),
-      status: newEquipment.status,
-      itemPicture: savedEquipment.image_data,  
-      image_data: savedEquipment.image_data,
-      image_filename: savedEquipment.image_filename,
-      documents: savedEquipment.documents || [],
-      image_content_type: savedEquipment.image_content_type,
-      supplier: '',
-      unit_price: parseFloat(newEquipment.amount), 
-      date: newEquipment.date
-    };
-    setEquipmentData(prevData => [...prevData, newEquipmentItem]);
-
-    alert(`Equipment "${newEquipment.name}" added successfully!\nDocuments uploaded: ${equipmentDocumentFiles.length}`);
-    setEquipmentDocumentFiles([]);
-    
-  } catch (error) {
-    console.error('❌ Error adding equipment:', error);
-    setError(`Failed to add equipment: ${error.message}`);
-    alert(`Failed to add equipment: ${error.message}`);
-  } finally {
-    setAddingEquipment(false);
-  }
-};
-
-  // Delete equipment function
   const handleDeleteEquipment = async (equipmentId, equipmentName) => {
     if (!window.confirm(`Are you sure you want to delete "${equipmentName}"? This action cannot be undone.`)) {
       return;
@@ -637,10 +732,8 @@ if (equipmentDocumentFiles.length > 0) {
       setLoading(true);
       await EquipmentAPI.deleteEquipment(equipmentId);
       
-      // Remove from local state
       setEquipmentData(prevData => prevData.filter(item => item._id !== equipmentId));
       
-      // Close overview modal if the deleted item was selected
       if (selectedEquipment && selectedEquipment._id === equipmentId) {
         handleCloseEquipmentOverview();
       }
@@ -656,10 +749,8 @@ if (equipmentDocumentFiles.length > 0) {
     }
   };
 
-  // QR Code generation function
   const generateQRCode = async (equipment) => {
     try {
-      // Create comprehensive QR code data for equipment
       const qrData = JSON.stringify({
         type: 'equipment',
         itemCode: equipment.itemCode,
@@ -676,7 +767,6 @@ if (equipmentDocumentFiles.length > 0) {
         generatedBy: 'Equipment Management System'
       });
 
-      // Generate QR code as data URL with better quality
       const dataURL = await QRCode.toDataURL(qrData, {
         width: 300,
         margin: 2,
@@ -697,7 +787,6 @@ if (equipmentDocumentFiles.length > 0) {
     }
   };
 
-  // Download QR code as image
   const downloadQRCode = () => {
     if (!qrCodeDataURL || !qrCodeEquipment) return;
 
@@ -712,7 +801,6 @@ if (equipmentDocumentFiles.length > 0) {
     console.log(`📥 QR Code downloaded: ${fileName}`);
   };
 
-  // Enhanced print QR code function
   const printQRCode = () => {
     if (!qrCodeDataURL || !qrCodeEquipment) return;
 
@@ -782,7 +870,6 @@ if (equipmentDocumentFiles.length > 0) {
                 <p><strong>Category:</strong> ${qrCodeEquipment.category}</p>
                 <p><strong>Location:</strong> ${qrCodeEquipment.location}</p>
                 <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
-                <p><strong>Quantity:</strong> ${qrCodeEquipment.quantity} ${qrCodeEquipment.unit}</p>
                 <p><strong>Date:</strong> ${qrCodeEquipment.date || 'Not specified'}</p>
                 <p><strong>Description:</strong> ${qrCodeEquipment.description}</p>
               </div>
@@ -819,12 +906,10 @@ if (equipmentDocumentFiles.length > 0) {
     setQrCodeEquipment(null);
   };
 
-  // Refresh equipment data
   const handleRefreshEquipment = () => {
     loadEquipment();
   };
 
-  // Show loading state
   if (loading && equipmentData.length === 0) {
     return (
       <div className="equipment-page-container">
@@ -838,7 +923,6 @@ if (equipmentDocumentFiles.length > 0) {
 
   return (
     <div className="equipment-page-container">
-      {/* Enhanced Error Banner */}
       {error && (
         <div className="error-banner" style={{
           backgroundColor: '#fee2e2',
@@ -873,7 +957,7 @@ if (equipmentDocumentFiles.length > 0) {
           <div className="search-input-wrapper">
             <input
               type="text"
-              placeholder="Search by code, name, description, serial, or category..."
+              placeholder="Search by code, name, description, or category..."
               className="search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -882,8 +966,7 @@ if (equipmentDocumentFiles.length > 0) {
               <path d="M15 15L21 21M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          
-          {/* NEW: Items per page selector */}
+
           <div className="items-per-page-container">
             <span>Show:</span>
             <select 
@@ -941,89 +1024,92 @@ if (equipmentDocumentFiles.length > 0) {
           )}
         </div>
       ) : (
-        // UPDATES FOR EquipmentPage.js
-
-// 1. UPDATE TABLE STRUCTURE - Remove USEFUL LIFE column
-// Replace the table section (around line 685-740) with this:
-
-// Update the table structure in EquipmentPage.js to stretch full width
-
-// Update the table structure in EquipmentPage.js to stretch full width
-
-// Update the table structure in EquipmentPage.js to include STATUS column
-
-// Update the table structure in EquipmentPage.js to include STATUS column
-
-// Update the table structure in EquipmentPage.js to include STATUS column
-
-<table className="equipment-table">
-  <thead>
-    <tr>
-      <th style={{ width: '20%' }}>ITEM CODE</th>
-      <th style={{ width: '30%' }}>EQUIPMENT NAME</th>
-      <th style={{ width: '20%' }}>STATUS</th>
-      <th style={{ width: '20%' }}>AMOUNT</th>
-      <th style={{ width: '10%' }}>ACTION</th>
-    </tr>
-  </thead>
-  <tbody>
-    {paginatedEquipment.map((equipment, index) => (
-      <tr key={equipment._id || index}>
-        <td style={{ width: '20%' }}>{equipment.itemCode}</td>
-        <td style={{ width: '30%' }}>
-          <span 
-            className="description-clickable"
-            onClick={() => handleEquipmentClick(equipment)}
-            title="Click to view details"
-          >
-            {equipment.name}
-          </span>
-        </td>
-        <td style={{ width: '20%' }}>
-          <span style={{
-            color: equipment.status === 'Within-Useful-Life' ? '#10b981' : 
-                   equipment.status === 'Maintenance' ? '#f59e0b' :
-                   equipment.status === 'Beyond-Useful-Life' ? '#ef4444' : '#ef4444',
-            fontWeight: '500'
-          }}>
-            {equipment.status}
-          </span>
-        </td>
-        <td style={{ width: '20%' }}>₱{equipment.amount ? parseFloat(equipment.amount).toFixed(2) : '0.00'}</td>
-        <td style={{ width: '10%', padding: '12px 30px 12px 20px' }}>
-          <div className="action-buttons-container" style={{ display: 'flex', gap: '8px', justifyContent: 'center', width: '100%' }}>
-  <button 
-    className="view-icon-btn"
-    onClick={() => handleEquipmentClick(equipment)}
-    title="View equipment details"
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  </button>
-  {currentUser?.role === 'admin' && (
-  <button 
-    className="delete-icon-btn"
-    onClick={() => handleDeleteEquipment(equipment._id, equipment.name)}
-    title="Delete equipment"
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  </button>
-)}
-          </div>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
+        <table className="equipment-table">
+          <thead>
+            <tr>
+              <th style={{ width: '20%' }}>ITEM CODE</th>
+              <th style={{ width: '25%' }}>EQUIPMENT NAME</th>
+              <th style={{ width: '15%' }}>STATUS</th>
+              <th style={{ width: '15%' }}>LCC REMARKS</th>
+              <th style={{ width: '15%' }}>AMOUNT</th>
+              <th style={{ width: '10%' }}>ACTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedEquipment.map((equipment, index) => {
+              const lccBadge = getLCCBadge(equipment);
+              return (
+                <tr key={equipment._id || index}>
+                  <td style={{ width: '20%' }}>{equipment.itemCode}</td>
+                  <td style={{ width: '25%' }}>
+                    <span 
+                      className="description-clickable"
+                      onClick={() => handleEquipmentClick(equipment)}
+                      title="Click to view details"
+                    >
+                      {equipment.name}
+                    </span>
+                  </td>
+                  <td style={{ width: '15%' }}>
+                    <span style={{
+                      color: equipment.status === 'Within-Useful-Life' ? '#10b981' : 
+                             equipment.status === 'Maintenance' ? '#f59e0b' :
+                             equipment.status === 'Beyond-Useful-Life' ? '#ef4444' : '#ef4444',
+                      fontWeight: '500'
+                    }}>
+                      {equipment.status}
+                    </span>
+                  </td>
+                  <td style={{ width: '15%' }}>
+                    {lccBadge && (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        color: lccBadge.color,
+                        backgroundColor: lccBadge.bgColor,
+                        border: `1px solid ${lccBadge.color}`
+                      }}>
+                        {lccBadge.text}
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ width: '15%' }}>₱{equipment.amount ? parseFloat(equipment.amount).toFixed(2) : '0.00'}</td>
+                  <td style={{ width: '10%', padding: '12px 30px 12px 20px' }}>
+                    <div className="action-buttons-container" style={{ display: 'flex', gap: '8px', justifyContent: 'center', width: '100%' }}>
+                      <button 
+                        className="view-icon-btn"
+                        onClick={() => handleEquipmentClick(equipment)}
+                        title="View equipment details"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      {currentUser?.role === 'admin' && (
+                        <button 
+                          className="delete-icon-btn"
+                          onClick={() => handleDeleteEquipment(equipment._id, equipment.name)}
+                          title="Delete equipment"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
 
-      {/* NEW: Pagination Controls */}
       {filteredEquipment.length > 0 && (
         <div className="pagination-container">
           <div className="pagination-info">
@@ -1973,7 +2059,7 @@ if (equipmentDocumentFiles.length > 0) {
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.21071 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           Print Repair History
