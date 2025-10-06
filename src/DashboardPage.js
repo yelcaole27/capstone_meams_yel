@@ -1386,22 +1386,23 @@ function DashboardPage() {
         marginTop: '20px'
       }}>
         <button
-          onClick={() => window.print()}
-          style={{
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          🖨️ Print Requisition
-        </button>
+  onClick={() => window.print()}
+  style={{
+    backgroundColor: '#4CAF50',
+    color: '#FFFFFF',  // WHITE TEXT
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',  // BOLD TEXT
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  }}
+>
+  🖨️ Print Requisition
+</button>
       </div>
     </div>
   </div>
@@ -1786,22 +1787,23 @@ function DashboardPage() {
         marginTop: '20px'
       }}>
         <button
-          onClick={() => window.print()}
-          style={{
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          🖨️ Print Requisition
-        </button>
+  onClick={() => window.print()}
+  style={{
+    backgroundColor: '#4CAF50',
+    color: '#FFFFFF',  // WHITE TEXT
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',  // BOLD TEXT
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  }}
+>
+  🖨️ Print Requisition
+</button>
       </div>
     </div>
   </div>
@@ -2201,22 +2203,24 @@ function DashboardPage() {
               marginTop: '30px'
             }}>
               <button
-                onClick={() => window.print()}
-                style={{
-                  backgroundColor: '#FF6B35',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                🖨️ Print Purchase Form
-              </button>
+  onClick={() => window.print()}
+  className="print-btn-purchase"
+  style={{
+    backgroundColor: '#FF6B35',
+    color: '#FFFFFF',  // WHITE TEXT
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',  // BOLD TEXT
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  }}
+>
+  🖨️ Print Purchase Form
+</button>
             </div>
           </div>
         </div>
@@ -2571,22 +2575,24 @@ function DashboardPage() {
               marginTop: '30px'
             }}>
               <button
-                onClick={() => window.print()}
-                style={{
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                🖨️ Print Repair Form
-              </button>
+  onClick={() => window.print()}
+  className="print-btn-repair"
+  style={{
+    backgroundColor: '#2196F3',
+    color: '#FFFFFF',  // WHITE TEXT
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',  // BOLD TEXT
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  }}
+>
+  🖨️ Print Repair Form
+</button>
             </div>
           </div>
         </div>
