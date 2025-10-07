@@ -354,7 +354,7 @@
 /* Print Requisition Button - Green/Teal Gradient */
 .requisition-form-modal button[onclick*="print()"],
 .requisition-form-modal .print-hidden button {
-  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  background: linear-gradient(135deg, #55d8ed, #4dbfef) !important;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
   color: #000000 !important;  /* ADD THIS */
   font-weight: bold !important;  /* ADD THIS */
@@ -362,35 +362,62 @@
 
 .requisition-form-modal button[onclick*="print()"]:hover,
 .requisition-form-modal .print-hidden button:hover {
-  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  background: linear-gradient(135deg, #026e74, #0e7091) !important;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
   color: #FFFFFF !important;  /* ADD THIS */
 }
 
 /* Print Purchase Form Button - Orange/Red Gradient */
 .print-btn-purchase {
-  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  background: linear-gradient(135deg, #55d8ed, #4dbfef) !important;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
   color: #FFFFFF !important;  /* ADD THIS */
   font-weight: bold !important;  /* ADD THIS */
 }
 
 .print-btn-purchase:hover {
-  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  background: linear-gradient(135deg, #026e74, #0e7091) !important;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
   color: #FFFFFF !important;  /* ADD THIS */
 }
 
 /* Print Repair Form Button - Blue/Purple Gradient */
 .print-btn-repair {
-  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  background: linear-gradient(135deg, #55d8ed, #4dbfef) !important;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
   color: #FFFFFF !important;  /* ADD THIS */
   font-weight: bold !important;  /* ADD THIS */
 }
 
 .print-btn-repair:hover {
-  background: linear-gradient(135deg, #059669, #14B8A6) !important;
+  background: linear-gradient(135deg, #026e74, #0e7091) !important;
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
   color: #FFFFFF !important;  /* ADD THIS */
+}
+
+/* Extended horizontal forecast row */
+.graph-row-extended {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: stretch;
+  grid-column: 1 / -1;
+}
+
+.graph-row-extended .graph-card {
+  flex: 1;
+  min-width: 45%;
+  height: 400px;
+}
+
+@media (max-width: 900px) {
+  .graph-row-extended {
+    flex-direction: column;
+  }
+  .graph-row-extended .graph-card {
+    width: 100%;
+    height: 350px;
+  }
 }
