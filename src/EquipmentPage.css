@@ -1617,18 +1617,18 @@
 
 /* Report Repair Button - Bright Blue Gradient */
 .item-overview-actions .repair-btn {
-  background: linear-gradient(135deg, #2563EB, #3B82F6) !important;
+  background: linear-gradient(135deg, #eb2525, #f63b70) !important;
 }
 
 .item-overview-actions .repair-btn:hover {
-  background: linear-gradient(135deg, #1e40af, #2563EB) !important;
+  background: linear-gradient(135deg, #931010, #a91425) !important;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
 
 /* Update Equipment Button - Medium Blue Gradient */
 .item-overview-actions .update-btn {
-  background: linear-gradient(135deg, #1D4ED8, #60A5FA) !important;
+  background: linear-gradient(135deg, #1D4ED8, #518dd7) !important;
 }
 
 .item-overview-actions .update-btn:hover {
