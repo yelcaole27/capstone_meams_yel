@@ -1371,11 +1371,11 @@
 
 /* Edit Item Button - Blue Gradient (Medium Blue) */
 .item-overview-actions .edit-item-btn {
-  background: linear-gradient(135deg, #1D4ED8, #60A5FA) !important;
+  background: linear-gradient(135deg, #363131, #47443d) !important;
 }
 
 .item-overview-actions .edit-item-btn:hover {
-  background: linear-gradient(135deg, #1e3a8a, #1D4ED8) !important;
+  background: linear-gradient(135deg, #23160c, #2c271c) !important;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
 }
