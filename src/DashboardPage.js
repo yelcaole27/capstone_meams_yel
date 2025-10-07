@@ -1,14 +1,16 @@
+// MultipleFiles/DashboardPage.js
+
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Sector, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts'; // NEW: Added LineChart, Line, XAxis, YAxis, CartesianGrid
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import SuppliesAPI from './suppliesApi';
 import EquipmentAPI from './EquipmentApi';
 import './DashboardPage.css';
-import { useAuth } from './AuthContext'; // NEW: Import useAuth
-import { useTheme } from './ThemeContext'; // Import useTheme for chart colors
+import { useAuth } from './AuthContext';
+import { useTheme } from './ThemeContext';
 
 function DashboardPage() {
-  const { authToken, isAuthenticated, loading: authLoading } = useAuth(); // NEW: Get authToken and auth status
-  const { getChartColors } = useTheme(); // Get theme-aware chart colors
+  const { authToken, isAuthenticated, loading: authLoading } = useAuth();
+  const { getChartColors } = useTheme();
   const chartColors = getChartColors();
   const [suppliesData, setSuppliesData] = useState([]);
   const [equipmentData, setEquipmentData] = useState([]);
@@ -16,22 +18,139 @@ function DashboardPage() {
   const [error, setError] = useState(null);
   const [activeSupplyIndex, setActiveSupplyIndex] = useState(null);
   const [activeEquipmentIndex, setActiveEquipmentIndex] = useState(null);
-
-  // NEW STATE FOR FORECAST DATA
   const [suppliesForecastData, setSuppliesForecastData] = useState([]);
   const [equipmentForecastData, setEquipmentForecastData] = useState([]);
-  // END NEW STATE
 
-  // New state for modal visibility
   const [showRequisitionModal, setShowRequisitionModal] = useState(false);
   const [showRepairModal, setShowRepairModal] = useState(false);
   const [showOfficeSupplyForm, setShowOfficeSupplyForm] = useState(false);
   const [showOtherSupplyForm, setShowOtherSupplyForm] = useState(false);
-
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [showRepairForm, setShowRepairForm] = useState(false);
 
-  // Get actual understock supplies from API data
+  // Extracted CSS constants to fix ESLint parsing issues with inline template literals
+  const requisitionCSS = `
+    .requisition-form-modal * {
+      color: black !important;
+    }
+    .requisition-form-modal input {
+      width: 100% !important;
+      border: none !important;
+      outline: none !important;
+      font-size: 12px !important;
+      color: black !important;
+      background-color: transparent !important;
+      font-family: Arial, sans-serif !important;
+    }
+    .requisition-form-modal input:focus {
+      color: black !important;
+    }
+    .requisition-form-modal .requisition-input-filled {
+      background-color: #f0f8ff !important;
+    }
+    .requisition-form-modal h2,
+    .requisition-form-modal h3,
+    .requisition-form-modal th,
+    .requisition-form-modal td,
+    .requisition-form-modal div,
+    .requisition-form-modal span,
+    .requisition-form-modal strong {
+      color: black !important;
+    }
+    @media print {
+      .print-hidden {
+        display: none !important;
+      }
+      body * {
+        visibility: hidden;
+      }
+      .requisition-form-modal, .requisition-form-modal * {
+        visibility: visible !important;
+      }
+      .requisition-form-modal {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 20px !important;
+        max-width: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: white !important;
+      }
+      .requisition-form-modal .requisition-input-filled {
+        background-color: transparent !important;
+      }
+      .requisition-form-modal input {
+        background-color: transparent !important;
+        border: none !important;
+      }
+    }
+  `;
+
+  const purchaseRepairCSS = `
+    .purchase-repair-form-modal * {
+      color: black !important;
+    }
+    .purchase-repair-form-modal input {
+      width: 100% !important;
+      border: none !important;
+      outline: none !important;
+      font-size: 12px !important;
+      color: black !important;
+      background-color: transparent !important;
+      font-family: Arial, sans-serif !important;
+    }
+    .purchase-repair-form-modal input:focus {
+      color: black !important;
+    }
+    .purchase-repair-form-modal .form-input-filled {
+      background-color: #f0f8ff !important;
+    }
+    .purchase-repair-form-modal h2,
+    .purchase-repair-form-modal h3,
+    .purchase-repair-form-modal th,
+    .purchase-repair-form-modal td,
+    .purchase-repair-form-modal div,
+    .purchase-repair-form-modal span,
+    .purchase-repair-form-modal strong {
+      color: black !important;
+    }
+    @media print {
+      .print-hidden {
+        display: none !important;
+      }
+      body * {
+        visibility: hidden;
+      }
+      .purchase-repair-form-modal, .purchase-repair-form-modal * {
+        visibility: visible !important;
+      }
+      .purchase-repair-form-modal {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 20px !important;
+        max-width: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: white !important;
+      }
+      .purchase-repair-form-modal .form-input-filled {
+        background-color: transparent !important;
+      }
+      .purchase-repair-form-modal input {
+        background-color: transparent !important;
+        border: none !important;
+      }
+    }
+  `;
+
   const getUnderstockData = () => {
     return suppliesData.filter(supply => {
       const status = supply.status || '';
@@ -39,129 +158,113 @@ function DashboardPage() {
     }).slice(0, 10);
   };
 
-  // Get actual equipment beyond useful life from API data
   const getEquipmentBeyondLifeData = () => {
-  // Import the calculateLCCAnalysis function from EquipmentPage
-  // Since it's not available here, we'll replicate the logic
-  return equipmentData.filter(equipment => {
-    const repairHistory = equipment.repairHistory || [];
-    const usefulLife = equipment.usefulLife || 5;
-    const purchasePrice = equipment.amount || 0;
-    const currentDate = new Date();
-    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
-    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+    return equipmentData.filter(equipment => {
+      const repairHistory = equipment.repairHistory || [];
+      const usefulLife = equipment.usefulLife || 5;
+      const purchasePrice = equipment.amount || 0;
+      const currentDate = new Date();
+      const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+      const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
 
-    const totalRepairs = repairHistory.length;
-    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
-    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
-    const costThreshold = purchasePrice * 0.5;
+      const totalRepairs = repairHistory.length;
+      const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+      const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+      const costThreshold = purchasePrice * 0.5;
 
-    // Determine if equipment should be replaced
-    let recommendReplacement = false;
+      let recommendReplacement = false;
 
-    if (totalRepairCost >= costThreshold) {
-      recommendReplacement = true;
-    }
-    if (repairFrequency > 3) {
-      recommendReplacement = true;
-    }
-    if (ageInYears >= usefulLife) {
-      recommendReplacement = true;
-    }
+      if (totalRepairCost >= costThreshold) recommendReplacement = true;
+      if (repairFrequency > 3) recommendReplacement = true;
+      if (ageInYears >= usefulLife) recommendReplacement = true;
 
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const recentRepairs = repairHistory.filter(repair => {
-      const repairDate = new Date(repair.repairDate);
-      return repairDate >= sixMonthsAgo;
-    }).length;
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const recentRepairs = repairHistory.filter(repair => {
+        const repairDate = new Date(repair.repairDate);
+        return repairDate >= sixMonthsAgo;
+      }).length;
 
-    if (recentRepairs >= 3) {
-      recommendReplacement = true;
-    }
+      if (recentRepairs >= 3) recommendReplacement = true;
 
-    return recommendReplacement;
-  }).slice(0, 10);
-};
+      return recommendReplacement;
+    }).slice(0, 10);
+  };
 
   const getEquipmentMaintenanceData = () => {
-  return equipmentData.filter(equipment => {
-    // Show equipment that has a reportDate OR status is Maintenance
-    return equipment.reportDate || 
-           equipment.status?.toLowerCase().includes('maintenance') || 
-           equipment.status?.toLowerCase().includes('repair') ||
-           equipment.status?.toLowerCase().includes('service');
-  });
-};
+    return equipmentData.filter(equipment => {
+      return equipment.reportDate || 
+             equipment.status?.toLowerCase().includes('maintenance') || 
+             equipment.status?.toLowerCase().includes('repair') ||
+             equipment.status?.toLowerCase().includes('service');
+    });
+  };
+
   const getEquipmentPurchaseData = () => {
-  // Use the same logic as getEquipmentBeyondLifeData to get equipment that should be replaced
-  return equipmentData.filter(equipment => {
-    const repairHistory = equipment.repairHistory || [];
-    const usefulLife = equipment.usefulLife || 5;
-    const purchasePrice = equipment.amount || 0;
-    const currentDate = new Date();
-    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
-    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+    return equipmentData.filter(equipment => {
+      const repairHistory = equipment.repairHistory || [];
+      const usefulLife = equipment.usefulLife || 5;
+      const purchasePrice = equipment.amount || 0;
+      const currentDate = new Date();
+      const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+      const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
 
-    const totalRepairs = repairHistory.length;
-    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
-    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
-    const costThreshold = purchasePrice * 0.5;
+      const totalRepairs = repairHistory.length;
+      const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+      const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+      const costThreshold = purchasePrice * 0.5;
 
-    let recommendReplacement = false;
+      let recommendReplacement = false;
 
-    if (totalRepairCost >= costThreshold) recommendReplacement = true;
-    if (repairFrequency > 3) recommendReplacement = true;
-    if (ageInYears >= usefulLife) recommendReplacement = true;
+      if (totalRepairCost >= costThreshold) recommendReplacement = true;
+      if (repairFrequency > 3) recommendReplacement = true;
+      if (ageInYears >= usefulLife) recommendReplacement = true;
 
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const recentRepairs = repairHistory.filter(repair => {
-      const repairDate = new Date(repair.repairDate);
-      return repairDate >= sixMonthsAgo;
-    }).length;
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const recentRepairs = repairHistory.filter(repair => {
+        const repairDate = new Date(repair.repairDate);
+        return repairDate >= sixMonthsAgo;
+      }).length;
 
-    if (recentRepairs >= 3) recommendReplacement = true;
+      if (recentRepairs >= 3) recommendReplacement = true;
 
-    return recommendReplacement;
-  });
-};
+      return recommendReplacement;
+    });
+  };
 
   const understockData = getUnderstockData();
   const equipmentLifeData = getEquipmentBeyondLifeData();
 
-  // Clean, professional color palette
   const supplyColors = ['#4CAF50', '#F44336', '#FF9800'];
   const equipmentColors = ['#4CAF50', '#FF9800', '#F44336'];
 
-  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
-      if (authLoading) return; // Wait for auth context to load
+      if (authLoading) return;
 
       try {
         setLoading(true);
 
-        if (!isAuthenticated) { // Use isAuthenticated from AuthContext
-          console.warn('User not authenticated, using empty data for charts');
+        if (!isAuthenticated) {
+          console.warn('User  not authenticated, using empty data for charts');
           setSuppliesData([]);
           setEquipmentData([]);
-          setSuppliesForecastData([]); // Clear forecast data too
-          setEquipmentForecastData([]); // Clear forecast data too
+          setSuppliesForecastData([]);
+          setEquipmentForecastData([]);
           setLoading(false);
           return;
         }
 
-        // Fetch main supplies and equipment data
         const [supplies, equipment] = await Promise.all([
-          SuppliesAPI.getAllSupplies(authToken).catch(err => { // Pass authToken
+          SuppliesAPI.getAllSupplies(authToken).catch(err => {
             console.warn('Failed to fetch supplies:', err);
             if (err.message.includes('Authentication failed')) {
               setError('Please log in to view dashboard data');
             }
             return [];
           }),
-          EquipmentAPI.getAllEquipment(authToken).catch(err => { // Pass authToken
+          EquipmentAPI.getAllEquipment(authToken).catch(err => {
             console.warn('Failed to fetch equipment:', err);
             if (err.message.includes('Authentication failed')) {
               setError('Please log in to view dashboard data');
@@ -173,7 +276,7 @@ function DashboardPage() {
         setSuppliesData(supplies || []);
         setEquipmentData(equipment || []);
 
-        // NEW: Fetch forecast data
+        // Fetch forecast data (now includes generated 2024 and 2025 forecast)
         const [suppliesForecastRes, equipmentForecastRes] = await Promise.all([
           fetch('http://localhost:8000/api/forecast-supplies', {
             headers: {
@@ -188,19 +291,46 @@ function DashboardPage() {
         ]);
 
         if (suppliesForecastRes.success) {
-          setSuppliesForecastData(suppliesForecastRes.data);
+          const enrichedSuppliesData = suppliesForecastRes.data.map(item => ({
+            ...item,
+            quantity: parseFloat(item.quantity) || 0,
+            lower_bound: parseFloat(item.lower_bound) || 0,
+            upper_bound: parseFloat(item.upper_bound) || 0,
+            // Assuming forecast_type is provided by the backend
+            forecast_type: item.forecast_type || 'historical' // Default to historical if not specified
+          }));
+          setSuppliesForecastData(enrichedSuppliesData);
+          console.log('Supplies forecast loaded:', enrichedSuppliesData.length, 'months');
+          console.log('Supplies forecast data range:', 
+            enrichedSuppliesData.length > 0 ? new Date(enrichedSuppliesData[0].date).toLocaleDateString() : 'N/A', 
+            'to', 
+            enrichedSuppliesData.length > 0 ? new Date(enrichedSuppliesData[enrichedSuppliesData.length - 1].date).toLocaleDateString() : 'N/A'
+          );
         } else {
           console.error('Failed to fetch supplies forecast:', suppliesForecastRes.message);
           setSuppliesForecastData([]);
         }
 
         if (equipmentForecastRes.success) {
-          setEquipmentForecastData(equipmentForecastRes.data);
+          const enrichedEquipmentData = equipmentForecastRes.data.map(item => ({
+            ...item,
+            quantity: parseFloat(item.quantity) || 0,
+            lower_bound: parseFloat(item.lower_bound) || 0,
+            upper_bound: parseFloat(item.upper_bound) || 0,
+            // Assuming forecast_type is provided by the backend
+            forecast_type: item.forecast_type || 'historical' // Default to historical if not specified
+          }));
+          setEquipmentForecastData(enrichedEquipmentData);
+          console.log('Equipment forecast loaded:', enrichedEquipmentData.length, 'months');
+          console.log('Equipment forecast data range:', 
+            enrichedEquipmentData.length > 0 ? new Date(enrichedEquipmentData[0].date).toLocaleDateString() : 'N/A', 
+            'to', 
+            enrichedEquipmentData.length > 0 ? new Date(enrichedEquipmentData[enrichedEquipmentData.length - 1].date).toLocaleDateString() : 'N/A'
+          );
         } else {
           console.error('Failed to fetch equipment forecast:', equipmentForecastRes.message);
           setEquipmentForecastData([]);
         }
-        // END NEW: Fetch forecast data
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -215,9 +345,8 @@ function DashboardPage() {
     };
 
     fetchData();
-  }, [authToken, isAuthenticated, authLoading]); // Re-run when authToken or auth status changes
+  }, [authToken, isAuthenticated, authLoading]);
 
-  // Handle button clicks
   const handleGenerateRequisition = () => {
     setShowRequisitionModal(true);
   };
@@ -227,58 +356,48 @@ function DashboardPage() {
   };
 
   const handleRequisitionChoice = (choice) => {
-  console.log(`Selected requisition type: ${choice}`);
-  setShowRequisitionModal(false);
+    console.log(`Selected requisition type: ${choice}`);
+    setShowRequisitionModal(false);
 
-  if (choice === 'OFFICE SUPPLIES') {
-    setShowOfficeSupplyForm(true);
-    setShowOtherSupplyForm(false);
-  } else if (choice === 'OTHER SUPPLIES') {
-    setShowOfficeSupplyForm(false);
-    setShowOtherSupplyForm(true);
-  }
-};
+    if (choice === 'OFFICE SUPPLIES') {
+      setShowOfficeSupplyForm(true);
+      setShowOtherSupplyForm(false);
+    } else if (choice === 'OTHER SUPPLIES') {
+      setShowOfficeSupplyForm(false);
+      setShowOtherSupplyForm(true);
+    }
+  };
 
   const getOtherRequisitionData = () => {
-  // Other Supply form shows Construction, Sanitary, and Electrical supplies
-  const otherSupplyCategories = [
-    'construction supply', 
-    'sanitary supply', 
-    'electrical supply'
-  ];
+    const otherSupplyCategories = ['construction supply', 'sanitary supply', 'electrical supply'];
+    const otherUnderstockItems = understockData.filter(item => {
+      const category = (item.category || '').toLowerCase();
+      return otherSupplyCategories.some(cat => category.includes(cat));
+    });
 
-  const otherUnderstockItems = understockData.filter(item => {
-    const category = (item.category || '').toLowerCase();
-    return otherSupplyCategories.some(cat => category.includes(cat));
-  });
+    return otherUnderstockItems.map(item => ({
+      qty: item.quantity || item.currentStock || 0,
+      unit: item.unit || 'pcs',
+      description: item.name || item.itemName || 'N/A',
+      remarks: ''
+    }));
+  };
 
-  return otherUnderstockItems.map(item => ({
-    qty: item.quantity || item.currentStock || 0, // Show actual current quantity
-    unit: item.unit || 'pcs',
-    description: item.name || item.itemName || 'N/A',
-    remarks: ''
-  }));
-};
-
-  // Prepare requisition data from understock items
   const getRequisitionData = () => {
-  // Office Supply form shows only "OFFICE SUPPLY" category items
-  const officeSupplyCategories = ['office supply'];
+    const officeSupplyCategories = ['office supply'];
+    const officeUnderstockItems = understockData.filter(item => {
+      const category = (item.category || '').toLowerCase();
+      return officeSupplyCategories.some(cat => category.includes(cat));
+    });
 
-  const officeUnderstockItems = understockData.filter(item => {
-    const category = (item.category || '').toLowerCase();
-    return officeSupplyCategories.some(cat => category.includes(cat));
-  });
+    return officeUnderstockItems.map(item => ({
+      qty: item.quantity || item.currentStock || 0,
+      unit: item.unit || 'pcs',
+      description: item.name || item.itemName || 'N/A',
+      remarks: ''
+    }));
+  };
 
-  return officeUnderstockItems.map(item => ({
-    qty: item.quantity || item.currentStock || 0, // Show actual current quantity
-    unit: item.unit || 'pcs',
-    description: item.name || item.itemName || 'N/A',
-    remarks: ''
-  }));
-};
-
-  // NEW: Updated handleRepairChoice function
   const handleRepairChoice = (choice) => {
     console.log(`Selected repair type: ${choice}`);
     setShowRepairModal(false);
@@ -290,22 +409,20 @@ function DashboardPage() {
     }
   };
 
-  // NEW: Get purchase form data (equipment beyond useful life)
   const getPurchaseFormData = () => {
-  const purchaseItems = getEquipmentPurchaseData();
-  
-  return purchaseItems.map(item => ({
-    itemCode: item.itemCode || item.id || 'N/A',
-    unit: item.unit || 'pcs',
-    equipmentName: item.name || 'N/A',
-    description: item.description || item.category || 'N/A',
-    quantity: 1,
-    amount: '',
-    remarks: 'REPLACE' // Add remarks field
-  }));
-};
+    const purchaseItems = getEquipmentPurchaseData();
+    
+    return purchaseItems.map(item => ({
+      itemCode: item.itemCode || item.id || 'N/A',
+      unit: item.unit || 'pcs',
+      equipmentName: item.name || 'N/A',
+      description: item.description || item.category || 'N/A',
+      quantity: 1,
+      amount: '',
+      remarks: 'REPLACE'
+    }));
+  };
 
-  // NEW: Get repair form data (equipment needing maintenance)
   const getRepairFormData = () => {
     const repairItems = getEquipmentMaintenanceData();
     
@@ -322,16 +439,14 @@ function DashboardPage() {
     setShowRepairModal(false);
     setShowOfficeSupplyForm(false);
     setShowOtherSupplyForm(false);
-    // NEW: Close new modals
     setShowPurchaseForm(false);
     setShowRepairForm(false);
   };
 
-  // Process supplies data for pie chart
   const getSupplyStatusData = () => {
     if (!suppliesData.length) {
       return [
-        { name: 'Normal', value: 15, color: supplyColors[0] },
+        {name: 'Normal', value: 15, color: supplyColors[0] },
         { name: 'Understock', value: 5, color: supplyColors[1] },
         { name: 'Overstock', value: 3, color: supplyColors[2] }
       ];
@@ -358,7 +473,6 @@ function DashboardPage() {
     ].filter(item => item.value > 0);
   };
 
-  // Process equipment data for pie chart
   const getEquipmentStatusData = () => {
     if (!equipmentData.length) {
       return [
@@ -390,7 +504,6 @@ function DashboardPage() {
     ].filter(item => item.value > 0);
   };
 
-  // Minimalist label function for Pie Charts
   const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent < 0.05) return null;
 
@@ -414,7 +527,6 @@ function DashboardPage() {
     );
   };
 
-  // Clean tooltip for Pie Charts
   const renderTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
@@ -436,19 +548,6 @@ function DashboardPage() {
     return null;
   };
 
-  // Simple hover effect for Pie Charts
-  const onPieEnter = (data, index, setActiveIndex) => {
-    setActiveIndex(index);
-  };
-
-  const onPieLeave = (setActiveIndex) => {
-    setActiveIndex(null);
-  };
-
-  const supplyChartData = getSupplyStatusData();
-  const equipmentChartData = getEquipmentStatusData();
-
-  // NEW: Custom Tooltip for Line Charts
   const renderLineTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -472,120 +571,153 @@ function DashboardPage() {
     }
     return null;
   };
-  // END NEW: Custom Tooltip for Line Charts
+
+  const onPieEnter = (data, index, setActiveIndex) => {
+    setActiveIndex(index);
+  };
+
+  const onPieLeave = (setActiveIndex) => {
+    setActiveIndex(null);
+  };
+
+  const supplyChartData = getSupplyStatusData();
+  const equipmentChartData = getEquipmentStatusData();
 
   return (
     <section className="dashboard-content-area">
       <div className="dashboard-grid">
-        {/* Top Row: Line Graphs */}
-        <div className="graph-card line-graph-1">
-          <h3>Supplies Forecast (Next 12 Months)</h3> {/* Updated title */}
-          <div style={{ width: '100%', height: '280px' }}>
-            {loading ? (
-              <div className="graph-placeholder">Loading supplies forecast...</div>
-            ) : error ? (
-              <div className="graph-placeholder">Error loading data</div>
-            ) : suppliesForecastData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={suppliesForecastData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-                  <XAxis dataKey="date" stroke={chartColors.axis} tick={{ fill: chartColors.text }} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
-                  <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
-                  <Tooltip content={renderLineTooltip} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="quantity"
-                    stroke={chartColors.primaryLine || '#2e7d32'} // darker green for visibility
-                    strokeWidth={2.5}
-                    activeDot={{ r: 7 }}
-                    name="Forecasted Quantity"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="lower_bound"
-                    stroke={chartColors.secondaryLine || '#1565c0'} // strong blue
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    name="Lower Bound"
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="upper_bound"
-                    stroke={chartColors.accentLine || '#ef6c00'} // orange
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    name="Upper Bound"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="graph-placeholder">No supplies forecast data available.</div>
-            )}
-          </div>
-        </div>
-        <div className="graph-card line-graph-2">
-          <h3>Equipment Forecast (Next 12 Months)</h3> {/* Updated title */}
-          <div style={{ width: '100%', height: '280px' }}>
-            {loading ? (
-              <div className="graph-placeholder">Loading equipment forecast...</div>
-            ) : error ? (
-              <div className="graph-placeholder">Error loading data</div>
-            ) : equipmentForecastData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={equipmentForecastData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-                  <XAxis dataKey="date" stroke={chartColors.axis} tick={{ fill: chartColors.text }} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} />
-                  <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
-                  <Tooltip content={renderLineTooltip} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="quantity"
-                    stroke={chartColors.primaryLine || '#2e7d32'} // darker green for visibility
-                    strokeWidth={2.5}
-                    activeDot={{ r: 7 }}
-                    name="Forecasted Quantity"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="lower_bound"
-                    stroke={chartColors.secondaryLine || '#1565c0'} // strong blue
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    name="Lower Bound"
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="upper_bound"
-                    stroke={chartColors.accentLine || '#ef6c00'} // orange
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    name="Upper Bound"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="graph-placeholder">No equipment forecast data available.</div>
-            )}
-          </div>
-        </div>
-            
+{/* Extended Line Graphs: Supplies + Equipment */}
+<div className="graph-row-extended">
+  <div className="graph-card line-graph-1">
+    <h3>Supplies Trend & Forecast (2023–2025)</h3>
+    <div style={{ width: '100%', height: '400px' }}>
+      {loading ? (
+        <div className="graph-placeholder">Loading supplies forecast...</div>
+      ) : error ? (
+        <div className="graph-placeholder">Error loading data</div>
+      ) : suppliesForecastData.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={suppliesForecastData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <XAxis
+              dataKey="date"
+              stroke={chartColors.axis}
+              tick={{ fill: chartColors.text }}
+              tickFormatter={(tick) =>
+                new Date(tick).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: '2-digit',
+                })
+              }
+            />
+            <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
+            <Tooltip content={renderLineTooltip} />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="quantity"
+              stroke={chartColors.primaryLine || '#2e7d32'}
+              strokeWidth={2.5}
+              activeDot={{ r: 7 }}
+              name="Quantity"
+            />
+            <Line
+              type="monotone"
+              dataKey="lower_bound"
+              stroke={chartColors.secondaryLine || '#1565c0'}
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              name="Lower Bound"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="upper_bound"
+              stroke={chartColors.accentLine || '#ef6c00'}
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              name="Upper Bound"
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="graph-placeholder">No supplies forecast data available.</div>
+      )}
+    </div>
+  </div>
+
+  <div className="graph-card line-graph-2">
+    <h3>Equipment Trend & Forecast (2023–2025)</h3>
+    <div style={{ width: '100%', height: '400px' }}>
+      {loading ? (
+        <div className="graph-placeholder">Loading equipment forecast...</div>
+      ) : error ? (
+        <div className="graph-placeholder">Error loading data</div>
+      ) : equipmentForecastData.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={equipmentForecastData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+            <XAxis
+              dataKey="date"
+              stroke={chartColors.axis}
+              tick={{ fill: chartColors.text }}
+              tickFormatter={(tick) =>
+                new Date(tick).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: '2-digit',
+                })
+              }
+            />
+            <YAxis stroke={chartColors.axis} tick={{ fill: chartColors.text }} />
+            <Tooltip content={renderLineTooltip} />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="quantity"
+              stroke={chartColors.primaryLine || '#2e7d32'}
+              strokeWidth={2.5}
+              activeDot={{ r: 7 }}
+              name="Quantity"
+            />
+            <Line
+              type="monotone"
+              dataKey="lower_bound"
+              stroke={chartColors.secondaryLine || '#1565c0'}
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              name="Lower Bound"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="upper_bound"
+              stroke={chartColors.accentLine || '#ef6c00'}
+              strokeDasharray="5 5"
+              strokeWidth={2}
+              name="Upper Bound"
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="graph-placeholder">No equipment forecast data available.</div>
+      )}
+    </div>
+  </div>
+</div>
+
+
         {/* Middle Row: Pie Charts with Status Tables */}
         <div className="graph-card pie-graph-1">
           <h3>Supply Status Distribution</h3>
           <div style={{ display: 'flex', gap: '20px', height: '280px' }}>
-            {/* Pie Chart */}
             <div style={{ flex: '1', minWidth: '300px' }}>
               {loading ? (
                 <div className="graph-placeholder">Loading supply data...</div>
@@ -627,17 +759,14 @@ function DashboardPage() {
               )}
             </div>
             
-            {/* Status Table */}
             <div style={{ flex: '0 0 250px' }}>
               <div className="status-table-container">
-                <h4
-                  style={{
+                <h4 style={{
                     margin: '0 0 15px 0',
                     color: chartColors.text,
                     fontSize: '14px',
                     fontWeight: 'bold'
-                  }}
-                >
+                  }}>
                    Supply Status Summary
                 </h4>
                 <table className="status-table">
@@ -677,7 +806,6 @@ function DashboardPage() {
         <div className="graph-card pie-graph-2">
           <h3>Equipment Status Distribution</h3>
           <div style={{ display: 'flex', gap: '20px', height: '280px' }}>
-            {/* Pie Chart */}
             <div style={{ flex: '1', minWidth: '300px' }}>
               {loading ? (
                 <div className="graph-placeholder">Loading equipment data...</div>
@@ -719,17 +847,14 @@ function DashboardPage() {
               )}
             </div>
             
-            {/* Status Table */}
             <div style={{ flex: '0 0 250px' }}>
               <div className="status-table-container">
-                <h4
-                  style={{
+                <h4 style={{
                     margin: '0 0 15px 0',
                     color: chartColors.text,
                     fontSize: '14px',
                     fontWeight: 'bold'
-                  }}
-                >
+                  }}>
                   Equipment Status Summary
                 </h4>
                 <table className="status-table">
@@ -1079,68 +1204,7 @@ function DashboardPage() {
         ×
       </button>
 
-      <style>{`
-        .requisition-form-modal * {
-          color: black !important;
-        }
-        .requisition-form-modal input {
-          width: 100% !important;
-          border: none !important;
-          outline: none !important;
-          font-size: 12px !important;
-          color: black !important;
-          background-color: transparent !important;
-          font-family: Arial, sans-serif !important;
-        }
-        .requisition-form-modal input:focus {
-          color: black !important;
-        }
-        .requisition-form-modal .requisition-input-filled {
-          background-color: #f0f8ff !important;
-        }
-        .requisition-form-modal h2,
-        .requisition-form-modal h3,
-        .requisition-form-modal th,
-        .requisition-form-modal td,
-        .requisition-form-modal div,
-        .requisition-form-modal span,
-        .requisition-form-modal strong {
-          color: black !important;
-        }
-
-        /* Print-specific styles */
-        @media print {
-  .print-hidden {
-    display: none !important;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .requisition-form-modal, .requisition-form-modal * {
-    visibility: visible !important;
-  }
-  .requisition-form-modal {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 20px !important;
-    max-width: none !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: white !important;
-  }
-  .requisition-form-modal .requisition-input-filled {
-    background-color: transparent !important;
-  }
-  .requisition-form-modal input {
-    background-color: transparent !important;
-    border: none !important;
-  }
-}
-      `}</style>
+      <style>{requisitionCSS}</style>
       
       {/* Form Header */}
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -1479,68 +1543,7 @@ function DashboardPage() {
       </button>
 
       {/* Same styling and form content as Office Supply form, but with Other Supplies checkbox checked */}
-      <style>{`
-        .requisition-form-modal * {
-          color: black !important;
-        }
-        .requisition-form-modal input {
-          width: 100% !important;
-          border: none !important;
-          outline: none !important;
-          font-size: 12px !important;
-          color: black !important;
-          background-color: transparent !important;
-          font-family: Arial, sans-serif !important;
-        }
-        .requisition-form-modal input:focus {
-          color: black !important;
-        }
-        .requisition-form-modal .requisition-input-filled {
-          background-color: #f0f8ff !important;
-        }
-        .requisition-form-modal h2,
-        .requisition-form-modal h3,
-        .requisition-form-modal th,
-        .requisition-form-modal td,
-        .requisition-form-modal div,
-        .requisition-form-modal span,
-        .requisition-form-modal strong {
-          color: black !important;
-        }
-
-        /* Print-specific styles */
-        @media print {
-  .print-hidden {
-    display: none !important;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .requisition-form-modal, .requisition-form-modal * {
-    visibility: visible !important;
-  }
-  .requisition-form-modal {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 20px !important;
-    max-width: none !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: white !important;
-  }
-  .requisition-form-modal .requisition-input-filled {
-    background-color: transparent !important;
-  }
-  .requisition-form-modal input {
-    background-color: transparent !important;
-    border: none !important;
-  }
-}
-      `}</style>
+      <style>{requisitionCSS}</style>
       
       {/* Form Header */}
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -1877,68 +1880,7 @@ function DashboardPage() {
               ×
             </button>
 
-            <style>{`
-              .purchase-repair-form-modal * {
-                color: black !important;
-              }
-              .purchase-repair-form-modal input {
-                width: 100% !important;
-                border: none !important;
-                outline: none !important;
-                font-size: 12px !important;
-                color: black !important;
-                background-color: transparent !important;
-                font-family: Arial, sans-serif !important;
-              }
-              .purchase-repair-form-modal input:focus {
-                color: black !important;
-              }
-              .purchase-repair-form-modal .form-input-filled {
-                background-color: #f0f8ff !important;
-              }
-              .purchase-repair-form-modal h2,
-              .purchase-repair-form-modal h3,
-              .purchase-repair-form-modal th,
-              .purchase-repair-form-modal td,
-              .purchase-repair-form-modal div,
-              .purchase-repair-form-modal span,
-              .purchase-repair-form-modal strong {
-                color: black !important;
-              }
-
-              @media print {
-  .print-hidden {
-    display: none !important;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .purchase-repair-form-modal, .purchase-repair-form-modal * {
-    visibility: visible !important;
-  }
-  .purchase-repair-form-modal {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 20px !important;
-    max-width: none !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: white !important;
-  }
-  .purchase-repair-form-modal .form-input-filled {
-    background-color: transparent !important;
-  }
-  .purchase-repair-form-modal input {
-    background-color: transparent !important;
-    border: none !important;
-  }
-    
-}
-            `}</style>
+            <style>{purchaseRepairCSS}</style>
 
             {/* Form Header */}
             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -2294,67 +2236,7 @@ function DashboardPage() {
               ×
             </button>
 
-            <style>{`
-              .purchase-repair-form-modal * {
-                color: black !important;
-              }
-              .purchase-repair-form-modal input {
-                width: 100% !important;
-                border: none !important;
-                outline: none !important;
-                font-size: 12px !important;
-                color: black !important;
-                background-color: transparent !important;
-                font-family: Arial, sans-serif !important;
-              }
-              .purchase-repair-form-modal input:focus {
-                color: black !important;
-              }
-              .purchase-repair-form-modal .form-input-filled {
-                background-color: #f0f8ff !important;
-              }
-              .purchase-repair-form-modal h2,
-              .purchase-repair-form-modal h3,
-              .purchase-repair-form-modal th,
-              .purchase-repair-form-modal td,
-              .purchase-repair-form-modal div,
-              .purchase-repair-form-modal span,
-              .purchase-repair-form-modal strong {
-                color: black !important;
-              }
-
-              @media print {
-  .print-hidden {
-    display: none !important;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .purchase-repair-form-modal, .purchase-repair-form-modal * {
-    visibility: visible !important;
-  }
-  .purchase-repair-form-modal {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 20px !important;
-    max-width: none !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: white !important;
-  }
-  .purchase-repair-form-modal .form-input-filled {
-    background-color: transparent !important;
-  }
-  .purchase-repair-form-modal input {
-    background-color: transparent !important;
-    border: none !important;
-  }
-}
-            `}</style>
+            <style>{purchaseRepairCSS}</style>
 
             {/* Form Header */}
             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
