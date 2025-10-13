@@ -1,9 +1,5 @@
 1. Open VS Code
-<<<<<<< HEAD
 (IMPORTANT: DELETE THE EXISTING VENV FOLDER) (BEFORE DOING ALL BELOW)
-=======
-(IMPORTANT: DELETE THE EXISTING "VENV" FOLDER) (BEFORE DOING ALL BELOW)
->>>>>>> 2bf08a3d702eb383f69ba6226a4861b540fc7d28
 
 1. Important: Delete the existing venv folder before doing all the steps below.
 2. Extensions view or Ctrl+Shift+X
