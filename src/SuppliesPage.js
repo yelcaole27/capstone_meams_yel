@@ -1232,6 +1232,7 @@ const handleRemoveImage = async (supplyId) => {
           </div>
           
           <div className="dashboard-actions" style={{ display: 'flex', gap: '10px' }}>
+            {currentUser?.role === 'admin' && (
             <button 
               className="action-btn"
               onClick={handleOpenThresholdModal}
@@ -1244,7 +1245,8 @@ const handleRemoveImage = async (supplyId) => {
               </svg>
               Set Thresholds
             </button>
-            
+            )}
+
             {recommendations.length > 0 && (
               <button 
                 className="action-btn"
