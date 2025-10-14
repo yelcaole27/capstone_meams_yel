@@ -338,7 +338,7 @@ function StaffLayout() {
 
       <main className="main-content">
         <header className="main-header">
-          <h1>Welcome, {fullName}</h1>
+          <h1>MAINTENANCE AND ENGINEERING ASSET MANAGEMENT SYSTEM</h1>
           <div className="header-actions">
             {/* Help & Support Dropdown */}
             <div className="staff-menu-dropdown">
