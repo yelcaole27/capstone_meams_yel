@@ -429,36 +429,15 @@ function MainLayout() {
       </aside>
 
       <main className="main-content">
-        <header className="main-header">
-  {/* ? FIXED: UPPER MAIN HEADER*/}
-  <h1>MAINTENANCE AND ENGINEERING ASSET MANAGEMENT SYSTEM</h1>
+        <header className="main-header" style={{ display: 'flex', alignItems: 'center', paddingLeft: '24px' }}>
+  <div style={{ display: 'flex', alignItems: 'center' }}>
+    {/* Logos: tightly grouped */}
+    <img src="/udm_logo.png" alt="Logo 1" style={{ height: '65px', marginRight: '8px' }} />
+    <img src="/meams_logo.png" alt="Logo 2" style={{ height: '60px', marginRight: '16px' }} />
+    {/* Title: close to logos */}
+    <h1 style={{ margin: 0 }}>MAINTENANCE AND ENGINEERING ASSET MANAGEMENT SYSTEM</h1>
+  </div>
   <div className="header-actions">
-
-    {/* Help & Support Dropdown */}
-    <div className="admin-menu-dropdown">
-      <button className="admin-menu-toggle" onClick={toggleHelpMenu}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M9.09 9C9.3251 8.33167 9.78915 7.76811 10.4 7.40913C11.0108 7.05016 11.7289 6.91894 12.4272 7.03871C13.1255 7.15849 13.7588 7.52152 14.2151 8.06353C14.6713 8.60553 14.9211 9.29152 14.92 10C14.92 12 11.92 13 11.92 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      {showHelpMenu && (
-        <div className="admin-dropdown-content">
-          <a href="#" onClick={(e) => { 
-            e.preventDefault(); 
-            setShowHelpMenu(false); 
-            setShowUserGuideModal(true);
-          }}>User Guide</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); setShowHelpMenu(false); }}>About MED</a>
-          <a href="#" onClick={(e) => { 
-            e.preventDefault(); 
-            setShowHelpMenu(false); 
-            setShowReportModal(true);
-          }}>Report Issue</a>
-        </div>
-      )}
-    </div>
 
     {/* Theme Toggle Button */}
     <button 
