@@ -12,7 +12,9 @@
   --border-color: #333333;
   --hover-bg: #333333;
   --active-bg: #4a4a4a;
-  --accent: #4ade80;
+  --accent: #FFC000;
+  --accent-hover: #ffad00;
+  --accent-glow: rgba(255, 192, 0, 0.2);
 }
 
 .theme-light {
@@ -23,7 +25,9 @@
   --border-color: #dddddd;
   --hover-bg: #e8e8e8;
   --active-bg: #dcdcdc;
-  --accent: #22c55e;
+  --accent: #92400E;
+  --accent-hover: #78350F;
+  --accent-glow: rgba(146, 64, 14, 0.25);
 }
 
 .theme-dark {
@@ -34,7 +38,9 @@
   --border-color: #333333;
   --hover-bg: #333333;
   --active-bg: #4a4a4a;
-  --accent: #4ade80;
+  --accent: #FFC000;
+  --accent-hover: #ffad00;
+  --accent-glow: rgba(255, 192, 0, 0.2);
 }
 
 /* ============================================================
@@ -96,6 +102,13 @@ html, body, #root {
   font-weight: 400;
   letter-spacing: 2px;
   text-align: center;
+  text-shadow: 0 0 20px var(--accent-glow);
+  transition: all 0.3s ease;
+}
+
+.sidebar .logo-text:hover {
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
 }
 
 /* ============================================================
@@ -112,7 +125,7 @@ html, body, #root {
   background: var(--hover-bg);
   border-radius: 50%;
   margin: 0 auto 10px;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,11 +133,13 @@ html, body, #root {
   cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .admin-avatar:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-hover);
   transform: scale(1.05);
+  box-shadow: 0 0 25px var(--accent-glow);
 }
 
 .admin-avatar.uploading {
@@ -179,8 +194,9 @@ html, body, #root {
 }
 
 .avatar-action-btn.change-btn:hover {
-  background: #22c55e;
+  background: var(--accent-hover);
   transform: scale(1.1);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .avatar-action-btn.delete-btn {
@@ -267,7 +283,21 @@ html, body, #root {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 16px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
 }
 
 .nav-item svg {
@@ -282,17 +312,23 @@ html, body, #root {
 }
 
 .nav-item:hover svg {
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .nav-item.active {
-  background: var(--active-bg);
-  color: var(--text-primary);
+  background: linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%);
+  color: var(--accent);
   font-weight: 600;
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+
+.nav-item.active::before {
+  transform: scaleY(1);
 }
 
 .nav-item.active svg {
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 /* ============================================================
@@ -362,6 +398,20 @@ html, body, #root {
   font-size: 25px;
   color: var(--text-primary);
   font-weight: 400;
+  position: relative;
+  padding-left: 15px;
+}
+
+.main-header h1::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 70%;
+  background: var(--accent);
+  border-radius: 2px;
 }
 
 /* Header Actions Container */
@@ -388,9 +438,10 @@ html, body, #root {
 
 .theme-toggle-btn:hover {
   background: var(--active-bg);
-  color: var(--text-primary);
+  color: var(--accent);
   border-color: var(--accent);
   transform: scale(1.05);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .theme-toggle-btn:active {
@@ -444,7 +495,7 @@ html, body, #root {
 }
 
 .admin-menu-toggle:hover {
-  color: var(--text-primary);
+  color: var(--accent);
   background: var(--hover-bg);
 }
 
@@ -464,6 +515,7 @@ html, body, #root {
   border-radius: 10px;
   overflow: hidden;
   margin-top: 10px;
+  border: 1px solid var(--accent-glow);
 }
 
 .admin-dropdown-content a {
@@ -472,12 +524,30 @@ html, body, #root {
   text-decoration: none;
   display: block;
   font-size: 14px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.admin-dropdown-content a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
 }
 
 .admin-dropdown-content a:hover {
   background-color: var(--hover-bg);
-  color: var(--text-primary);
+  color: var(--accent);
+  padding-left: 19px;
+}
+
+.admin-dropdown-content a:hover::before {
+  transform: scaleX(1);
 }
 
 .admin-dropdown-content a:first-child {
