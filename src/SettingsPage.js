@@ -421,14 +421,14 @@ const handleSendReport = async () => {
                 </div>
                 <p>Drag and Drop files here or <span className="choose-file-link">Choose file</span></p>
                 <div className="file-specs">
-                  <small>Supported formats: CSV, XLS, XLSX</small>
-                  <small>Maximum size: 25MB</small>
-                  <small>
+                  <large>Supported formats: CSV, XLS, XLSX</large>
+                  <large>Maximum size: 25MB</large>
+                  <large>
                     {importType === 'supplies' 
                       ? 'Expected columns: name/item_name, category, quantity, supplier, location, status' 
                       : 'Expected columns: name/item_name, description, category, quantity, unit, location, status, serialNo, unit_price'
                     }
-                  </small>
+                  </large>
                 </div>
               </div>
               
@@ -570,28 +570,8 @@ const handleSendReport = async () => {
           )}
         </div>
 
-        {/* Questions/Report Bugs Section - Available to All Users */}
-        <div className="settings-section bugs-section">
-          <h2 className="section-title">QUESTIONS / REPORT BUGS</h2>
-          
-          <textarea
-            className="bug-report-textarea"
-            placeholder="Type here..."
-            value={bugReport}
-            onChange={(e) => setBugReport(e.target.value)}
-            rows={6}
-          />
-          
-          <button className="send-btn" onClick={handleSendReport}>
-            Send
-            <svg className="send-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
       </div>
-    </div>
   );
 }
 
