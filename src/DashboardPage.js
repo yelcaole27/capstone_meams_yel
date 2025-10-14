@@ -973,7 +973,7 @@ function DashboardPage() {
 </div>
 
           <div className="table-card equipment-life-table">
-  <h3>Equipment Beyond Useful Life!</h3>
+  <h3>Equipment Due for Replacement!</h3>
   <table>
     <thead>
       <tr>
