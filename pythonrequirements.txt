@@ -9,7 +9,7 @@ python-multipart
 Pillow
 pydantic[email]
 email-validator
-bcrypt
+bcrypt==3.2.2
 pandas
 openpyxl
 xlrd
