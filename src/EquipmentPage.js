@@ -1869,11 +1869,11 @@ function EquipmentPage() {
               <td className="info-value-cell">{selectedEquipment.itemCode || 'N/A'}</td>
             </tr>
             <tr>
-              <td className="info-label-cell">Description:</td>
-              <td className="info-value-cell">{selectedEquipment.description || 'N/A'}</td>
-              <td className="info-label-cell">PAR No.:</td>
-              <td className="info-value-cell"></td>
-            </tr>
+  <td className="info-label-cell">Description:</td>
+  <td className="info-value-cell">{selectedEquipment.description || 'N/A'}</td>
+  <td className="info-label-cell">Price:</td>
+  <td className="info-value-cell">₱{selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
+</tr>
           </tbody>
         </table>
       </div>
@@ -1962,9 +1962,11 @@ function EquipmentPage() {
                 <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedEquipment.itemCode || 'N/A'}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Description:</td>
-                <td colspan="3" style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedEquipment.description || 'N/A'}</td>
-              </tr>
+  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Description:</td>
+  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedEquipment.description || 'N/A'}</td>
+  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Price Amount:</td>
+  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">₱${selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
+</tr>
             </table>
 
             <table style="width: 100%; border-collapse: collapse; border: 2px solid #333; margin-top: 10px;">
@@ -2154,9 +2156,11 @@ function EquipmentPage() {
                   <td class="print-info-value">${selectedEquipment.itemCode || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <td class="print-info-label">Description:</td>
-                  <td class="print-info-value" colspan="3">${selectedEquipment.description || 'N/A'}</td>
-                </tr>
+  <td class="print-info-label">Description:</td>
+  <td class="print-info-value">${selectedEquipment.description || 'N/A'}</td>
+  <td class="print-info-label">Price Amount:</td>
+  <td class="print-info-value">₱${selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
+</tr>
               </table>
 
               <table class="print-table">
