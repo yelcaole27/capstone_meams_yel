@@ -6,9 +6,10 @@ import './HelpSupport.css';
 function HelpSupport() {
   const { getCurrentUser, authToken } = useAuth();
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState('report'); // Changed default to 'report'
+  const [activeTab, setActiveTab] = useState('report');
   const [bugReport, setBugReport] = useState('');
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [expandedGuide, setExpandedGuide] = useState(null);
   const currentUser = getCurrentUser();
 
   const getAuthToken = () => {
@@ -59,6 +60,24 @@ function HelpSupport() {
     }
   };
 
+  const GuideAccordionItem = ({ title, children, isOpen, onToggle }) => {
+    return (
+      <div className="guide-item">
+        <div className="guide-item-header" onClick={onToggle}>
+          <h4>{title}</h4>
+          <div className={`guide-item-icon ${isOpen ? 'open' : ''}`}>
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div className={`guide-item-content ${isOpen ? 'open' : ''}`}>
+          {children}
+        </div>
+      </div>
+    );
+  };
+   
   return (
     <div className="help-support-container">
       <div className="help-support-header">
@@ -107,55 +126,70 @@ function HelpSupport() {
             <div className="guide-card">
               <h3>Managing Supplies and Equipment</h3>
               
-              <div className="guide-item">
-                <h4>1. Adding Supply</h4>
+              <GuideAccordionItem
+                title="Adding Supply"
+                isOpen={expandedGuide === 'add-supply'}
+                onToggle={() => setExpandedGuide(expandedGuide === 'add-supply' ? null : 'add-supply')}
+              >
                 <ol>
                   <li>Navigate to the Supplies section.</li>
                   <li>Scroll down to find and click the "Add Supply" button.</li>
                   <li>Complete the required information fields.</li>
                   <li>Click Add to save the new supply item.</li>
                 </ol>
-              </div>
+              </GuideAccordionItem>
 
-              <div className="guide-item">
-                <h4>2. Adding Equipment</h4>
+              <GuideAccordionItem
+                title="Adding Equipment"
+                isOpen={expandedGuide === 'add-equipment'}
+                onToggle={() => setExpandedGuide(expandedGuide === 'add-equipment' ? null : 'add-equipment')}
+              >
                 <ol>
                   <li>Go to the Equipment section.</li>
                   <li>Scroll down to locate and click the "Add Equipment" button.</li>
                   <li>Fill in the necessary details about the equipment.</li>
                   <li>Click Add to register the new equipment.</li>
                 </ol>
-              </div>
+              </GuideAccordionItem>
 
-              <div className="guide-item">
-                <h4>3. Updating Supply Quantity</h4>
+              <GuideAccordionItem
+                title="Updating Supply Quantity"
+                isOpen={expandedGuide === 'update-supply'}
+                onToggle={() => setExpandedGuide(expandedGuide === 'update-supply' ? null : 'update-supply')}
+              >
                 <ol>
                   <li>Go to the Supplies section.</li>
                   <li>Click the name of the supply you wish to modify.</li>
                   <li>Select the "Update Supply" button.</li>
                   <li>Enter the exact new amount (quantity) for the supply and save the changes.</li>
                 </ol>
-              </div>
+              </GuideAccordionItem>
 
-              <div className="guide-item">
-                <h4>4. Updating Equipment Details</h4>
+              <GuideAccordionItem
+                title="Updating Equipment Details"
+                isOpen={expandedGuide === 'update-equipment'}
+                onToggle={() => setExpandedGuide(expandedGuide === 'update-equipment' ? null : 'update-equipment')}
+              >
                 <ol>
                   <li>Go to the Equipment section.</li>
                   <li>Click the name of the equipment you want to change.</li>
                   <li>Select the "Update Equipment" button.</li>
                   <li>Adjust the details (e.g., RepairDate, RepairDetails) as needed and save the changes.</li>
                 </ol>
-              </div>
+              </GuideAccordionItem>
 
-              <div className="guide-item">
-                <h4>5. Locating the QR Code Generator</h4>
+              <GuideAccordionItem
+                title="Locating the QR Code Generator"
+                isOpen={expandedGuide === 'qr-code'}
+                onToggle={() => setExpandedGuide(expandedGuide === 'qr-code' ? null : 'qr-code')}
+              >
                 <ol>
                   <li>Navigate to either the Supplies or Equipment section.</li>
                   <li>Click the item name (supply or equipment) for which you need a QR code.</li>
                   <li>You will see and click the "Generate QR Code" button.</li>
                   <li>The system will then display the unique QR code for that specific item.</li>
                 </ol>
-              </div>
+              </GuideAccordionItem>
             </div>
           </div>
         )}
