@@ -18,6 +18,9 @@ function EquipmentPage() {
   const [isEquipmentDocumentViewerOpen, setIsEquipmentDocumentViewerOpen] = useState(false);
   const [equipmentDocumentFiles, setEquipmentDocumentFiles] = useState([]);
   const [equipmentDocDragActive, setEquipmentDocDragActive] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const uniqueCategories = ['All Categories', ...new Set(equipmentData.map(item => item.category))];
 
   // NEW: LCC Analysis State
   const [showLCCAnalysis, setShowLCCAnalysis] = useState(false);
@@ -476,12 +479,17 @@ function EquipmentPage() {
     }
   };
 
-  const filteredEquipment = equipmentData.filter(item =>
-    item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEquipment = equipmentData.filter(item => {
+  const matchesSearch = searchTerm === '' || 
+    item.itemCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.itemName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category?.toLowerCase().includes(searchTerm.toLowerCase());
+  
+  const matchesCategory = selectedCategory === 'All Categories' || item.category === selectedCategory;
+  
+  return matchesSearch && matchesCategory;
+});
 
   const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -977,56 +985,68 @@ function EquipmentPage() {
         </div>
       )}
       
-      <div className="equipment-header">
-        <h2 className="page-title">Equipment Inventory</h2>
-        <div className="table-controls">
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              placeholder="Search by code, name, description, or category..."
-              className="search-input"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 15L21 21M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-
-          <div className="items-per-page-container">
-            <span>Show:</span>
-            <select 
-              className="items-per-page-select" 
-              value={itemsPerPage} 
-              onChange={handleItemsPerPageChange}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-            <span>per page</span>
-          </div>
-
-          <button 
-            className="refresh-btn" 
-            onClick={handleRefreshEquipment}
-            disabled={loading}
-            style={{
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '8px 12px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-        </div>
+        <div className="equipment-header">
+    <h2 className="page-title">Equipment Inventory</h2>
+    <div className="table-controls">
+      <div className="search-input-wrapper">
+        <input
+          type="text"
+          placeholder="Search by code, name, description..."
+          className="search-input"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <svg className="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 15L21 21M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
+
+      <div className="dropdown-container">
+        <button 
+          className="dropdown-toggle"
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        >
+          {selectedCategory}
+          <svg className="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        
+        {isDropdownOpen && (
+          <div className="dropdown-menu">
+            {uniqueCategories.map(category => (
+              <div 
+                key={category}
+                className="dropdown-item"
+                onClick={() => {
+                  setSelectedCategory(category);
+                  setIsDropdownOpen(false);
+                }}
+              >
+                {category}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="items-per-page-container">
+        <span>Show:</span>
+        <select 
+          className="items-per-page-select" 
+          value={itemsPerPage} 
+          onChange={handleItemsPerPageChange}
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+        <span>per page</span>
+      </div>
+    </div>
+  </div>
 
       {equipmentData.length === 0 && !loading ? (
         <div style={{ 
