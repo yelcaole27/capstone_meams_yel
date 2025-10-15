@@ -75,7 +75,7 @@ html, body, #root {
 .sidebar {
   width: 250px;
   background: var(--sidebar-bg);
-  padding: 30px 20px;
+  padding: 15px 20px 30px 20px;;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -92,24 +92,35 @@ html, body, #root {
 }
 
 .sidebar .logo {
-  margin-bottom: 30px;
+  margin-bottom: 10px;
+}
+
+/* Target the Link wrapper to remove any default link styling */
+.sidebar .logo a {
+  text-decoration: none;
+  color: inherit;
 }
 
 .sidebar .logo-text {
   font-family: 'Koulen', cursive;
   font-size: 32px;
-  color: var(--text-primary);
+  color: var(--text-primary); /* White/default color */
   font-weight: 400;
   letter-spacing: 2px;
   text-align: center;
   text-shadow: 0 0 20px var(--accent-glow);
   transition: all 0.3s ease;
+  margin: 0;
+  cursor: pointer;
 }
 
-.sidebar .logo-text:hover {
+/* Hover effect - glows in accent color and scales up */
+.sidebar .logo a:hover .logo-text {
   color: var(--accent);
   text-shadow: 0 0 30px var(--accent-glow);
+  transform: scale(1.05);
 }
+
 
 /* ============================================================
    ADMIN INFO & AVATAR
@@ -407,7 +418,7 @@ html, body, #root {
 
 .main-header h1 {
   font-family: 'Koulen', cursive;
-  font-size: 25px;
+  font-size: 35px;
   color: var(--text-primary);
   font-weight: 400;
   position: relative;
