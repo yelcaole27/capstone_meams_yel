@@ -343,31 +343,43 @@ html, body, #root {
 
 .sign-out-btn {
   width: 100%;
-  background: none;
+  background: transparent !important;
   border: none;
+  border-left: 3px solid transparent;
   display: flex;
   align-items: center;
-  padding: 12px 15px;
+  padding: 12px 12px;
   border-radius: 10px;
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .sign-out-btn svg {
   margin-right: 12px;
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
   transition: color 0.2s ease;
 }
 
 .sign-out-btn:hover {
-  background: var(--hover-bg);
-  color: var(--text-primary);
+  background: var(--hover-bg) !important;
+  color: var(--text-primary) !important;
 }
 
 .sign-out-btn:hover svg {
-  color: var(--text-primary);
+  color: var(--accent) !important;
+}
+
+.sign-out-btn:active {
+  background: linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%) !important;
+  color: var(--accent) !important;
+  border-left: 3px solid var(--accent);
+  font-weight: 600;
+}
+
+.sign-out-btn:active svg {
+  color: var(--accent) !important;
 }
 
 /* ============================================================
