@@ -362,7 +362,7 @@ const handleSendReport = async () => {
   return (
     <div className="settings-page-container">
       <div className="settings-header">
-        <h1 className="settings-title">DATA TRANSFER</h1>
+        <h1 className="settings-title">Data Transfer</h1>
         {currentUser && (
           <div className="user-info" style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
             Logged in as: {currentUser.username} ({currentUser.role})
