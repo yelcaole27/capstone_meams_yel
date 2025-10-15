@@ -323,12 +323,12 @@ html, body, #root {
 }
 
 .nav-item:hover svg {
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 .nav-item.active {
   background: linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%);
-  color: var(--accent);
+  color: var(--text-primary) !important;
   font-weight: 600;
   border-left: 3px solid var(--accent);
   padding-left: 12px;
@@ -339,7 +339,7 @@ html, body, #root {
 }
 
 .nav-item.active svg {
-  color: var(--accent);
+  color: var(--text-primary) !important;
 }
 
 /* ============================================================
