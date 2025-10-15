@@ -95,21 +95,46 @@ html, body, #root {
   margin-bottom: 30px;
 }
 
+.staff-sidebar .logo a {
+  text-decoration: none;
+  color: inherit;
+}
+
 .staff-sidebar .logo-text {
   font-family: 'Koulen', cursive;
   font-size: 32px;
-  color: var(--text-primary);
+  color: var(--text-primary); /* White/default color */
   font-weight: 400;
   letter-spacing: 2px;
   text-align: center;
   text-shadow: 0 0 20px var(--accent-glow);
   transition: all 0.3s ease;
+  margin: 0;
+  cursor: pointer;
 }
 
-.staff-sidebar .logo-text:hover {
+/* Hover effect - accent color with glow */
+.staff-sidebar .logo a:hover .logo-text {
   color: var(--accent);
   text-shadow: 0 0 30px var(--accent-glow);
+  transform: scale(1.05);
 }
+
+/* Active and visited states - keep white/default color */
+.staff-sidebar .logo a:active .logo-text,
+.staff-sidebar .logo a:visited .logo-text,
+.staff-sidebar .logo a:focus .logo-text {
+  color: var(--text-primary);
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* Override visited hover to still show accent color */
+.staff-sidebar .logo a:visited:hover .logo-text {
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
+  transform: scale(1.05);
+}
+
 
 /* ============================================================
    STAFF INFO & AVATAR
