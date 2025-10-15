@@ -1416,3 +1416,80 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
+/* Add these styles to your SuppliesPage.css to remove black outlines */
+
+/* Remove black borders from select dropdowns in the overlay */
+.overlay-content .category-dropdown select,
+.overlay-content .form-group select {
+  border: 1px solid #ccc !important;
+  outline: none;
+  box-shadow: none;
+}
+
+.overlay-content .category-dropdown select:focus,
+.overlay-content .form-group select:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Remove black borders from all form inputs in overlay */
+.overlay-content .form-group input,
+.overlay-content .form-group textarea {
+  border: 1px solid #ccc !important;
+  outline: none;
+  box-shadow: none;
+}
+
+.overlay-content .form-group input:focus,
+.overlay-content .form-group textarea:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Polish the date input specifically */
+.overlay-content .date-input {
+  border: 1px solid #ccc !important;
+  outline: none;
+  box-shadow: none;
+}
+
+.overlay-content .date-input:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Remove outline from buttons */
+.overlay-content button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+/* Polish file drop zone border */
+.file-drop-zone {
+  border: 2px dashed #ccc !important;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-active {
+  border-color: #007bff !important;
+}
+
+/* Ensure category dropdown wrapper doesn't have black border */
+.overlay-content .category-dropdown {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+/* Update the category dropdown select appearance */
+.overlay-content .category-dropdown select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  background-color: white;
+}

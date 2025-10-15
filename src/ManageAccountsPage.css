@@ -843,12 +843,6 @@ input:checked + .slider:before {
   border: 1px solid #9ae6b4;
 }
 
-.loading-spinner {
-  text-align: center;
-  padding: 20px;
-  color: #666;
-}
-
 .modal-error {
   background-color: #fee;
   color: #c53030;

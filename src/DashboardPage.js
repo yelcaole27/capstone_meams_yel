@@ -261,8 +261,8 @@ function DashboardPage() {
   const understockData = getUnderstockData();
   const equipmentLifeData = getEquipmentBeyondLifeData();
 
-  const supplyColors = ['#4CAF50', '#F44336', '#FF9800'];
-  const equipmentColors = ['#4CAF50', '#FF9800', '#F44336'];
+ const supplyColors = ['#4CAF50', '#F44336', '#FF9800'];
+const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -786,7 +786,11 @@ function DashboardPage() {
                       ))}
                     </Pie>
                     <Tooltip content={renderTooltip} />
-                    <Legend />
+                    <Legend 
+  formatter={(value) => <span style={{ color: chartColors.text }}>{value}</span>}
+  iconSize={25}
+  wrapperStyle={{ fontSize: '14px' }}
+/>
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -874,7 +878,11 @@ function DashboardPage() {
                       ))}
                     </Pie>
                     <Tooltip content={renderTooltip} />
-                    <Legend />
+                    <Legend 
+  formatter={(value) => <span style={{ color: chartColors.text }}>{value}</span>}
+  iconSize={25}
+  wrapperStyle={{ fontSize: '14px' }}
+/>
                   </PieChart>
                 </ResponsiveContainer>
               )}

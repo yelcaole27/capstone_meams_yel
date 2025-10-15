@@ -421,3 +421,7 @@
     height: 350px;
   }
 }
+
+.recharts-legend-item-text {
+  color: #ffffff !important;
+}

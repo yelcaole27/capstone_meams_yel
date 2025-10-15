@@ -295,8 +295,9 @@ function LogsPage() {
       {/* Loading state */}
       {loading && (
         <div className="loading-message">
-          <div className="loading-spinner"></div>
-          Loading logs...
+          <div className="loading-state">
+            <h2>Loading Logs...</h2>
+            </div>
         </div>
       )}
 

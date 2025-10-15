@@ -949,7 +949,6 @@ function EquipmentPage() {
       <div className="equipment-page-container">
         <div className="loading-state">
           <h2>Loading equipment...</h2>
-          <p>Please wait while we fetch equipment data from the database.</p>
         </div>
       </div>
     );

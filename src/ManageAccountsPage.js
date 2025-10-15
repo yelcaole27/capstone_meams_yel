@@ -540,8 +540,6 @@ function ManageAccountsPage() {
         </button>
       </div>
 
-      {loading && <div className="loading-spinner">Loading...</div>}
-
       <div className="account-cards-grid">
         {accounts.map((account) => (
           <div 

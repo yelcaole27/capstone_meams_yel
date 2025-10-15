@@ -474,11 +474,11 @@
 }
 
 .currency-symbol {
-  position: absolute;
+ position: absolute;
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-primary) !important;
+  color: #333 !important;
   font-weight: bold;
   z-index: 2;
   pointer-events: none;
@@ -498,7 +498,7 @@
   right: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-primary) !important;
+  color: #333 !important;
   font-size: 12px;
   pointer-events: none;
   z-index: 2;
@@ -1674,4 +1674,77 @@
 .item-overview-actions .action-btn svg {
   stroke: currentColor;
   fill: none;
+}
+
+.add-equipment-content .amount-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.add-equipment-content .useful-life-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.add-equipment-content .amount-container input {
+  padding-left: 35px !important;
+}
+
+.add-equipment-content .useful-life-container input {
+  padding-right: 60px !important;
+}
+
+/* Remove black borders from all select dropdowns */
+.add-equipment-content select {
+  border: 1px solid #ccc !important;
+  box-shadow: none !important;
+}
+
+.add-equipment-content select:focus {
+  outline: none;
+  border-color: #007bff !important;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Remove black borders from all text inputs */
+.add-equipment-content input[type="text"],
+.add-equipment-content input[type="number"],
+.add-equipment-content input[type="date"] {
+  border: 1px solid #ccc !important;
+  box-shadow: none !important;
+}
+
+.add-equipment-content input:focus {
+  outline: none;
+  border-color: #007bff !important;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Remove black borders from textarea */
+.add-equipment-content textarea {
+  border: 1px solid #ccc !important;
+  box-shadow: none !important;
+}
+
+.add-equipment-content textarea:focus {
+  outline: none;
+  border-color: #007bff !important;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Remove button focus outlines */
+.add-equipment-content button:focus {
+  outline: none;
+}
+
+/* Polish file drop zone border */
+.add-equipment-content .file-drop-zone {
+  border: 2px dashed #ccc !important;
+}
+
+.add-equipment-content .file-drop-zone:hover,
+.add-equipment-content .file-drop-zone.drag-active {
+  border-color: #007bff !important;
 }

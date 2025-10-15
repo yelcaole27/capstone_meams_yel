@@ -102,6 +102,98 @@ async def logout(request: Request, token: str = Depends(get_current_user)):
     await create_log_entry(username, "Logged out.", "", client_ip)
     return {"message": "Successfully logged out"}
 
+@router.post("/api/auth/refresh")
+async def refresh_token(request: Request, token: str = Depends(get_current_user)):
+    """
+    Refresh JWT token endpoint
+    Validates current token and issues a new one with extended expiration
+    """
+    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
+    
+    try:
+        # Verify the current token
+        payload = verify_token(token)
+        username = payload["username"]
+        role = payload["role"]
+        
+        # Get user from database to verify account is still active
+        accounts_collection = get_accounts_collection()
+        
+        # Check if it's a hardcoded user or database user
+        from config import HARDCODED_USERS
+        
+        if username in HARDCODED_USERS:
+            user = {
+                "username": username,
+                "role": HARDCODED_USERS[username]["role"],
+                "status": True,
+                "_id": "hardcoded"
+            }
+        else:
+            user = accounts_collection.find_one({"username": username})
+        
+        # Verify user still exists and is active
+        if not user:
+            await create_log_entry(
+                username,
+                "Token refresh failed.",
+                "User not found",
+                client_ip
+            )
+            raise HTTPException(
+                status_code=401,
+                detail="User not found"
+            )
+        
+        # Check if account is still active
+        if user.get("status") == False:
+            await create_log_entry(
+                username,
+                "Token refresh failed.",
+                "Account is deactivated",
+                client_ip
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Account has been deactivated"
+            )
+        
+        # Create new access token with fresh expiration
+        new_access_token = create_access_token(
+            data={
+                "sub": username,
+                "role": role,
+                "userId": str(user["_id"])
+            }
+        )
+        
+        await create_log_entry(
+            username,
+            "Token refreshed.",
+            f"New token issued for role: {role}",
+            client_ip
+        )
+        
+        return {
+            "access_token": new_access_token,
+            "token_type": "bearer"
+        }
+        
+    except HTTPException as e:
+        # Re-raise HTTP exceptions
+        raise e
+    except Exception as e:
+        await create_log_entry(
+            "unknown",
+            "Token refresh error.",
+            str(e),
+            client_ip
+        )
+        raise HTTPException(
+            status_code=401,
+            detail="Could not refresh token"
+        )
+
 @router.post("/change-password")
 async def change_password_api(
     password_data: PasswordChangeRequest,
