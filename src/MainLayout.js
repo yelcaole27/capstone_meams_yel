@@ -278,7 +278,7 @@ function MainLayout() {
   const hasAdminAccess = localStorage.getItem('adminToken');
 
   return (
-    <div className="main-layout-container">
+    <div className={`main-layout-container ${theme === 'light' ? 'theme-light' : 'theme-dark'}`}>
       <aside className="sidebar">
         <div className="logo">
         <Link to="/dashboard" style={{ textDecoration: 'none' }}>
