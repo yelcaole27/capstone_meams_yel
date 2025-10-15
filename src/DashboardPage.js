@@ -151,6 +151,31 @@ function DashboardPage() {
     }
   `;
 
+  const pluralizeUnit = (unit, quantity) => {
+  const qty = parseInt(quantity) || 0;
+  
+  // If quantity is 1 or less, return singular
+  if (qty <= 1) return unit;  // ← Checks ONLY the number
+  
+  // Your exact unit pluralization rules
+  const lowerUnit = unit.toLowerCase();
+  
+  const plurals = {
+    'piece': 'pieces',
+    'pack': 'packs',
+    'box': 'boxes',
+    'bottle': 'bottles',
+    'gallon': 'gallons',
+    'set': 'sets',
+    'roll': 'rolls',
+    'bag': 'bags',
+    'meter': 'meters',
+    'ream': 'reams'
+  };
+  
+  return plurals[lowerUnit] || unit;
+};
+
   const getUnderstockData = () => {
     return suppliesData.filter(supply => {
       const status = supply.status || '';
@@ -369,34 +394,42 @@ function DashboardPage() {
   };
 
   const getOtherRequisitionData = () => {
-    const otherSupplyCategories = ['construction supply', 'sanitary supply', 'electrical supply'];
-    const otherUnderstockItems = understockData.filter(item => {
-      const category = (item.category || '').toLowerCase();
-      return otherSupplyCategories.some(cat => category.includes(cat));
-    });
+  const otherSupplyCategories = ['construction supply', 'sanitary supply', 'electrical supply'];
+  const otherUnderstockItems = understockData.filter(item => {
+    const category = (item.category || '').toLowerCase();
+    return otherSupplyCategories.some(cat => category.includes(cat));
+  });
 
-    return otherUnderstockItems.map(item => ({
-      qty: item.quantity || item.currentStock || 0,
-      unit: item.unit || 'pcs',
+  return otherUnderstockItems.map(item => {
+    const qty = item.quantity || item.currentStock || 0;
+    const baseUnit = item.unit || item.unitType || 'piece';
+    return {
+      qty: qty,
+      unit: pluralizeUnit(baseUnit, qty),
       description: item.name || item.itemName || 'N/A',
       remarks: ''
-    }));
-  };
+    };
+  });
+};
 
   const getRequisitionData = () => {
-    const officeSupplyCategories = ['office supply'];
-    const officeUnderstockItems = understockData.filter(item => {
-      const category = (item.category || '').toLowerCase();
-      return officeSupplyCategories.some(cat => category.includes(cat));
-    });
+  const officeSupplyCategories = ['office supply'];
+  const officeUnderstockItems = understockData.filter(item => {
+    const category = (item.category || '').toLowerCase();
+    return officeSupplyCategories.some(cat => category.includes(cat));
+  });
 
-    return officeUnderstockItems.map(item => ({
-      qty: item.quantity || item.currentStock || 0,
-      unit: item.unit || 'pcs',
+  return officeUnderstockItems.map(item => {
+    const qty = item.quantity || item.currentStock || 0;
+    const baseUnit = item.unit || item.unitType || 'piece';
+    return {
+      qty: qty,
+      unit: pluralizeUnit(baseUnit, qty),
       description: item.name || item.itemName || 'N/A',
       remarks: ''
-    }));
-  };
+    };
+  });
+};
 
   const handleRepairChoice = (choice) => {
     console.log(`Selected repair type: ${choice}`);
