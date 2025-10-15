@@ -223,7 +223,9 @@ function StaffLayout() {
     <div className="staff-layout-container">
       <aside className="staff-sidebar">
         <div className="logo">
-          <h1 className="logo-text">MEAMS</h1>
+        <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+        <h1 className="logo-text">MEAMS</h1>
+        </Link>
         </div>
 
         <div className="staff-info">
