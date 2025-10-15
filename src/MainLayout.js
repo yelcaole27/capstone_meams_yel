@@ -405,7 +405,7 @@ function MainLayout() {
                   <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" />
                   <path d="M7 16.5L13.5 23L22 14.5L15.5 8L7 16.5Z" fill="currentColor" />
                 </svg>
-                Data
+                Data Transfer
               </Link>
             </li>
               <li>
