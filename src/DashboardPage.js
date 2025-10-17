@@ -27,6 +27,7 @@ function DashboardPage() {
   const [showOtherSupplyForm, setShowOtherSupplyForm] = useState(false);
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [showRepairForm, setShowRepairForm] = useState(false);
+  const { theme } = useTheme()
 
   // Extracted CSS constants to fix ESLint parsing issues with inline template literals
   const requisitionCSS = `
@@ -621,15 +622,15 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
       <div className="dashboard-grid">
 {/* Extended Line Graphs: Supplies + Equipment */}
 <div className="graph-row-extended">
-  <div className="graph-card line-graph-1">
-    <h3>Supplies Trend & Forecast (2023–2025)</h3>
+  <div className="graph-card line-graph-1" >
+    <h3>Supplies Trend & Forecast (2024–2025)</h3>
     <div style={{ width: '100%', height: '400px' }}>
       {loading ? (
         <div className="graph-placeholder">Loading supplies forecast...</div>
       ) : error ? (
         <div className="graph-placeholder">Error loading data</div>
       ) : suppliesForecastData.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" >
           <LineChart
             data={suppliesForecastData}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -664,6 +665,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
               strokeDasharray="5 5"
               strokeWidth={2}
               name="Lower Bound"
+
               dot={false}
             />
             <Line
@@ -684,7 +686,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   </div>
 
   <div className="graph-card line-graph-2">
-    <h3>Equipment Trend & Forecast (2023–2025)</h3>
+    <h3>Equipment Trend & Forecast (2024–2025)</h3>
     <div style={{ width: '100%', height: '400px' }}>
       {loading ? (
         <div className="graph-placeholder">Loading equipment forecast...</div>
