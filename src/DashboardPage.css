@@ -423,6 +423,6 @@
   }
 }
 
-.recharts-legend-item-text{
-  color: #ffffff !important;
+.recharts-legend-item-text {
+  color: var(--text-primary) !important;
 }
