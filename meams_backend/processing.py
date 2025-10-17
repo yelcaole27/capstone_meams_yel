@@ -11,7 +11,7 @@ def bootstrap_years(df: pd.DataFrame, date_col='date', value_col='quantity',
                     start_year=2021, end_year=2024, noise_level=0.05) -> pd.DataFrame:
     """
     Bootstrap synthetic years from a single year (e.g., 2023) by adding noise.
-    Returns a dataset spanning start_year–end_year.
+    Returns a dataset spanning start_yearâ€"end_year.
     """
     df[date_col] = pd.to_datetime(df[date_col])
     df = df.set_index(date_col).sort_index()
@@ -72,6 +72,7 @@ def generate_sarima_forecast(df: pd.DataFrame, date_col='date', value_col='quant
                              n_periods=12, seasonal_period=12) -> pd.DataFrame:
     """
     Fit SARIMA model and forecast next n_periods months.
+    Uses SARIMA confidence intervals but expands them to at least ±15% for visibility.
     """
     if df.empty or len(df) < 12:
         return pd.DataFrame(columns=[date_col, value_col, 'lower_bound', 'upper_bound'])
@@ -95,11 +96,27 @@ def generate_sarima_forecast(df: pd.DataFrame, date_col='date', value_col='quant
     last_date = df.index.max()
     forecast_dates = [last_date + pd.DateOffset(months=i) for i in range(1, n_periods + 1)]
 
+    # Extract confidence intervals
+    lower_bound = conf_int.iloc[:, 0].values.clip(min=0)
+    upper_bound = conf_int.iloc[:, 1].values.clip(min=0)
+    forecast_values = forecast_mean.values
+
+    # Ensure bounds are meaningful: at least ±15% of the forecast value
+    # This prevents SARIMA's tight bounds from appearing invisible
+    for i in range(len(forecast_values)):
+        min_lower = forecast_values[i] * 0.85  # At least 15% below
+        max_upper = forecast_values[i] * 1.15  # At least 15% above
+        
+        if lower_bound[i] > min_lower:
+            lower_bound[i] = min_lower
+        if upper_bound[i] < max_upper:
+            upper_bound[i] = max_upper
+
     forecast_df = pd.DataFrame({
         date_col: forecast_dates,
-        value_col: forecast_mean.values,
-        'lower_bound': conf_int.iloc[:, 0].values.clip(min=0),
-        'upper_bound': conf_int.iloc[:, 1].values.clip(min=0)
+        value_col: forecast_values,
+        'lower_bound': lower_bound,
+        'upper_bound': upper_bound
     })
 
     return forecast_df
