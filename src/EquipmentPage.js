@@ -1335,7 +1335,7 @@ function EquipmentPage() {
 
 
               <div className="form-group">
-                 <label>DATE:</label>
+                 <label>DATE OF RECEIPT:</label>
                  <input
                   type="date"
                   name="date"
