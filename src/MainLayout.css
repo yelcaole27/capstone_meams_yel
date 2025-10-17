@@ -418,7 +418,7 @@ html, body, #root {
 
 .main-header h1 {
   font-family: 'Koulen', cursive;
-  font-size: 35px;
+  font-size: 30px;
   color: var(--text-primary);
   font-weight: 400;
   position: relative;
