@@ -44,6 +44,7 @@
   margin-bottom: 10px;
   font-weight: 600;
   text-align: center;
+  
 }
 
 .graph-placeholder {
@@ -422,6 +423,6 @@
   }
 }
 
-.recharts-legend-item-text {
+.recharts-legend-item-text{
   color: #ffffff !important;
 }
