@@ -9,12 +9,11 @@ app = FastAPI(title=API_TITLE, version=API_VERSION)
 
 @app.get("/")
 async def root():
-    return {
-        "message": "MEAMS API is running!",
-        "status": "active",
-        "version": API_VERSION
-    }
+    return {"message": "API is working!", "status": "ok"}
 
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
