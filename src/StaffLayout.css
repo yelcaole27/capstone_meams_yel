@@ -1,0 +1,574 @@
+/* StaffLayout.css */
+@import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
+
+/* ============================================================
+   THEME VARIABLES (Shared with MainLayout)
+   ============================================================ */
+:root {
+  --background: #2a2a2a;
+  --sidebar-bg: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #333333;
+  --hover-bg: #333333;
+  --active-bg: #4a4a4a;
+  --accent: #FFC000;
+  --accent-hover: #ffad00;
+  --accent-glow: rgba(255, 192, 0, 0.2);
+}
+
+.theme-light {
+  --background: #f5f5f5;
+  --sidebar-bg: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #444444;
+  --border-color: #dddddd;
+  --hover-bg: #e8e8e8;
+  --active-bg: #dcdcdc;
+  --accent: #FFC000;
+  --accent-hover: #ffad00;
+  --accent-glow: rgba(255, 192, 0, 0.15);
+}
+
+.theme-dark {
+  --background: #2a2a2a;
+  --sidebar-bg: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #333333;
+  --hover-bg: #333333;
+  --active-bg: #4a4a4a;
+  --accent: #FFC000;
+  --accent-hover: #ffad00;
+  --accent-glow: rgba(255, 192, 0, 0.2);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  overflow: hidden;
+}
+
+.staff-layout-container {
+  display: flex;
+  height: 100vh;
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   SIDEBAR STYLES
+   ============================================================ */
+.staff-sidebar {
+  width: 250px;
+  background: var(--sidebar-bg);
+  padding: 15px 20px 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid var(--border-color);
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.staff-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.staff-sidebar .logo {
+  margin-bottom: 30px;
+}
+
+.staff-sidebar .logo a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.staff-sidebar .logo-text {
+  font-family: 'Koulen', cursive;
+  font-size: 32px;
+  color: var(--text-primary); /* White/default color */
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-align: center;
+  text-shadow: 0 0 20px var(--accent-glow);
+  transition: all 0.3s ease;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Hover effect - accent color with glow */
+.staff-sidebar .logo a:hover .logo-text {
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
+  transform: scale(1.05);
+}
+
+/* Active and visited states - keep white/default color */
+.staff-sidebar .logo a:active .logo-text,
+.staff-sidebar .logo a:visited .logo-text,
+.staff-sidebar .logo a:focus .logo-text {
+  color: var(--text-primary);
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* Override visited hover to still show accent color */
+.staff-sidebar .logo a:visited:hover .logo-text {
+  color: var(--accent);
+  text-shadow: 0 0 30px var(--accent-glow);
+  transform: scale(1.05);
+}
+
+
+/* ============================================================
+   STAFF INFO & AVATAR
+   ============================================================ */
+.staff-info {
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.staff-avatar {
+  width: 80px;
+  height: 80px;
+  background: var(--hover-bg);
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  border: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.staff-avatar:hover {
+  border-color: var(--accent-hover);
+  transform: scale(1.05);
+  box-shadow: 0 0 25px var(--accent-glow);
+}
+
+.staff-avatar.uploading {
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: color 0.3s ease;
+}
+
+.staff-avatar:hover .avatar-placeholder {
+  color: var(--accent);
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: var(--accent);
+}
+
+.staff-avatar:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.staff-avatar.uploading .avatar-overlay {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.avatar-action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.avatar-action-btn.delete-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.avatar-action-btn.delete-btn:hover {
+  background: #dc2626;
+  color: white;
+  transform: scale(1.1);
+}
+
+.upload-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--hover-bg);
+  border-top: 2px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.staff-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   NAVIGATION MENU
+   ============================================================ */
+.nav-menu {
+  width: 100%;
+  flex: 1;
+}
+
+.nav-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-menu li {
+  margin-bottom: 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.nav-item svg {
+  margin-right: 12px;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.nav-item:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.nav-item:hover svg {
+  color: var(--accent);
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%);
+  color: var(--accent);
+  font-weight: 600;
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+
+.nav-item.active::before {
+  transform: scaleY(1);
+}
+
+.nav-item.active svg {
+  color: var(--accent);
+}
+
+/* ============================================================
+   SIGN OUT
+   ============================================================ */
+.sign-out {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sign-out-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sign-out-btn svg {
+  margin-right: 12px;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.sign-out-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.sign-out-btn:hover svg {
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main-content {
+  flex: 1;
+  background: var(--background);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 30px 30px 20px 30px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--background);
+}
+
+.main-header h1 {
+  font-family: 'Koulen', cursive;
+  font-size: 30px;
+  color: var(--text-primary);
+  font-weight: 400;
+  position: relative;
+  padding-left: 15px;
+}
+
+.main-header h1::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 70%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* Header Actions Container */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: var(--hover-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--active-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle-btn:hover svg {
+  transform: rotate(20deg);
+}
+
+/* Scrollable Content Area */
+.main-content-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 30px 30px 30px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.main-content-scrollable::-webkit-scrollbar {
+  display: none;
+}
+
+.main-content-scrollable > * {
+  min-height: max-content;
+}
+
+/* ============================================================
+   STAFF MENU DROPDOWN
+   ============================================================ */
+.staff-menu-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.staff-menu-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-menu-toggle:hover {
+  color: var(--accent);
+  background: var(--hover-bg);
+}
+
+.staff-menu-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.staff-dropdown-content {
+  position: absolute;
+  background-color: var(--sidebar-bg);
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+  z-index: 1;
+  right: 0;
+  top: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+  border: 1px solid var(--accent-glow);
+}
+
+.staff-dropdown-content a {
+  color: var(--text-secondary);
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.staff-dropdown-content a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.staff-dropdown-content a:hover {
+  background-color: var(--hover-bg);
+  color: var(--accent);
+  padding-left: 19px;
+}
+
+.staff-dropdown-content a:hover::before {
+  transform: scaleX(1);
+}
+
+.staff-dropdown-content a:first-child {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.staff-dropdown-content a:last-child {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.main-content > div {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}

@@ -1,0 +1,344 @@
+/* ProfileModal.css - Updated with theme variables */
+.profile-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.profile-modal-content {
+  background: var(--sidebar-bg);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+}
+
+.profile-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.profile-modal-header h2 {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-modal-header h2 svg {
+  color: #4ade80;
+}
+
+.profile-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.profile-modal-close:hover {
+  color: var(--text-primary);
+  background-color: var(--hover-bg);
+}
+
+.profile-message {
+  margin: 0 24px 20px 24px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.profile-message.success {
+  background-color: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.profile-message.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.profile-modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.profile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--hover-bg);
+  border-top: 3px solid #4ade80;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--background);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.profile-user-info h3 {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.profile-role {
+  color: #4ade80;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+  text-transform: capitalize;
+}
+
+.profile-department {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+.profile-details {
+  display: grid;
+  gap: 20px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-field label {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.profile-field p {
+  color: var(--text-primary);
+  font-size: 16px;
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--background);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.profile-input {
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--text-primary);
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
+}
+
+.profile-input.disabled {
+  background: var(--hover-bg);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.profile-field-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.password-change-section {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--background);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.password-change-section h4 {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+}
+
+.password-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.profile-modal-footer {
+  padding: 0 24px 24px 24px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 24px;
+  margin-top: 24px;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: #4ade80;
+  color: #000000;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #22c55e;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background: var(--hover-bg);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--hover-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--active-bg);
+  color: var(--text-primary);
+}
+
+.btn-secondary:disabled {
+  background: var(--background);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .profile-modal-overlay {
+    padding: 10px;
+  }
+  
+  .profile-modal-content {
+    max-height: 95vh;
+  }
+  
+  .profile-avatar-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .profile-actions,
+  .password-actions {
+    flex-direction: column;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Scrollbar styling for modal content */
+.profile-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.profile-modal-content::-webkit-scrollbar-track {
+  background: var(--sidebar-bg);
+}
+
+.profile-modal-content::-webkit-scrollbar-thumb {
+  background: var(--hover-bg);
+  border-radius: 3px;
+}
+
+.profile-modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--active-bg);
+}

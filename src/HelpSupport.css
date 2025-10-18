@@ -1,0 +1,567 @@
+/* Help & Support Container */
+.help-support-container {
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Header Section */
+.help-support-header {
+  padding: 40px 40px 30px 40px;
+  background: var(--card-background);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.help-support-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.help-support-header p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Tabs Section */
+.help-support-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--card-background);
+  border-bottom: 2px solid var(--border-color);
+  padding: 0 40px;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+  position: relative;
+  top: 2px;
+}
+
+.tab-button:hover {
+  color: #FFC000;
+  background: var(--hover-background);
+}
+
+.tab-button.active {
+  color: #FFC000;
+  border-bottom-color: #FFC000;
+}
+
+.tab-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Content Section */
+.help-support-content {
+  padding: 40px;
+}
+
+/* User Guide Styles */
+.user-guide-section {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.guide-card {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 70px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.guide-card > h3 {
+  font-size: 27px;
+  font-weight: 600;
+  margin: 0 0 35px 0;
+  color: var(--text-primary);
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+/* DARK MODE ACCORDION STYLES */
+.theme-dark .guide-item,
+:root .guide-item {
+  margin-bottom: 16px;
+  border: 2px solid #5c594ed3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(255, 192, 0, 0.2) 0%, transparent 100%);
+  box-shadow: 0 2px 8px rgba(0, 255, 55, 0.1);
+}
+
+.theme-dark .guide-item-header,
+:root .guide-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  background: #1e1e1e;
+  transition: all 0.3s ease;
+  user-select: none;
+  border-left: 3px solid #3bf08fbf;
+}
+
+.theme-dark .guide-item-header:hover,
+:root .guide-item-header:hover {
+  background: rgba(12, 231, 110, 0.6);
+}
+
+.theme-dark .guide-item-header h4,
+:root .guide-item-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.theme-dark .guide-item-icon svg,
+:root .guide-item-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #3d9130;
+  stroke-width: 2.5;
+}
+
+.theme-dark .guide-item-content.open,
+:root .guide-item-content.open {
+  background: #1e1e1e;
+  border-top: 1px solid #000000;
+}
+
+.theme-dark .guide-item-content ol,
+:root .guide-item-content ol {
+  margin: 0;
+  padding-left: 25px;
+}
+
+.theme-dark .guide-item-content li,
+:root .guide-item-content li {
+  margin-bottom: 12px;
+  color: #ffffff;
+  line-height: 1.8;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* LIGHT MODE ACCORDION STYLES */
+.theme-light .guide-item {
+  margin-bottom: 16px;
+  border: 2px solid #FFC000;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e5e5e5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-light .guide-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  background: #fefefe66;
+  transition: all 0.3s ease;
+  user-select: none;
+  border-left: 3px solid #FFC000;
+}
+
+.theme-light .guide-item-header:hover {
+  background: #ffbf00c5;
+}
+
+.theme-light .guide-item-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #000000;
+  font-weight: 700;
+}
+
+.theme-light .guide-item-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #ffbf00b0;
+  stroke-width: 2.5;
+}
+
+.theme-light .guide-item-content.open {
+  background: transparent;
+  border-top: 1px solid #92400E;
+}
+
+.theme-light .guide-item-content ol {
+  margin: 0;
+  padding-left: 25px;
+}
+
+.theme-light .guide-item-content li {
+  margin-bottom: 12px;
+  color: #000000;
+  line-height: 1.8;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* DEFAULT/FALLBACK ACCORDION STYLES (if no theme attribute) */
+.guide-item {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-background, #333333);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.guide-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  background: var(--card-background, #333333);
+  transition: all 0.3s ease;
+  user-select: none;
+  border-left: 3px solid #FFC000;
+}
+
+.guide-item-header:hover {
+  background: rgba(255, 192, 0, 0.15);
+}
+
+.guide-item-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--accent, #FFC000);
+  font-weight: 700;
+}
+
+.guide-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+}
+
+.guide-item-icon.open {
+  transform: rotate(180deg);
+}
+
+.guide-item-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #FFC000;
+  stroke-width: 2.5;
+}
+
+.guide-item-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding: 0 15px;
+}
+
+.guide-item-content.open {
+  max-height: 600px;
+  padding: 20px 15px 25px 15px;
+  border-top: 1px solid var(--accent, #FFC000);
+}
+
+.guide-item-content ol {
+  margin: 0;
+  padding-left: 25px;
+}
+
+.guide-item-content li {
+  margin-bottom: 12px;
+  color: var(--text-primary, #ffffff);
+  line-height: 1.8;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.guide-item-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* About Section Styles */
+.about-section {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.about-card {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.about-header {
+  margin-bottom: 30px;
+}
+
+.about-header svg {
+  width: 64px;
+  height: 64px;
+  color: #4CAF50;
+  margin-bottom: 20px;
+}
+
+.about-header h3 {
+  font-size: 27px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.about-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 30px 0;
+  text-align: left;
+}
+
+.about-info {
+  background: var(--background-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 15px;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-item strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.about-note {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 20px;
+  background: var(--background-color);
+  border-radius: 8px;
+  border-left: 4px solid #4CAF50;
+  text-align: left;
+}
+
+/* Report Section Styles */
+.report-section {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.report-card {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.report-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.report-header svg {
+  width: 48px;
+  height: 48px;
+  color: #ff9800;
+  margin-bottom: 15px;
+}
+
+.report-header h3 {
+  font-size: 27px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.report-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 30px 0;
+  text-align: center;
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.report-form label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.report-form textarea {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--background-color);
+  resize: vertical;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.report-form textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.report-form textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.report-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.clear-btn,
+.submit-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-btn {
+  background: var(--background-color);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+}
+
+.clear-btn:hover:not(:disabled) {
+  background: var(--hover-background);
+}
+
+.clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submit-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .help-support-header {
+    padding: 30px 20px 20px 20px;
+  }
+
+  .help-support-header h1 {
+    font-size: 24px;
+  }
+
+  .help-support-tabs {
+    padding: 0 20px;
+    overflow-x: auto;
+  }
+
+  .tab-button {
+    padding: 14px 18px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .help-support-content {
+    padding: 20px;
+  }
+
+  .guide-card,
+  .about-card,
+  .report-card {
+    padding: 25px;
+  }
+
+  .user-guide-section {
+    max-width: 100%;
+  }
+
+  .report-actions {
+    flex-direction: column;
+  }
+
+  .clear-btn,
+  .submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

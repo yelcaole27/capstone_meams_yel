@@ -1,0 +1,428 @@
+/* DashboardPage.css */
+
+.dashboard-content-area {
+  flex-grow: 1;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.dashboard-grid {
+  display: grid;
+  width: 100%;
+  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "line1 line2"
+    "pie1 pie2"
+    "tables-row tables-row";
+}
+
+/* Assign grid areas */
+.line-graph-1 { grid-area: line1; }
+.line-graph-2 { grid-area: line2; }
+.pie-graph-1 { grid-area: pie1; }
+.pie-graph-2 { grid-area: pie2; }
+.dashboard-tables-row { grid-area: tables-row; }
+
+/* Common styles for all cards (graphs and tables) */
+.graph-card, .table-card {
+  background: var(--sidebar-bg);
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  color: var(--text-primary);
+  min-height: 0;
+}
+
+.graph-card h3, .table-card h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-align: center;
+  
+}
+
+.graph-placeholder {
+  background: var(--hover-bg);
+  border-radius: 8px;
+  min-height: 150px;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Pie Chart Container Styles */
+.pie-chart-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  min-height: 200px;
+}
+
+.pie-chart-wrapper {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  height: 200px;
+}
+
+/* Status Table Container */
+.status-table-container {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+}
+
+.status-table-container h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text-primary);
+  table-layout: fixed;
+  flex: 1;
+}
+
+.status-table th {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.status-table th:first-child {
+  width: 40%;
+}
+
+.status-table th:nth-child(2) {
+  width: 30%;
+  text-align: center;
+}
+
+.status-table th:nth-child(3) {
+  width: 30%;
+  text-align: right;
+}
+
+.status-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.status-table td:first-child {
+  font-weight: 500;
+}
+
+.status-table td:nth-child(2) {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.status-table td:nth-child(3) {
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.status-table .total-row {
+  border-top: 2px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.status-table .total-row td {
+  color: var(--text-primary);
+  font-weight: bold;
+  padding: 10px;
+  font-size: 13px;
+}
+
+/* Status color indicators */
+.status-normal { color: #4ade80 !important; }
+.status-understock { color: #f87171 !important; }
+.status-overstock { color: #fbbf24 !important; }
+.status-within-useful-life { color: #4ade80 !important; }
+.status-maintenance { color: #fbbf24 !important; }
+.status-beyond-useful-life { color: #f87171 !important; }
+
+/* Styles for the tables container */
+.dashboard-tables-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* Styles for individual Table Cards */
+.table-card {
+  flex: 1;
+  min-width: 300px;
+  max-width: 450px;
+}
+
+.table-card table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  flex-grow: 1;
+  max-height: 180px;
+  overflow-y: auto;
+  display: block;
+}
+
+.table-card thead, .table-card tbody {
+  display: block;
+}
+
+.table-card th, .table-card td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  width: 25%;
+  box-sizing: border-box;
+}
+
+.table-card th {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  background: var(--sidebar-bg);
+  z-index: 1;
+}
+
+.table-card tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-card .generate-button {
+  background: var(--text-primary);
+  color: var(--background);
+  border: none;
+  border-radius: 18px;
+  padding: 8px 15px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.table-card .generate-button:hover {
+  background: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .pie-chart-container {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .pie-chart-wrapper {
+    min-width: 180px;
+    height: 180px;
+  }
+  
+  .status-table-container {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .status-table {
+    font-size: 13px;
+  }
+  
+  .status-table th,
+  .status-table td {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    grid-template-areas:
+      "line1"
+      "line2"
+      "pie1"
+      "pie2"
+      "tables-row";
+  }
+
+  .dashboard-tables-row {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .table-card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .graph-card, .table-card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+  
+  .graph-card h3, .table-card h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .graph-placeholder {
+    min-height: 120px;
+    font-size: 12px;
+  }
+  
+  .pie-chart-container {
+    min-height: auto;
+  }
+  
+  .pie-chart-wrapper {
+    min-width: 150px;
+    height: 150px;
+  }
+  
+  .status-table-container {
+    padding: 12px;
+  }
+  
+  .status-table {
+    font-size: 11px;
+  }
+  
+  .status-table th,
+  .status-table td {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  
+  .table-card th, .table-card td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .table-card .generate-button {
+    padding: 7px 12px;
+    font-size: 11px;
+    border-radius: 15px;
+  }
+}
+
+
+/* Dashboard Print Button Gradients - Clean Solution */
+
+/* Print Requisition Button - Green/Teal Gradient */
+.requisition-form-modal button[onclick*="print()"],
+.requisition-form-modal .print-hidden button {
+  background: linear-gradient(135deg, #55d8ed, #4dbfef) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #000000 !important;  /* ADD THIS */
+  font-weight: bold !important;  /* ADD THIS */
+}
+
+.requisition-form-modal button[onclick*="print()"]:hover,
+.requisition-form-modal .print-hidden button:hover {
+  background: linear-gradient(135deg, #026e74, #0e7091) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+}
+
+/* Print Purchase Form Button - Orange/Red Gradient */
+.print-btn-purchase {
+  background: linear-gradient(135deg, #55d8ed, #4dbfef) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+  font-weight: bold !important;  /* ADD THIS */
+}
+
+.print-btn-purchase:hover {
+  background: linear-gradient(135deg, #026e74, #0e7091) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+}
+
+/* Print Repair Form Button - Blue/Purple Gradient */
+.print-btn-repair {
+  background: linear-gradient(135deg, #55d8ed, #4dbfef) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+  font-weight: bold !important;  /* ADD THIS */
+}
+
+.print-btn-repair:hover {
+  background: linear-gradient(135deg, #026e74, #0e7091) !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  color: #FFFFFF !important;  /* ADD THIS */
+}
+
+/* Extended horizontal forecast row */
+.graph-row-extended {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: stretch;
+  grid-column: 1 / -1;
+}
+
+.graph-row-extended .graph-card {
+  flex: 1;
+  min-width: 45%;
+  height: 400px;
+}
+
+@media (max-width: 900px) {
+  .graph-row-extended {
+    flex-direction: column;
+  }
+  .graph-row-extended .graph-card {
+    width: 100%;
+    height: 350px;
+  }
+}
+
+.recharts-legend-item-text {
+  color: var(--text-primary) !important;
+}

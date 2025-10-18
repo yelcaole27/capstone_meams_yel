@@ -1,0 +1,416 @@
+/* LoginPage.css - Updated with theme variables */
+@import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--background);
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  background: var(--background);
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.login-form {
+  background: var(--sidebar-bg);
+  border-radius: 30px;
+  padding: 40px;
+  width: 400px;
+  height: 450px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo {
+  margin-bottom: 40px;
+}
+
+.logo-text {
+  font-family: 'Koulen', cursive;
+  font-size: 60px !important;
+  color: var(--text-primary);
+  font-weight: 400;
+  letter-spacing: 3px !important;
+  text-align: center;
+  margin-bottom: 0px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  color: var(--text-secondary);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.login-input {
+  width: 100%;
+  background: var(--hover-bg);
+  border: none;
+  border-radius: 25px;
+  padding: 15px 20px 15px 45px;
+  color: var(--text-primary);
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+.login-input::placeholder {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.login-input:focus {
+  background: var(--active-bg);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+}
+
+.password-toggle:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.password-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.login-button {
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 25px;
+  padding: 15px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 5px;
+}
+
+.login-button:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.forgot-password {
+  text-align: center;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.forgot-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.forgot-link:hover {
+  color: var(--text-primary);
+}
+
+/* Overlay Styles */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  pointer-events: auto !important;
+}
+
+.forgot-modal {
+  background: var(--sidebar-bg);
+  border-radius: 20px;
+  padding: 30px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  position: relative;
+  animation: modalSlideIn 0.3s ease-out;
+  pointer-events: auto !important;
+  z-index: 1001;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  font-family: 'Koulen', cursive;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.modal-description {
+  color: var(--text-secondary);
+  margin-bottom: 25px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.reset-button {
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 25px;
+  padding: 15px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 15px;
+}
+
+.reset-button:hover:not(:disabled) {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+.reset-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.message {
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+.message.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.login-button:disabled,
+.login-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Modal Input Interactions */
+.forgot-modal form {
+  position: relative;
+  z-index: 1002;
+  pointer-events: auto !important;
+  width: 100%;
+}
+
+.forgot-modal .input-group {
+  position: relative;
+  z-index: 1003;
+  margin-bottom: 15px;
+  width: 100%;
+  pointer-events: auto !important;
+}
+
+.forgot-modal .input-wrapper {
+  position: relative;
+  z-index: 1004;
+  pointer-events: auto !important;
+  display: flex;
+  align-items: center;
+}
+
+.forgot-modal input,
+.forgot-modal .login-input,
+.forgot-modal input[type="password"],
+.forgot-modal input[type="text"],
+.forgot-modal input[type="email"] {
+  position: relative;
+  z-index: 1005 !important;
+  pointer-events: auto !important;
+  cursor: text !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  width: 100%;
+  background: var(--hover-bg);
+  border: none;
+  border-radius: 25px;
+  padding: 15px 20px 15px 45px;
+  color: var(--text-primary);
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+.forgot-modal input::placeholder,
+.forgot-modal .login-input::placeholder {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.forgot-modal input:focus,
+.forgot-modal .login-input:focus {
+  background: var(--active-bg) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2) !important;
+}
+
+.forgot-modal input:hover,
+.forgot-modal .login-input:hover {
+  background: var(--active-bg);
+}
+
+.forgot-modal .password-toggle {
+  position: absolute;
+  right: 15px;
+  z-index: 1006 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+}
+
+.forgot-modal .password-toggle:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.forgot-modal .input-icon {
+  position: absolute;
+  left: 15px;
+  color: var(--text-secondary);
+  z-index: 1007;
+  pointer-events: none;
+}
+
+.forgot-modal button,
+.forgot-modal .reset-button,
+.forgot-modal .close-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 1008;
+}
+
+.overlay * {
+  pointer-events: auto;
+}
+
+.overlay::before,
+.overlay::after {
+  pointer-events: none;
+}
