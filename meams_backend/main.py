@@ -7,6 +7,14 @@ import time
 
 app = FastAPI(title=API_TITLE, version=API_VERSION)
 
+@app.get("/")
+async def root():
+    return {
+        "message": "MEAMS API is running!",
+        "status": "active",
+        "version": API_VERSION
+    }
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
