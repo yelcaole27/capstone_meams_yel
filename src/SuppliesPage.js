@@ -40,6 +40,8 @@ function SuppliesPage() {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
   const [qrCodeItem, setQrCodeItem] = useState(null);
+  const [qrScanEvents, setQrScanEvents] = useState([]);
+  const [isListeningForScans, setIsListeningForScans] = useState(false);
 
   // NEW: State for Update Quantity Modal
   const [isUpdateQuantityModalOpen, setIsUpdateQuantityModalOpen] = useState(false);
@@ -356,108 +358,89 @@ const handleCloseDocumentViewer = () => {
   // QR Code generation function - UPDATED to include new fields
   const generateQRCode = async (item) => {
   try {
-    // Create minimal HTML for stock card format
-    const htmlTemplate = `
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width,initial-scale=1">
-          <style>
-            body { font: 12px Arial; padding: 8px; text-align: center; }
-            h1 { font: 14px Arial; margin: 8px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 8px auto; max-width: 350px; }
-            td, th { border: 1px solid #000; padding: 4px; font: 10px Arial; }
-            th { background: #eee; }
-          </style>
-        </head>
-        <body>
-          <h1>Universidad De Manila<br>Stock Card</h1>
-          <table>
-            <tr>
-              <td><b>Item:</b></td>
-              <td>${item.itemName}</td>
-              <td><b>Stock No.:</b></td>
-              <td>${item.stockNo}</td>
-            </tr>
-            <tr>
-              <td><b>Category:</b></td>
-              <td>${item.category}</td>
-              <td><b>Description:</b></td>
-              <td>${item.description || 'N/A'}</td>
-            </tr>
-          </table>
-          <table>
-            <tr>
-              <th>Date</th>
-              <th>Receipt</th>
-              <th>Issue</th>
-              <th>Balance</th>
-            </tr>
-            <tr>
-              <td>${item.date}</td>
-              <td>${item.quantity}</td>
-              <td>-</td>
-              <td>${item.quantity}</td>
-            </tr>
-          </table>
-        </body>
-      </html>
-    `.replace(/\s+/g, ' ').trim();
-
-    const dataURI = `data:text/html;charset=utf-8,${encodeURIComponent(htmlTemplate)}`;
+    // Get your backend URL
+    const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
     
-    // Check if HTML is too large for QR code
-    if (htmlTemplate.length > 400) {
-      throw new Error('HTML content exceeds QR code capacity');
-    }
-
-    // Generate QR code with HTML content
-    const qrDataURL = await QRCode.toDataURL(dataURI, {
-      width: 200,
-      margin: 1,
-      errorCorrectionLevel: 'L'
+    // Create a simple URL that contains only the item ID
+    // The backend will fetch CURRENT data when scanned
+    const scanUrl = `${BACKEND_URL}/api/supplies/scan/${item._id}`;
+    
+    console.log('📱 Generating QR code with URL:', scanUrl);
+    
+    // Generate QR code with just the URL
+    const qrDataURL = await QRCode.toDataURL(scanUrl, {
+      width: 300,
+      margin: 2,
+      errorCorrectionLevel: 'H'
     });
 
-    // Update state with generated QR code
+    // Update state
     setQrCodeDataURL(qrDataURL);
     setQrCodeItem(item);
     setIsQRModalOpen(true);
-
-  } catch (error) {
-    console.warn('HTML format failed, falling back to text format:', error.message);
     
-    try {
-      // Fallback to plain text format
-      const textContent = [
-        'UNIVERSIDAD DE MANILA - STOCK CARD',
-        `Item: ${item.itemName}`,
-        `Stock No: ${item.stockNo}`,
-        `Category: ${item.category}`,
-        `Description: ${item.description || 'N/A'}`,
-        `Date: ${item.date}`,
-        `Quantity: ${item.quantity}`,
-        '------',
-        'Date | Receipt | Issue | Balance',
-        `${item.date} | ${item.quantity} | - | ${item.quantity}`
-      ].join('\n');
-
-      const qrDataURL = await QRCode.toDataURL(textContent, {
-        width: 200,
-        margin: 2,
-        errorCorrectionLevel: 'M'
-      });
-
-      // Update state with text-based QR code
-      setQrCodeDataURL(qrDataURL);
-      setQrCodeItem(item);
-      setIsQRModalOpen(true);
-
-    } catch (textError) {
-      console.error('QR code generation failed completely:', textError.message);
-      alert('Unable to generate QR code - content is too large for encoding');
-    }
+    console.log('✅ QR Code generated successfully');
+    
+  } catch (error) {
+    console.error('❌ QR code generation failed:', error);
+    alert('Failed to generate QR code: ' + error.message);
   }
 };
+
+
+const startListeningForScans = (scanId) => {
+  const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  
+  // Use Server-Sent Events (SSE) for real-time updates
+  const eventSource = new EventSource(`${BACKEND_URL}/api/qr/listen/${scanId}`);
+  
+  eventSource.onmessage = (event) => {
+    const scanData = JSON.parse(event.data);
+    console.log('📱 QR Code scanned!', scanData);
+    
+    // Add to scan events
+    setQrScanEvents(prev => [...prev, scanData]);
+    
+    // Show notification
+    if (Notification.permission === 'granted') {
+      new Notification('QR Code Scanned!', {
+        body: `${scanData.itemName} was scanned at ${new Date(scanData.timestamp).toLocaleTimeString()}`,
+        icon: '/favicon.ico'
+      });
+    }
+    
+    // Play sound (optional)
+    const audio = new Audio('/scan-sound.mp3');
+    audio.play().catch(e => console.log('Could not play sound'));
+  };
+  
+  eventSource.onerror = (error) => {
+    console.error('❌ SSE connection error:', error);
+    eventSource.close();
+  };
+  
+  // Store the eventSource so we can close it later
+  window.currentEventSource = eventSource;
+  setIsListeningForScans(true);
+};
+
+// ===== ADD THIS CLEANUP FUNCTION =====
+const stopListeningForScans = () => {
+  if (window.currentEventSource) {
+    window.currentEventSource.close();
+    window.currentEventSource = null;
+    setIsListeningForScans(false);
+    console.log('🛑 Stopped listening for scans');
+  }
+};
+
+// ===== ADD THIS useEffect FOR CLEANUP =====
+useEffect(() => {
+  // Cleanup on unmount
+  return () => {
+    stopListeningForScans();
+  };
+}, []);
 
   // FOR STOCK CARD //
 const [isStockCardOpen, setIsStockCardOpen] = useState(false);
@@ -2213,6 +2196,7 @@ const handleRemoveImage = async (supplyId) => {
           Copy Data
         </button>
       </div>
+      
       
       <button className="close-qr-btn" onClick={handleCloseQRModal}>
         ×
