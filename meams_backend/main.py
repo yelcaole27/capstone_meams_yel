@@ -7,20 +7,6 @@ from routers import help_support
 import time
 app = FastAPI(title=API_TITLE, version=API_VERSION)
 
-@app.get("/")
-async def root():
-    return {"message": "API is working!", "status": "ok"}
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
