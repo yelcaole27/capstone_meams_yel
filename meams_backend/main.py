@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from .config import API_TITLE, API_VERSION, ALLOWED_ORIGINS
-from . import config
-from .database import connect_db
-from .routers import help_support
+from config import API_TITLE, API_VERSION, ALLOWED_ORIGINS
+from import config
+from database import connect_db
+from routers import help_support
 import time
 app = FastAPI(title=API_TITLE, version=API_VERSION)
 
