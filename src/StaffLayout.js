@@ -343,7 +343,7 @@ function StaffLayout() {
   <div style={{ display: 'flex', alignItems: 'center' }}>
     {/* Logos: tightly grouped */}
     <img src="/udm_logo.png" alt="Logo 1" style={{ height: '65px', marginRight: '8px' }} />
-    <img src="/meams_logo.png" alt="Logo 2" style={{ height: '60px', marginRight: '16px' }} />
+    <img src="/med_logo.png" alt="Logo 2" style={{ height: '74px', marginRight: '16px' }} />
     {/* Title: close to logos */}
     <h1 style={{ margin: 0 }}>MAINTENANCE AND ENGINEERING ASSET MANAGEMENT SYSTEM</h1>
   </div>
