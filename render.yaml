@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: meams-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: BASE_URL
+        # Set this in Render dashboard to your actual URL
+        # Example: https://meams-backend.onrender.com
+        sync: false
+      - key: MONGODB_URI
+        # Set this in Render dashboard to your MongoDB connection string
+        sync: false
