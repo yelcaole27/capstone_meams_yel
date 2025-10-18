@@ -435,8 +435,8 @@ function MainLayout() {
         <header className="main-header" style={{ display: 'flex', alignItems: 'center', paddingLeft: '24px' }}>
   <div style={{ display: 'flex', alignItems: 'center' }}>
     {/* Logos: tightly grouped */}
-    <img src="/udm_logo.png" alt="Logo 1" style={{ height: '65px', marginRight: '8px' }} />
-    <img src="/med_logo.png" alt="Logo 2" style={{ height: '74px', marginRight: '16px' }} />
+    <img src="/udm_logo.png" alt="Logo 1" style={{ height: '65px', marginRight: '8px', filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.25)' }} />
+    <img src="med_logo.png" alt="Logo 2" style={{ height: '74px', marginRight: '16px', filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.25)'}} />
     {/* Title: close to logos */}
     <h1 style={{ margin: 0 }}>MAINTENANCE AND ENGINEERING ASSET MANAGEMENT SYSTEM</h1>
   </div>
