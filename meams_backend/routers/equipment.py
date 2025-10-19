@@ -459,278 +459,317 @@ async def remove_document(
     }
 
 
-@router.get("/view/{equipment_id}", response_class=HTMLResponse)  
+# In your equipment router file (equipment_router.py)
+
+@router.get("/view/{equipment_id}", response_class=HTMLResponse)
 async def view_equipment_qr(equipment_id: str):
     """
-    Handle QR code scan - returns HTML page with equipment details and repair history
-    Similar to supplies stock card view
+    Handle QR code scan - fetches CURRENT data from database
     """
     from fastapi.responses import HTMLResponse
     from datetime import datetime
     
-    # Validate ID
-    if not ObjectId.is_valid(equipment_id):
-        return HTMLResponse(
-            content="<h1>Invalid QR Code</h1>",
-            status_code=400
-        )
-    
-    # Fetch CURRENT data from database
-    equipment = get_equipment_by_id(equipment_id)
-    
-    if not equipment:
-        return HTMLResponse(
-            content="<h1>Equipment Not Found</h1>",
-            status_code=404
-        )
-    
-    # Build repair history HTML
-    repair_html = ""
-    if equipment.get('repairHistory'):
-        recent = sorted(equipment['repairHistory'], 
-                       key=lambda x: x.get('repairDate', ''), 
-                       reverse=True)[:10]
+    try:
+        # Validate ID
+        if not ObjectId.is_valid(equipment_id):
+            return HTMLResponse(
+                content="<h1>Invalid QR Code</h1>",
+                status_code=400
+            )
         
-        rows = ""
-        total_cost = 0
-        for repair in recent:
-            amount = float(repair.get('amountUsed', 0))
-            total_cost += amount
-            rows += f"""
-            <tr>
-                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDate', 'N/A')}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDetails', '-')}</td>
-                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #059669;">₱{amount:.2f}</td>
-            </tr>
+        # Fetch CURRENT data from database
+        equipment = get_equipment_by_id(equipment_id)
+        
+        if not equipment:
+            return HTMLResponse(
+                content="<h1>Equipment Not Found</h1>",
+                status_code=404
+            )
+        
+        # Ensure required fields exist with defaults
+        equipment.setdefault('name', 'Unknown Equipment')
+        equipment.setdefault('itemCode', 'N/A')
+        equipment.setdefault('category', 'N/A')
+        equipment.setdefault('location', 'Not specified')
+        equipment.setdefault('status', 'Within-Useful-Life')
+        equipment.setdefault('amount', 0)
+        equipment.setdefault('usefulLife', 0)
+        equipment.setdefault('description', 'No description available')
+        
+        # Convert ObjectId to string
+        equipment_id_str = str(equipment.get('_id', equipment_id))
+        
+        # Build repair history HTML
+        repair_html = ""
+        if equipment.get('repairHistory'):
+            recent = sorted(equipment['repairHistory'], 
+                           key=lambda x: x.get('repairDate', ''), 
+                           reverse=True)[:5]
+            
+            rows = ""
+            for repair in recent:
+                rows += f"""
+                <tr>
+                    <td>{repair.get('repairDate', 'N/A')}</td>
+                    <td>{repair.get('repairDetails', 'N/A')}</td>
+                    <td style="font-weight: 600;">₱{float(repair.get('amountUsed', 0)):.2f}</td>
+                </tr>
+                """
+            
+            repair_html = f"""
+            <div class="repair-section">
+                <h3>Recent Repair History</h3>
+                <table class="repair-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Details</th>
+                            <th>Amount Used</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows}
+                    </tbody>
+                </table>
+            </div>
             """
         
-        repair_html = f"""
-        <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <h3 style="margin: 0 0 20px 0; color: #1f2937; border-bottom: 3px solid #667eea; padding-bottom: 10px;">
-                📋 Repair History
-            </h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563;">Repair Date</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563;">Details</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #4b5563;">Amount Used</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows}
-                </tbody>
-                <tfoot>
-                    <tr style="background: #f3f4f6; font-weight: bold; border-top: 2px solid #e5e7eb;">
-                        <td colspan="2" style="padding: 12px;">Total Repairs: {len(recent)}</td>
-                        <td style="padding: 12px; text-align: right; color: #059669;">₱{total_cost:.2f}</td>
-                    </tr>
-                </tfoot>
-            </table>
+        # Return beautiful HTML page
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{equipment['name']} - Equipment Details</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    background: #363636;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    margin: 0;
+                }}
+                .container {{
+                    background: white;
+                    border-radius: 20px;
+                    padding: 40px;
+                    max-width: 900px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                }}
+                .header {{
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 20px;
+                    border-bottom: 3px solid #fbbf24;
+                }}
+                .logo {{
+                    font-size: 72px;
+                    margin-bottom: 15px;
+                }}
+                h1 {{
+                    color: #1f2937;
+                    margin: 10px 0;
+                    font-size: 32px;
+                }}
+                .subtitle {{
+                    color: #6b7280;
+                    font-size: 16px;
+                    margin-top: 5px;
+                }}
+                .timestamp {{
+                    background: #3d9130;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    margin: 20px 0;
+                    font-weight: 600;
+                    box-shadow: 0 4px 12px rgba(61, 145, 48, 0.4);
+                }}
+                .info-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin: 30px 0;
+                }}
+                .info-card {{
+                    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+                    padding: 20px;
+                    border-radius: 12px;
+                    border-left: 4px solid #fbbf24;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    transition: transform 0.2s;
+                }}
+                .info-card:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }}
+                .label {{
+                    font-size: 12px;
+                    color: #6b7280;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
+                }}
+                .value {{
+                    font-size: 20px;
+                    color: #1f2937;
+                    font-weight: 700;
+                    margin-top: 8px;
+                }}
+                .amount {{
+                    font-size: 36px;
+                    color: #3d9130;
+                    font-weight: 800;
+                }}
+                .status {{
+                    display: inline-block;
+                    padding: 8px 20px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }}
+                .status-within-useful-life {{ background: #d1fae5; color: #065f46; }}
+                .status-maintenance {{ background: #fef3c7; color: #92400e; }}
+                .status-beyond-useful-life {{ background: #fee2e2; color: #991b1b; }}
+                
+                .repair-section {{
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: #f9fafb;
+                    border-radius: 8px;
+                }}
+                .repair-section h3 {{
+                    margin: 0 0 10px 0;
+                    font-size: 18px;
+                    color: #1f2937;
+                }}
+                .repair-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                .repair-table tr {{
+                    background: #3d9130;
+                    color: white;
+                }}
+                .repair-table th {{
+                    padding: 8px;
+                    text-align: left;
+                    font-size: 14px;
+                }}
+                .repair-table td {{
+                    padding: 8px;
+                    border-bottom: 1px solid #e5e7eb;
+                    font-size: 13px;
+                }}
+                .repair-table tbody tr {{
+                    background: white;
+                    color: #1f2937;
+                }}
+                .repair-table tbody tr:hover {{
+                    background: #f9fafb;
+                }}
+                
+                .footer {{
+                    margin-top: 40px;
+                    text-align: center;
+                    padding-top: 20px;
+                    border-top: 2px solid #e5e7eb;
+                    color: #9ca3af;
+                    font-size: 14px;
+                }}
+                .footer-logo {{
+                    font-weight: 700;
+                    color: #3d9130;
+                    margin-top: 10px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">⚙️</div>
+                    
+                    {f'''
+        <div class="image-container" style="text-align: center; margin: 30px 0;">
+            <img src="{equipment.get('image_data', '')}" 
+                 alt="{equipment['name']}" 
+                 style="max-width: 70%; max-height: 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
         </div>
-        """
-    else:
-        repair_html = """
-        <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto 15px; opacity: 0.3;">
-                <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <h3 style="margin: 0 0 10px 0; color: #6b7280;">No Repair History</h3>
-            <p style="margin: 0; color: #9ca3af; font-size: 14px;">This equipment has not been repaired yet</p>
-        </div>
-        """
-    
-    # Return beautiful HTML page
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{equipment['name']} - Equipment Details</title>
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                background: #363636;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                margin: 0;
-            }}
-            .container {{
-                background: white;
-                border-radius: 20px;
-                padding: 40px;
-                max-width: 900px;
-                width: 100%;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            }}
-            .header {{
-                text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #fbbf24;
-            }}
-            .logo {{
-                font-size: 72px;
-                margin-bottom: 15px;
-            }}
-            h1 {{
-                color: #1f2937;
-                margin: 10px 0;
-                font-size: 32px;
-            }}
-            .subtitle {{
-                color: #6b7280;
-                font-size: 16px;
-                margin-top: 5px;
-            }}
-            .timestamp {{
-                background: #3d9130;
-                color: white;
-                padding: 12px 20px;
-                border-radius: 10px;
-                text-align: center;
-                margin: 20px 0;
-                font-weight: 600;
-                box-shadow: 0 4px 12px rgba(61, 145, 48, 0.4);
-            }}
-            .info-grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin: 30px 0;
-            }}
-            .info-card {{
-                background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-                padding: 20px;
-                border-radius: 12px;
-                border-left: 4px solid #fbbf24;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                transition: transform 0.2s;
-            }}
-            .info-card:hover {{
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }}
-            .label {{
-                font-size: 12px;
-                color: #6b7280;
-                text-transform: uppercase;
-                font-weight: 600;
-                letter-spacing: 0.5px;
-            }}
-            .value {{
-                font-size: 20px;
-                color: #1f2937;
-                font-weight: 700;
-                margin-top: 8px;
-            }}
-            .amount {{
-                font-size: 36px;
-                color: #3d9130;
-                font-weight: 800;
-            }}
-            .status {{
-                display: inline-block;
-                padding: 8px 20px;
-                border-radius: 20px;
-                font-size: 14px;
-                font-weight: 600;
-                text-transform: uppercase;
-            }}
-            .status-operational {{ background: #d1fae5; color: #065f46; }}
-            .status-maintenance {{ background: #fef3c7; color: #92400e; }}
-            .status-beyond {{ background: #fee2e2; color: #991b1b; }}
-            .status-within {{ background: #dbeafe; color: #1e40af; }}
-            .footer {{
-                margin-top: 40px;
-                text-align: center;
-                padding-top: 20px;
-                border-top: 2px solid #e5e7eb;
-                color: #9ca3af;
-                font-size: 14px;
-            }}
-            .footer-logo {{
-                font-weight: 700;
-                color: #3d9130;
-                margin-top: 10px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-            
-                {f'''
-    <div class="image-container" style="text-align: center; margin: 30px 0;">
-        <img src="{equipment.get('image_data', '')}" 
-             alt="{equipment['name']}" 
-             style="max-width: 70%; max-height: 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
-    </div>
-    ''' if equipment.get('image_data') else ''}
+        ''' if equipment.get('image_data') else ''}
 
-                <h1>{equipment['name']}</h1>
-                <p class="subtitle">MEAMS - Equipment Management</p>
-            </div>
-            
-            <div class="timestamp">
-                📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
-            
-            <div class="info-grid">
-                <div class="info-card">
-                    <div class="label">Item Code</div>
-                    <div class="value">{equipment.get('itemCode', 'N/A')}</div>
+                    <h1>{equipment['name']}</h1>
+                    <p class="subtitle">MEAMS - Equipment Management</p>
                 </div>
                 
-                <div class="info-card">
-                    <div class="label">Category</div>
-                    <div class="value">{equipment.get('category', 'N/A')}</div>
+                <div class="timestamp">
+                    📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
                 </div>
                 
-                <div class="info-card">
-                    <div class="label">Status</div>
-                    <div class="value">
-                        <span class="status status-{equipment.get('status', 'operational').lower().replace(' ', '-').replace('_', '-')}">
-                            {equipment.get('status', 'Operational')}
-                        </span>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="label">Item Code</div>
+                        <div class="value">{equipment.get('itemCode', 'N/A')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Category</div>
+                        <div class="value">{equipment.get('category', 'N/A')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Status</div>
+                        <div class="value">
+                            <span class="status status-{equipment.get('status', 'Within-Useful-Life').lower().replace(' ', '-').replace('_', '-')}">
+                                {equipment.get('status', 'Within-Useful-Life')}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Location</div>
+                        <div class="value">{equipment.get('location', 'Not specified')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Purchase Amount</div>
+                        <div class="amount">₱{float(equipment.get('amount', 0)):.2f}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Useful Life</div>
+                        <div class="value">{equipment.get('usefulLife', 0)} years</div>
                     </div>
                 </div>
                 
-                <div class="info-card">
-                    <div class="label">Location</div>
-                    <div class="value">{equipment.get('location', 'Not specified')}</div>
+                <div class="info-card" style="margin-top: 20px;">
+                    <div class="label">Description</div>
+                    <div class="value" style="font-size: 16px; font-weight: 500; line-height: 1.6;">
+                        {equipment.get('description', 'No description available')}
+                    </div>
                 </div>
                 
-                <div class="info-card">
-                    <div class="label">Purchase Amount</div>
-                    <div class="amount">₱{float(equipment.get('amount', 0)):.2f}</div>
-                </div>
+                {repair_html}
                 
-                <div class="info-card">
-                    <div class="label">Useful Life</div>
-                    <div class="value">{equipment.get('usefulLife', 0)} years</div>
+                <div class="footer">
+                    <p>Equipment ID: {equipment_id_str}</p>
+                    <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
                 </div>
             </div>
-            
-            <div class="info-card" style="margin-top: 20px;">
-                <div class="label">Description</div>
-                <div class="value" style="font-size: 16px; font-weight: 500; line-height: 1.6;">
-                    {equipment.get('description', 'No description available')}
-                </div>
-            </div>
-            
-            {repair_html}
-            
-            <div class="footer">
-                <p>Equipment ID: {equipment['_id']}</p>
-                <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return HTMLResponse(content=html)
+        </body>
+        </html>
+        """
+        
+        return HTMLResponse(content=html)
+        
+    except Exception as e:
+        return HTMLResponse(
+            content=f"<h1>Error Loading Equipment</h1><p>{str(e)}</p>",
+            status_code=500
+        )
