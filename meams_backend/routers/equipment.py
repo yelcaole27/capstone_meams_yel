@@ -670,7 +670,14 @@ async def view_equipment_qr(equipment_id: str):
             
             <div class="timestamp">
                 📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
+
+            {f'''
+            <div class="image-container" style="text-align: center; margin: 30px 0;">
+            <img src="data:{equipment.get('image_content_type', 'image/jpeg')};base64,{equipment.get('image_data', '')}" 
+             alt="{equipment['name']}" 
+            style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
             </div>
+            ''' if equipment.get('image_data') else ''}
             
             <div class="info-grid">
                 <div class="info-card">
