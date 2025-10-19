@@ -459,8 +459,8 @@ async def remove_document(
     }
 
 
-@router.get("/scan/{equipment_id}", response_class=HTMLResponse)
-async def scan_equipment_qr(equipment_id: str):
+@router.get("/view/{equipment_id}", response_class=HTMLResponse)  
+async def view_equipment_qr(equipment_id: str):
     """
     Handle QR code scan - returns HTML page with equipment details and repair history
     Similar to supplies stock card view

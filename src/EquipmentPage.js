@@ -786,16 +786,13 @@ function EquipmentPage() {
 
   const generateQRCode = async (equipment) => {
   try {
-    // Get your backend URL
     const BACKEND_URL = process.env.REACT_APP_API_URL || 'https://meams.onrender.com';
     
-    // Create a simple URL that contains only the equipment ID
-    // The backend will fetch CURRENT data when scanned
-    const scanUrl = `${BACKEND_URL}/api/equipment/scan/${equipment._id}`;
+    // Change to /view/ endpoint instead of /scan/
+    const scanUrl = `${BACKEND_URL}/api/equipment/view/${equipment._id}`;
     
     console.log('📱 Generating QR code with URL:', scanUrl);
     
-    // Generate QR code with just the URL
     const qrDataURL = await QRCode.toDataURL(scanUrl, {
       width: 300,
       margin: 2,
@@ -806,24 +803,17 @@ function EquipmentPage() {
       }
     });
 
-    // Update state
     setQrCodeDataURL(qrDataURL);
     setQrCodeEquipment(equipment);
     setIsQRModalOpen(true);
     
     console.log('✅ QR Code generated successfully');
     
-    // Request notification permission if not already granted
-    if (window.Notification && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
-    
   } catch (error) {
     console.error('❌ QR code generation failed:', error);
     alert('Failed to generate QR code: ' + error.message);
   }
 };
-
 
   const downloadQRCode = () => {
   if (!qrCodeDataURL || !qrCodeEquipment) return;
