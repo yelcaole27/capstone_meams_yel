@@ -21,6 +21,8 @@ function EquipmentPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const uniqueCategories = ['All Categories', ...new Set(equipmentData.map(item => item.category))];
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState(null);
 
   // NEW: LCC Analysis State
   const [showLCCAnalysis, setShowLCCAnalysis] = useState(false);
@@ -443,42 +445,42 @@ function EquipmentPage() {
   }, [searchTerm]);
 
   const loadEquipment = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const equipment = await EquipmentAPI.getAllEquipment();
-      
-      const transformedEquipment = equipment.map(item => ({
-        _id: item._id || item.id,
-        itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-        usefulLife: item.usefulLife || 1,
-        amount: item.amount || 0.0,
-        name: item.name || 'Unknown Equipment',
-        description: item.description || 'No description available',
-        category: item.category || 'General',
-        location: item.location || 'Unknown',
-        status: item.status || 'Within-Useful-Life',
-        supplier: item.supplier || '',
-        unit_price: item.unit_price || 0,
-        date: item.date || '',
-        has_image: item.image_data ? true : false,
-        image_data: item.image_data || null,
-        image_filename: item.image_filename || null,
-        image_content_type: item.image_content_type || null,
-        repairHistory: item.repairHistory || [],
-      }));
-      setEquipmentData(transformedEquipment);
-      console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
-      
-    } catch (err) {
-      console.error('Failed to load equipment:', err);
-      setError(`Failed to load equipment: ${err.message}`);
-      setEquipmentData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const equipment = await EquipmentAPI.getAllEquipment();
+    
+    const transformedEquipment = equipment.map(item => ({
+      _id: item._id || item.id,
+      itemCode: item.itemCode || item.item_code || `MED-E-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+      usefulLife: item.usefulLife || 1,
+      amount: item.amount || 0.0,
+      name: item.name || 'Unknown Equipment',
+      description: item.description || 'No description available',
+      category: item.category || 'General',
+      location: item.location || 'Unknown',
+      status: item.status || 'Within-Useful-Life',
+      supplier: item.supplier || '',
+      unit_price: item.unit_price || 0,
+      date: item.date || '',
+      has_image: item.image_data ? true : false,
+      image_data: item.image_data || null,
+      image_filename: item.image_filename || null,
+      image_content_type: item.image_content_type || null,
+      repairHistory: item.repairHistory || [], // ADDED THIS LINE
+    }));
+    setEquipmentData(transformedEquipment);
+    console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
+    
+  } catch (err) {
+    console.error('Failed to load equipment:', err);
+    setError(`Failed to load equipment: ${err.message}`);
+    setEquipmentData([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const filteredEquipment = equipmentData.filter(item => {
   const matchesSearch = searchTerm === '' || 
@@ -584,6 +586,45 @@ function EquipmentPage() {
     }
   };
 
+
+  const [imageDragActive, setImageDragActive] = useState(false);
+
+const handleImageDrag = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.type === "dragenter" || e.type === "dragover") {
+    setImageDragActive(true);
+  } else if (e.type === "dragleave") {
+    setImageDragActive(false);
+  }
+};
+
+const handleImageDrop = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setImageDragActive(false);
+  
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    const file = e.dataTransfer.files[0];
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageUploadError('Please select a valid image file (JPEG, PNG)');
+      return;
+    }
+    
+    // Validate file size
+    if (file.size > 25 * 1024 * 1024) {
+      setImageUploadError('File size must be less than 25MB');
+      return;
+    }
+    
+    // Upload the file
+    handleImageUploadForSelectedEquipment(file);
+  }
+};
+
   const handleEquipmentDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -616,7 +657,85 @@ function EquipmentPage() {
       setNewEquipment({ ...newEquipment, itemPicture: file });
     }
   };
+   
 
+  const handleImageUploadForSelectedEquipment = async (file) => {
+  try {
+    if (!file) return;
+    
+    if (file.size > 25 * 1024 * 1024) {
+      setImageUploadError('File size must be less than 25MB');
+      return;
+    }
+    
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageUploadError('Please select a valid image file (JPEG, PNG)');
+      return;
+    }
+    
+    setIsUploadingImage(true);
+    setImageUploadError(null);
+    
+    console.log('📤 Uploading image:', file.name);
+    
+    // Upload via API
+    const response = await EquipmentAPI.uploadEquipmentImage(selectedEquipment._id, file);
+    
+    console.log('✅ Image uploaded, response:', response);
+    
+    // Update local state with response from server
+    const updatedEquipment = {
+      ...selectedEquipment,
+      image_data: response.image_data || null,
+      image_filename: response.image_filename || file.name,
+      image_content_type: response.image_content_type || file.type,
+      has_image: true
+    };
+    
+    setSelectedEquipment(updatedEquipment);
+    
+    // Update equipmentData array
+    setEquipmentData(prevData =>
+      prevData.map(item =>
+        item._id === selectedEquipment._id ? updatedEquipment : item
+      )
+    );
+    
+    alert('Image uploaded successfully!');
+    
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    setImageUploadError(`Failed to upload image: ${error.message}`);
+  } finally {
+    setIsUploadingImage(false);
+  }
+};
+
+const getImageUrl = (equipment) => {
+  if (!equipment || !equipment.image_data) return null;
+  
+  const imageData = equipment.image_data;
+  const contentType = equipment.image_content_type || 'image/jpeg';
+  
+  // If it already starts with 'data:', return as is
+  if (imageData.startsWith('data:')) {
+    return imageData;
+  }
+  
+  // If it's plain base64 (check for common JPEG/PNG signatures)
+  if (imageData.startsWith('/9j/') || imageData.startsWith('iVBORw0KGgo')) {
+    return `data:${contentType};base64,${imageData}`;
+  }
+  
+  // If it looks like it might be base64 (no special characters that aren't base64)
+  if (/^[A-Za-z0-9+/=]+$/.test(imageData)) {
+    return `data:${contentType};base64,${imageData}`;
+  }
+  
+  // Default: assume it's base64 and add prefix
+  return `data:${contentType};base64,${imageData}`;
+};
   const generateEquipmentCode = () => {
     const categoryPrefix = newEquipment.category ? newEquipment.category.substring(0, 3).toUpperCase() : 'EQP';
     const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
@@ -1465,26 +1584,140 @@ const printQRCode = () => {
             <h3>Equipment Overview</h3>
             
             <div className="item-overview-layout">
-              <div className="item-image-placeholder">
-  {selectedEquipment.has_image && selectedEquipment.image_data ? (
-    <img
-  src={
-    selectedEquipment.image_data.startsWith('data:')
-      ? selectedEquipment.image_data
-      : `data:${selectedEquipment.image_content_type || 'image/jpeg'};base64,${selectedEquipment.image_data}`
-  }
-  alt={selectedEquipment.name || "Equipment image"}
-  className="item-image"
-  onError={(e) => {
-    e.target.style.display = 'none';
-    e.target.nextSibling.style.display = 'block';
-  }}
-/>
-  ) : (
-    <div className="placeholder-box">No Image</div>
-  )}
-</div>
+               {/* IMAGE SECTION - START */}
+        <div className="item-image-placeholder">
+          {/* If image exists, display it */}
+          {selectedEquipment.has_image && selectedEquipment.image_data ? (
+            <div style={{ 
+              position: 'relative', 
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              minHeight: '300px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}>
+              {/* Actual Image */}
+              <img
+                key={`${selectedEquipment._id}-${selectedEquipment.image_filename}`}
+                src={getImageUrl(selectedEquipment)}
+                alt={selectedEquipment.name || "Equipment image"}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '300px',
+                  objectFit: 'contain',
+                  objectPosition: 'center'
+                }}
+                onLoad={(e) => {
+                  console.log('✅ Image loaded successfully:', selectedEquipment.image_filename);
+                }}
+                onError={(e) => {
+                  console.error('❌ Image failed to load:', e);
+                  e.target.style.display = 'none';
+                  const errorDiv = document.createElement('div');
+                  errorDiv.style.cssText = `
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    height: 300px;
+                    background-color: #f0f0f0;
+                    border-radius: 8px;
+                    color: #999;
+                  `;
+                  errorDiv.innerHTML = `
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.5; margin-bottom: 10px;">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                      <path d="M21 15L16 10M3 20L8 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 14px;">Failed to load image</p>
+                  `;
+                  e.target.parentElement.appendChild(errorDiv);
+                }}
+              />
               
+              {/* Change Image Button Overlay */}
+              <button
+                onClick={() => document.getElementById('overviewImageInput').click()}
+                style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  right: '10px',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  border: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.9)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.7)'}
+              >
+                📷 Change Image
+              </button>
+            </div>
+          ) : (
+            // No image - show placeholder with click to upload
+            <div 
+              className="placeholder-box" 
+              onClick={() => document.getElementById('overviewImageInput').click()}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '300px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px',
+                color: '#999',
+                cursor: 'pointer',
+                border: '2px dashed #ddd',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#667eea';
+                e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#ddd';
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+              }}
+            >
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.3, marginBottom: '10px' }}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                <path d="M21 15L16 10M3 20L8 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <p style={{ margin: '10px 0 5px 0', fontSize: '16px', fontWeight: '600' }}>No Image</p>
+              <small style={{ color: '#bbb' }}>Click or drag to upload</small>
+            </div>
+          )}
+          
+          {/* Hidden File Input */}
+          <input
+            type="file"
+            id="overviewImageInput"
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                console.log('📁 File selected:', file.name, file.size, file.type);
+                handleImageUploadForSelectedEquipment(file);
+              }
+              e.target.value = ''; // Reset for re-selection
+            }}
+            accept="image/jpeg,image/png,image/jpg"
+            style={{ display: 'none' }}
+          />
+      </div>
+        
               <div className="item-details">
                 <div className="detail-row">
                   <span className="detail-label">Equipment Name:</span>
@@ -1532,6 +1765,8 @@ const printQRCode = () => {
                 </div>
               </div>
             </div>
+
+
             
             <div className="item-overview-actions">
   <button className="action-btn repair-btn" onClick={handleReportRepair}>
