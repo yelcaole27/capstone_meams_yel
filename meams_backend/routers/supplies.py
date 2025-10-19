@@ -314,7 +314,7 @@ async def scan_supply_qr(supply_id: str):
         <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
             <h3 style="margin: 0 0 10px 0;">Recent Transactions</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr style="background: #667eea; color: white;">
+                <tr style="background: #3d9130; color: white;">
                     <th style="padding: 8px; text-align: left;">Date</th>
                     <th style="padding: 8px;">Receipt</th>
                     <th style="padding: 8px;">Issue</th>
@@ -457,12 +457,12 @@ async def scan_supply_qr(supply_id: str):
             </div>
             
             {f'''
-            <div class="image-container" style="text-align: center; margin: 30px 0;">
-            <img src="data:{supply.get('image_content_type', 'image/jpeg')};base64,{supply.get('image_data', '')}" 
-            alt="{supply['name']}" 
-            style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
-            </div>
-            ''' if supply.get('image_data') else ''}
+           <div class="image-container" style="text-align: center; margin: 30px 0;">
+            <img src="data:{supply['itemPicture']['contentType']};base64,{supply['itemPicture']['data']}" 
+         alt="{supply['name']}" 
+         style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
+         </div>
+          ''' if supply.get('itemPicture') and supply['itemPicture'].get('data') else ''}
 
             <div class="info-grid">
                 <div class="info-card">
