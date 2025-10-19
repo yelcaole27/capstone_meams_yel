@@ -35,7 +35,7 @@ function LogsPage() {
       if (selectedUser && selectedUser !== 'ALL USERS') params.append('username', selectedUser);
       if (searchTerm) params.append('search', searchTerm);
 
-      const response = await fetch(`http://localhost:8000/api/logs?${params.toString()}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/logs?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -91,7 +91,7 @@ function LogsPage() {
         search: searchTerm || null
       };
 
-      const response = await fetch('http://localhost:8000/api/logs/export', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/logs/export`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
