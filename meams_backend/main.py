@@ -4,7 +4,18 @@ from config import API_TITLE, API_VERSION, ALLOWED_ORIGINS
 from database import connect_db
 from routers import help_support
 import time
+
 app = FastAPI(title=API_TITLE, version=API_VERSION)
+
+
+# CORS Middleware - uses ALLOWED_ORIGINS from config.py
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")
@@ -41,7 +52,7 @@ from routers import (
 
 # Include all routers
 app.include_router(auth.router)
-app.include_router(dashboard.router)  # Add dashboard first for priority
+app.include_router(dashboard.router)
 app.include_router(supplies.router)
 app.include_router(equipment.router)
 app.include_router(profile.router)
@@ -53,6 +64,7 @@ app.include_router(bulk_import.router)
 app.include_router(misc.router)
 app.include_router(help_support.router, tags=["help-support"])
 
+# Root endpoint - KEEP ONLY ONE
 @app.get("/")
 async def root():
     return {

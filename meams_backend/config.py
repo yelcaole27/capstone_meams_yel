@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # API Settings
-API_TITLE = "MEAMS Asset Management API"
+API_TITLE = "MEAMS API"
 API_VERSION = "1.0.0"
 API_HOST = "0.0.0.0"
 API_PORT = 8000
@@ -21,7 +21,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 # CORS Settings
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://localhost:3001"
+    "http://localhost:3001",
+    "https://meams.onrender.com",
+    "https://meams-frontend.onrender.com",
 ]
 
 # MongoDB

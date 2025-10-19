@@ -2,9 +2,13 @@
 Equipment router - handles all equipment-related endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Body
+from fastapi.responses import StreamingResponse
 from bson import ObjectId
 from typing import Optional
+import asyncio
+import json
 from datetime import datetime
+from fastapi.responses import HTMLResponse
 from database import get_equipment_collection
 from services.equipment_service import equipment_helper
 from models.equipment import EquipmentCreate, EquipmentUpdate
@@ -20,7 +24,7 @@ from services.equipment_service import (
     get_equipment_documents,
     get_equipment_document,
     delete_equipment_document,
-    calculate_lcc_analysis,  # NEW: Import LCC function - ALIGNED
+    calculate_lcc_analysis,
 )
 
 from services.auth_service import verify_token
@@ -28,6 +32,9 @@ from services.log_service import create_log_entry
 from dependencies import get_current_user
 
 router = APIRouter(prefix="/api/equipment", tags=["equipment"])
+
+# Store for scan events (in production, use Redis or similar)
+scan_events = {}
 
 @router.get("")
 async def list_equipment(token: str = Depends(get_current_user)):
@@ -67,6 +74,105 @@ async def get_single_equipment(equipment_id: str, token: str = Depends(get_curre
     
     equipment = get_equipment_by_id(equipment_id)
     return {"success": True, "message": "Equipment found", "data": equipment}
+
+# NEW: QR Code Scan Endpoint
+@router.get("/scan/{equipment_id}")
+async def scan_equipment(equipment_id: str):
+    """
+    Endpoint called when a QR code is scanned.
+    Returns current equipment data and triggers real-time notifications.
+    """
+    if not ObjectId.is_valid(equipment_id):
+        raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+    
+    try:
+        # Fetch current equipment data
+        equipment = get_equipment_by_id(equipment_id)
+        
+        # Create scan event data
+        scan_data = {
+            "equipment_id": equipment["_id"],
+            "equipment_name": equipment["name"],
+            "item_code": equipment["itemCode"],
+            "category": equipment["category"],
+            "status": equipment["status"],
+            "location": equipment.get("location", "N/A"),
+            "amount": equipment.get("amount", 0),
+            "useful_life": equipment.get("usefulLife", 0),
+            "timestamp": datetime.utcnow().isoformat(),
+            "scan_type": "equipment"
+        }
+        
+        # Notify all listeners for this equipment
+        if equipment_id in scan_events:
+            for queue in scan_events[equipment_id]:
+                await queue.put(scan_data)
+        
+        print(f"📱 QR Code scanned for equipment: {equipment['name']} ({equipment['itemCode']})")
+        
+        return {
+            "success": True,
+            "message": "Equipment scanned successfully",
+            "data": scan_data
+        }
+        
+    except Exception as e:
+        print(f"❌ Error scanning equipment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# NEW: Real-time Scan Listener Endpoint (Server-Sent Events)
+@router.get("/listen/{equipment_id}")
+async def listen_for_scans(equipment_id: str):
+    """
+    Server-Sent Events endpoint for real-time scan notifications.
+    Frontend connects to this to receive live scan events.
+    """
+    if not ObjectId.is_valid(equipment_id):
+        raise HTTPException(status_code=400, detail="Invalid equipment ID format")
+    
+    async def event_generator():
+        # Create a queue for this listener
+        queue = asyncio.Queue()
+        
+        # Register this listener
+        if equipment_id not in scan_events:
+            scan_events[equipment_id] = []
+        scan_events[equipment_id].append(queue)
+        
+        try:
+            print(f"👂 New listener connected for equipment {equipment_id}")
+            
+            # Send initial connection message
+            yield f"data: {json.dumps({'type': 'connected', 'equipment_id': equipment_id})}\n\n"
+            
+            # Keep connection alive and send events
+            while True:
+                try:
+                    # Wait for scan event (with timeout to keep connection alive)
+                    scan_data = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    yield f"data: {json.dumps(scan_data)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keepalive
+                    yield f": keepalive\n\n"
+                    
+        except asyncio.CancelledError:
+            print(f"👋 Listener disconnected for equipment {equipment_id}")
+        finally:
+            # Clean up
+            if equipment_id in scan_events:
+                scan_events[equipment_id].remove(queue)
+                if not scan_events[equipment_id]:
+                    del scan_events[equipment_id]
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 @router.put("/{equipment_id}")
 async def update_existing_equipment(
@@ -157,11 +263,9 @@ async def add_equipment_report(
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
-    # Validate equipment ID
     if not ObjectId.is_valid(equipment_id):
         raise HTTPException(status_code=400, detail="Invalid equipment ID")
     
-    # Validate required fields
     if not report_data.get("reportDate"):
         raise HTTPException(status_code=400, detail="Report date is required")
     
@@ -170,12 +274,10 @@ async def add_equipment_report(
     
     collection = get_equipment_collection()
     
-    # Check if equipment exists
     equipment = collection.find_one({"_id": ObjectId(equipment_id)})
     if not equipment:
         raise HTTPException(status_code=404, detail="Equipment not found")
     
-    # Update equipment with report data and set status to Maintenance
     update_result = collection.update_one(
         {"_id": ObjectId(equipment_id)},
         {
@@ -188,17 +290,14 @@ async def add_equipment_report(
         }
     )
     
-    # Check if update was successful
     if update_result.modified_count == 0:
         raise HTTPException(status_code=500, detail="Failed to update equipment with report")
     
-    # Retrieve the updated equipment
     updated_equipment = collection.find_one({"_id": ObjectId(equipment_id)})
     
     if not updated_equipment:
         raise HTTPException(status_code=404, detail="Equipment not found after update")
     
-    # Log the action
     await create_log_entry(
         username,
         "Added repair report.",
@@ -206,13 +305,7 @@ async def add_equipment_report(
         client_ip
     )
     
-    # Return formatted equipment data
     formatted_equipment = equipment_helper(updated_equipment)
-    
-    print(f"✅ Report added successfully for equipment {equipment_id}")
-    print(f"   Report Date: {formatted_equipment.get('reportDate')}")
-    print(f"   Report Details: {formatted_equipment.get('reportDetails')[:50]}...")
-    print(f"   Status: {formatted_equipment.get('status')}")
     
     return {
         "success": True,
@@ -250,7 +343,6 @@ async def update_equipment_repair_route(
         "data": updated_equipment
     }
 
-# NEW: LCC ANALYSIS ENDPOINT
 @router.get("/{equipment_id}/lcc-analysis")
 async def get_lcc_analysis(
     equipment_id: str,
@@ -265,10 +357,8 @@ async def get_lcc_analysis(
     if not ObjectId.is_valid(equipment_id):
         raise HTTPException(status_code=400, detail="Invalid equipment ID format")
     
-    # Calculate LCC analysis
     lcc_data = calculate_lcc_analysis(equipment_id)
     
-    # Log the action
     await create_log_entry(
         username,
         "Viewed LCC analysis.",
@@ -276,19 +366,11 @@ async def get_lcc_analysis(
         client_ip
     )
     
-    print(f"📊 LCC Analysis generated for equipment {equipment_id}")
-    print(f"   Equipment: {lcc_data['equipment_name']}")
-    print(f"   Risk Level: {lcc_data['risk_level']}")
-    print(f"   LCC Remarks: {', '.join(lcc_data['lcc_remarks'])}")
-    print(f"   Recommend Replacement: {lcc_data['recommend_replacement']}")
-    
     return {
         "success": True,
         "message": "LCC analysis calculated successfully",
         "data": lcc_data
     }
-
-# DOCUMENT ENDPOINTS
 
 @router.post("/{equipment_id}/documents")
 async def upload_document(
@@ -375,3 +457,273 @@ async def remove_document(
         "message": "Document deleted successfully",
         "data": updated_equipment
     }
+
+
+@router.get("/scan/{equipment_id}", response_class=HTMLResponse)
+async def scan_equipment_qr(equipment_id: str):
+    """
+    Handle QR code scan - returns HTML page with equipment details and repair history
+    Similar to supplies stock card view
+    """
+    from fastapi.responses import HTMLResponse
+    from datetime import datetime
+    
+    # Validate ID
+    if not ObjectId.is_valid(equipment_id):
+        return HTMLResponse(
+            content="<h1>Invalid QR Code</h1>",
+            status_code=400
+        )
+    
+    # Fetch CURRENT data from database
+    equipment = get_equipment_by_id(equipment_id)
+    
+    if not equipment:
+        return HTMLResponse(
+            content="<h1>Equipment Not Found</h1>",
+            status_code=404
+        )
+    
+    # Build repair history HTML
+    repair_html = ""
+    if equipment.get('repairHistory'):
+        recent = sorted(equipment['repairHistory'], 
+                       key=lambda x: x.get('repairDate', ''), 
+                       reverse=True)[:10]
+        
+        rows = ""
+        total_cost = 0
+        for repair in recent:
+            amount = float(repair.get('amountUsed', 0))
+            total_cost += amount
+            rows += f"""
+            <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDate', 'N/A')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDetails', '-')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #059669;">₱{amount:.2f}</td>
+            </tr>
+            """
+        
+        repair_html = f"""
+        <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; border-bottom: 3px solid #667eea; padding-bottom: 10px;">
+                📋 Repair History
+            </h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563;">Repair Date</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563;">Details</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #4b5563;">Amount Used</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f3f4f6; font-weight: bold; border-top: 2px solid #e5e7eb;">
+                        <td colspan="2" style="padding: 12px;">Total Repairs: {len(recent)}</td>
+                        <td style="padding: 12px; text-align: right; color: #059669;">₱{total_cost:.2f}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        """
+    else:
+        repair_html = """
+        <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto 15px; opacity: 0.3;">
+                <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <h3 style="margin: 0 0 10px 0; color: #6b7280;">No Repair History</h3>
+            <p style="margin: 0; color: #9ca3af; font-size: 14px;">This equipment has not been repaired yet</p>
+        </div>
+        """
+    
+    # Return beautiful HTML page
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{equipment['name']} - Equipment Details</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                margin: 0;
+            }}
+            .container {{
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 900px;
+                width: 100%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #667eea;
+            }}
+            .logo {{
+                font-size: 72px;
+                margin-bottom: 15px;
+            }}
+            h1 {{
+                color: #1f2937;
+                margin: 10px 0;
+                font-size: 32px;
+            }}
+            .subtitle {{
+                color: #6b7280;
+                font-size: 16px;
+                margin-top: 5px;
+            }}
+            .timestamp {{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 10px;
+                text-align: center;
+                margin: 20px 0;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }}
+            .info-grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin: 30px 0;
+            }}
+            .info-card {{
+                background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 4px solid #667eea;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transition: transform 0.2s;
+            }}
+            .info-card:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }}
+            .label {{
+                font-size: 12px;
+                color: #6b7280;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+            }}
+            .value {{
+                font-size: 20px;
+                color: #1f2937;
+                font-weight: 700;
+                margin-top: 8px;
+            }}
+            .amount {{
+                font-size: 36px;
+                color: #667eea;
+                font-weight: 800;
+            }}
+            .status {{
+                display: inline-block;
+                padding: 8px 20px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }}
+            .status-operational {{ background: #d1fae5; color: #065f46; }}
+            .status-maintenance {{ background: #fef3c7; color: #92400e; }}
+            .status-beyond {{ background: #fee2e2; color: #991b1b; }}
+            .status-within {{ background: #dbeafe; color: #1e40af; }}
+            .footer {{
+                margin-top: 40px;
+                text-align: center;
+                padding-top: 20px;
+                border-top: 2px solid #e5e7eb;
+                color: #9ca3af;
+                font-size: 14px;
+            }}
+            .footer-logo {{
+                font-weight: 700;
+                color: #667eea;
+                margin-top: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">⚙️</div>
+                <h1>{equipment['name']}</h1>
+                <p class="subtitle">Universidad De Manila - Equipment Management</p>
+            </div>
+            
+            <div class="timestamp">
+                📅 Scanned: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="label">Item Code</div>
+                    <div class="value">{equipment.get('itemCode', 'N/A')}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Category</div>
+                    <div class="value">{equipment.get('category', 'N/A')}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Status</div>
+                    <div class="value">
+                        <span class="status status-{equipment.get('status', 'operational').lower().replace(' ', '-').replace('_', '-')}">
+                            {equipment.get('status', 'Operational')}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Location</div>
+                    <div class="value">{equipment.get('location', 'Not specified')}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Purchase Amount</div>
+                    <div class="amount">₱{float(equipment.get('amount', 0)):.2f}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Useful Life</div>
+                    <div class="value">{equipment.get('usefulLife', 0)} years</div>
+                </div>
+            </div>
+            
+            <div class="info-card" style="margin-top: 20px;">
+                <div class="label">Description</div>
+                <div class="value" style="font-size: 16px; font-weight: 500; line-height: 1.6;">
+                    {equipment.get('description', 'No description available')}
+                </div>
+            </div>
+            
+            {repair_html}
+            
+            <div class="footer">
+                <p>Equipment ID: {equipment['_id']}</p>
+                <p class="footer-logo">Universidad De Manila Equipment Management System</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)

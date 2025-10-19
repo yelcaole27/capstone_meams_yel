@@ -1,19 +1,16 @@
 // src/services/equipmentApi.js
 import axios from 'axios';
 
-// Base URL for your Python FastAPI backend
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://meams.onrender.com';
 
-// Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // Increased to 15 seconds for better reliability
+  timeout: 15000,
 });
 
-// Function to get auth token
 const getAuthToken = () => {
   return localStorage.getItem('authToken') || 
          localStorage.getItem('adminToken') || 
@@ -22,12 +19,10 @@ const getAuthToken = () => {
          sessionStorage.getItem('token');
 };
 
-// Request interceptor for logging and authentication
 apiClient.interceptors.request.use(
   (config) => {
     console.log(`🚀 Equipment API Request: ${config.method?.toUpperCase()} ${config.url}`);
     
-    // Add authentication token to requests
     const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -44,7 +39,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => {
     console.log(`✅ Equipment API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
@@ -53,7 +47,6 @@ apiClient.interceptors.response.use(
   (error) => {
     console.error('❌ Equipment API Response Error:', error);
     
-    // Handle common error scenarios
     if (error.code === 'ECONNABORTED') {
       throw new Error('Request timeout. Please check your internet connection and try again.');
     } else if (error.response?.status === 401) {
@@ -74,12 +67,9 @@ apiClient.interceptors.response.use(
 );
 
 const EquipmentAPI = {
-  // Get all equipment
   async getAllEquipment() {
     try {
       const response = await apiClient.get('/api/equipment');
-      
-      // Handle different response structures
       const data = response.data.data || response.data.equipment || response.data;
       
       if (!Array.isArray(data)) {
@@ -95,7 +85,6 @@ const EquipmentAPI = {
     }
   },
 
-  // Get equipment by ID
   async getEquipmentById(id) {
     try {
       if (!id) {
@@ -110,112 +99,103 @@ const EquipmentAPI = {
     }
   },
 
-  // Add new equipment - ENHANCED WITH DEBUG LOGGING
   async addEquipment(equipmentData) {
-  try {
-    // Validation
-    if (!equipmentData.name?.trim()) {
-      throw new Error('Equipment name is required');
-    }
-    if (!equipmentData.description?.trim()) {
-      throw new Error('Equipment description is required');
-    }
-    if (!equipmentData.category?.trim()) {
-      throw new Error('Equipment category is required');
-    }
-
-    // Prepare data to send, including image fields
-    const processedData = {
-  name: equipmentData.name.trim(),
-  description: equipmentData.description.trim(),
-  category: equipmentData.category.trim(),
-  usefulLife: parseInt(equipmentData.usefulLife) || 0,
-  amount: parseFloat(equipmentData.amount) || 0,
-  location: equipmentData.location?.trim() || '',
-  status: equipmentData.status || 'Operational',
-  itemCode: equipmentData.itemCode?.trim() || '',
-  unit_price: parseFloat(equipmentData.unit_price) || 0,
-  supplier: equipmentData.supplier?.trim() || '',
-  date: equipmentData.date || '',
-  image_data: equipmentData.image_data || null,
-  image_filename: equipmentData.image_filename || null,
-  image_content_type: equipmentData.image_content_type || null,
-};
-
-
-    // Remove empty strings except for date and image_data fields
-    Object.keys(processedData).forEach(key => {
-      if (key !== 'date' && key !== 'image_data' && processedData[key] === '') {
-        delete processedData[key];
+    try {
+      if (!equipmentData.name?.trim()) {
+        throw new Error('Equipment name is required');
       }
-    });
+      if (!equipmentData.description?.trim()) {
+        throw new Error('Equipment description is required');
+      }
+      if (!equipmentData.category?.trim()) {
+        throw new Error('Equipment category is required');
+      }
 
-    // Send POST request to backend
-    const response = await apiClient.post('/api/equipment', processedData);
-    return response.data.data || response.data;
+      const processedData = {
+        name: equipmentData.name.trim(),
+        description: equipmentData.description.trim(),
+        category: equipmentData.category.trim(),
+        usefulLife: parseInt(equipmentData.usefulLife) || 0,
+        amount: parseFloat(equipmentData.amount) || 0,
+        location: equipmentData.location?.trim() || '',
+        status: equipmentData.status || 'Operational',
+        itemCode: equipmentData.itemCode?.trim() || '',
+        unit_price: parseFloat(equipmentData.unit_price) || 0,
+        supplier: equipmentData.supplier?.trim() || '',
+        date: equipmentData.date || '',
+        image_data: equipmentData.image_data || null,
+        image_filename: equipmentData.image_filename || null,
+        image_content_type: equipmentData.image_content_type || null,
+      };
 
-  } catch (error) {
-    console.error('Failed to add equipment:', error);
-    throw error;
-  }
-},
+      Object.keys(processedData).forEach(key => {
+        if (key !== 'date' && key !== 'image_data' && processedData[key] === '') {
+          delete processedData[key];
+        }
+      });
 
+      const response = await apiClient.post('/api/equipment', processedData);
+      return response.data.data || response.data;
 
-
-async uploadEquipmentImage(equipmentId, imageFile) {
-  try {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-
-    const token = getAuthToken();
-    if (!token) throw new Error('No authentication token found.');
-
-    const response = await fetch(`${API_BASE_URL}/api/equipment/${equipmentId}/image`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    } catch (error) {
+      console.error('Failed to add equipment:', error);
+      throw error;
     }
+  },
 
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
-    console.error('Failed to upload equipment image:', error);
-    throw error;
-  }
-},
-  // Update equipment
+  async uploadEquipmentImage(equipmentId, imageFile) {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const token = getAuthToken();
+      if (!token) throw new Error('No authentication token found.');
+
+      const response = await fetch(`${API_BASE_URL}/api/equipment/${equipmentId}/image`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Failed to upload equipment image:', error);
+      throw error;
+    }
+  },
+
   async updateEquipmentRepair(equipmentId, repairData) {
-  try {
-    if (!equipmentId) {
-      throw new Error('Equipment ID is required');
-    }
-    
-    if (!repairData.repairDate) {
-      throw new Error('Repair date is required');
-    }
-    
-    if (!repairData.repairDetails?.trim()) {
-      throw new Error('Repair details are required');
-    }
+    try {
+      if (!equipmentId) {
+        throw new Error('Equipment ID is required');
+      }
+      
+      if (!repairData.repairDate) {
+        throw new Error('Repair date is required');
+      }
+      
+      if (!repairData.repairDetails?.trim()) {
+        throw new Error('Repair details are required');
+      }
 
-    console.log(`Updating equipment repair ${equipmentId}:`, repairData);
-    
-    const response = await apiClient.put(`/api/equipment/${equipmentId}/repair`, repairData);
-    return response.data.data || response.data;
-  } catch (error) {
-    console.error('Failed to update equipment repair:', error);
-    throw error;
-  }
-},
+      console.log(`Updating equipment repair ${equipmentId}:`, repairData);
+      
+      const response = await apiClient.put(`/api/equipment/${equipmentId}/repair`, repairData);
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Failed to update equipment repair:', error);
+      throw error;
+    }
+  },
 
-  // Delete equipment
   async deleteEquipment(id) {
     try {
       if (!id) {
@@ -234,190 +214,34 @@ async uploadEquipmentImage(equipmentId, imageFile) {
     }
   },
 
-  // Get equipment by category
-  async getEquipmentByCategory(category) {
+  async addEquipmentReport(equipmentId, reportData) {
     try {
-      if (!category?.trim()) {
-        throw new Error('Category is required');
+      if (!equipmentId) {
+        throw new Error('Equipment ID is required');
       }
       
-      const response = await apiClient.get(`/api/equipment/category/${encodeURIComponent(category)}`);
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error(`Failed to fetch equipment for category ${category}:`, error);
-      throw error;
-    }
-  },
-
-  // Get equipment by status
-  async getEquipmentByStatus(status) {
-    try {
-      if (!status?.trim()) {
-        throw new Error('Status is required');
+      if (!reportData.reportDetails?.trim()) {
+        throw new Error('Report details are required');
       }
       
-      const response = await apiClient.get(`/api/equipment/status/${encodeURIComponent(status)}`);
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error(`Failed to fetch equipment with status ${status}:`, error);
-      throw error;
-    }
-  },
-
-  // Get equipment by location
-  async getEquipmentByLocation(location) {
-    try {
-      if (!location?.trim()) {
-        throw new Error('Location is required');
-      }
-      
-      const response = await apiClient.get(`/api/equipment/location/${encodeURIComponent(location)}`);
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error(`Failed to fetch equipment at location ${location}:`, error);
-      throw error;
-    }
-  },
-
-  // Search equipment
-  async searchEquipment(query) {
-    try {
-      if (!query || query.trim() === '') {
-        return this.getAllEquipment();
-      }
-      
-      const response = await apiClient.get(`/api/equipment/search/${encodeURIComponent(query.trim())}`);
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error(`Failed to search equipment with query "${query}":`, error);
-      throw error;
-    }
-  },
-
-  // Get all categories
-  async getEquipmentCategories() {
-    try {
-      const response = await apiClient.get('/api/equipment/categories');
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error('Failed to fetch equipment categories:', error);
-      // Return default categories as fallback
-      return ['Mechanical', 'Electrical', 'Medical', 'IT Equipment', 'Laboratory', 'HVAC', 'Safety'];
-    }
-  },
-
-  // Get all statuses
-  async getEquipmentStatuses() {
-    try {
-      const response = await apiClient.get('/api/equipment/statuses');
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error('Failed to fetch equipment statuses:', error);
-      // Return default statuses as fallback
-      return ['Operational', 'Maintenance', 'Out of Service', 'Under Repair'];
-    }
-  },
-
-  // Get all locations
-  async getEquipmentLocations() {
-    try {
-      const response = await apiClient.get('/api/equipment/locations');
-      const data = response.data.data || response.data;
-      
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error('Failed to fetch equipment locations:', error);
-      return [];
-    }
-  },
-
-  // Health check
-  async checkHealth() {
-    try {
-      const response = await apiClient.get('/health');
-      console.log('💚 Backend health check passed');
-      return response.data;
-    } catch (error) {
-      console.error('💔 Backend health check failed:', error);
-      throw error;
-    }
-  },
-
-  // Batch operations
-  async addMultipleEquipment(equipmentArray) {
-    try {
-      if (!Array.isArray(equipmentArray) || equipmentArray.length === 0) {
-        throw new Error('Equipment array is required and must not be empty');
+      if (!reportData.reportDate) {
+        throw new Error('Report date is required');
       }
 
-      const response = await apiClient.post('/api/equipment/batch', {
-        equipment: equipmentArray
-      });
+      console.log(`Adding report to equipment ${equipmentId}:`, reportData);
       
+      const response = await apiClient.put(`/api/equipment/${equipmentId}/report`, reportData);
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Failed to add multiple equipment:', error);
+      console.error('Failed to add equipment report:', error);
       throw error;
     }
   },
 
-  // Export equipment data
-  async exportEquipment(format = 'json') {
-    try {
-      const response = await apiClient.get(`/api/equipment/export?format=${format}`, {
-        responseType: format === 'csv' ? 'blob' : 'json'
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Failed to export equipment:', error);
-      throw error;
-    }
-  },
-
-  // add equipment report
-
-  async addEquipmentReport(equipmentId, reportData) {
-  try {
-    if (!equipmentId) {
-      throw new Error('Equipment ID is required');
-    }
-    
-    if (!reportData.reportDetails?.trim()) {
-      throw new Error('Report details are required');
-    }
-    
-    if (!reportData.reportDate) {
-      throw new Error('Report date is required');
-    }
-
-    console.log(`Adding report to equipment ${equipmentId}:`, reportData);
-    
-    const response = await apiClient.put(`/api/equipment/${equipmentId}/report`, reportData);
-    return response.data.data || response.data;
-  } catch (error) {
-    console.error('Failed to add equipment report:', error);
-    throw error;
-  }
-},
-
-// ========================================
+  // ========================================
   // DOCUMENT MANAGEMENT METHODS
   // ========================================
 
-  // Upload document to equipment
   async uploadEquipmentDocument(equipmentId, file) {
     try {
       const formData = new FormData();
@@ -450,7 +274,6 @@ async uploadEquipmentImage(equipmentId, imageFile) {
     }
   },
 
-  // Get all documents for equipment
   async getEquipmentDocuments(equipmentId) {
     try {
       console.log(`📥 Fetching documents for equipment ${equipmentId}`);
@@ -463,13 +286,11 @@ async uploadEquipmentImage(equipmentId, imageFile) {
     }
   },
 
-  // Get document URL for viewing/downloading
   getEquipmentDocumentUrl(equipmentId, documentIndex) {
     const token = getAuthToken();
     return `${API_BASE_URL}/api/equipment/${equipmentId}/documents/${documentIndex}?token=${encodeURIComponent(token)}`;
   },
 
-  // Download specific document
   async downloadEquipmentDocument(equipmentId, documentIndex, filename) {
     try {
       const token = getAuthToken();
@@ -508,7 +329,6 @@ async uploadEquipmentImage(equipmentId, imageFile) {
     }
   },
 
-  // Delete document
   async deleteEquipmentDocument(equipmentId, documentIndex) {
     try {
       console.log(`🗑️ Deleting document at index ${documentIndex} from equipment ${equipmentId}`);
@@ -524,19 +344,98 @@ async uploadEquipmentImage(equipmentId, imageFile) {
       throw error;
     }
   },
-  
-  // Method to check if user is authenticated
+
+  // ========================================
+  // QR CODE REAL-TIME SCANNING METHODS
+  // ========================================
+
+  /**
+   * Trigger a scan event for an equipment item
+   * This simulates scanning a QR code and returns current equipment data
+   */
+  async scanEquipment(equipmentId) {
+    try {
+      console.log(`📱 Scanning equipment QR code: ${equipmentId}`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/equipment/scan/${equipmentId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to scan equipment');
+      }
+
+      const result = await response.json();
+      console.log('✅ Equipment scanned successfully:', result.data);
+      return result.data;
+    } catch (error) {
+      console.error('Failed to scan equipment:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Start listening for real-time scan events using Server-Sent Events
+   * Returns an EventSource object that emits 'message' events
+   */
+  createScanListener(equipmentId, onScan, onError) {
+    console.log(`👂 Starting scan listener for equipment ${equipmentId}`);
+    
+    const eventSource = new EventSource(
+      `${API_BASE_URL}/api/equipment/listen/${equipmentId}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'connected') {
+          console.log('✅ Connected to scan listener');
+          return;
+        }
+        
+        console.log('📱 Equipment scanned:', data);
+        if (onScan) {
+          onScan(data);
+        }
+      } catch (error) {
+        console.error('Error parsing scan event:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('❌ Scan listener error:', error);
+      if (onError) {
+        onError(error);
+      }
+    };
+
+    return eventSource;
+  },
+
+  /**
+   * Stop listening for scan events
+   */
+  closeScanListener(eventSource) {
+    if (eventSource) {
+      eventSource.close();
+      console.log('🛑 Scan listener closed');
+    }
+  },
+
   isAuthenticated() {
     return !!getAuthToken();
   },
 
-  // Method to manually set token (useful for debugging)
   setAuthToken(token) {
     localStorage.setItem('authToken', token);
     console.log('🔑 Auth token set manually');
   },
 
-  // Get current API configuration
   getApiConfig() {
     return {
       baseURL: API_BASE_URL,

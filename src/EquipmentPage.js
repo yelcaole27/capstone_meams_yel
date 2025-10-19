@@ -26,6 +26,7 @@ function EquipmentPage() {
   const [showLCCAnalysis, setShowLCCAnalysis] = useState(false);
   const [lccData, setLccData] = useState(null);
 
+
   // NEW: LCC Analysis Function
   const calculateLCCAnalysis = (equipment) => {
     const repairHistory = equipment.repairHistory || [];
@@ -784,145 +785,159 @@ function EquipmentPage() {
   };
 
   const generateQRCode = async (equipment) => {
-    try {
-      const qrData = JSON.stringify({
-        type: 'equipment',
-        itemCode: equipment.itemCode,
-        name: equipment.name,
-        description: equipment.description,
-        usefulLife: equipment.usefulLife,
-        amount: equipment.amount,
-        category: equipment.category,
-        location: equipment.location,
-        status: equipment.status,
-        date: equipment.date,
-        id: equipment._id,
-        timestamp: new Date().toISOString(),
-        generatedBy: 'Equipment Management System'
-      });
+  try {
+    // Get your backend URL
+    const BACKEND_URL = process.env.REACT_APP_API_URL || 'https://meams.onrender.com';
+    
+    // Create a simple URL that contains only the equipment ID
+    // The backend will fetch CURRENT data when scanned
+    const scanUrl = `${BACKEND_URL}/api/equipment/scan/${equipment._id}`;
+    
+    console.log('📱 Generating QR code with URL:', scanUrl);
+    
+    // Generate QR code with just the URL
+    const qrDataURL = await QRCode.toDataURL(scanUrl, {
+      width: 300,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
 
-      const dataURL = await QRCode.toDataURL(qrData, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        errorCorrectionLevel: 'M'
-      });
-
-      setQrCodeDataURL(dataURL);
-      setQrCodeEquipment(equipment);
-      setIsQRModalOpen(true);
-      
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-      alert('Failed to generate QR code. Please try again.');
+    // Update state
+    setQrCodeDataURL(qrDataURL);
+    setQrCodeEquipment(equipment);
+    setIsQRModalOpen(true);
+    
+    console.log('✅ QR Code generated successfully');
+    
+    // Request notification permission if not already granted
+    if (window.Notification && Notification.permission === 'default') {
+      await Notification.requestPermission();
     }
-  };
+    
+  } catch (error) {
+    console.error('❌ QR code generation failed:', error);
+    alert('Failed to generate QR code: ' + error.message);
+  }
+};
+
 
   const downloadQRCode = () => {
-    if (!qrCodeDataURL || !qrCodeEquipment) return;
+  if (!qrCodeDataURL || !qrCodeEquipment) return;
 
-    const link = document.createElement('a');
-    const fileName = `QR_${qrCodeEquipment.itemCode}_${qrCodeEquipment.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-    link.download = fileName;
-    link.href = qrCodeDataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log(`📥 QR Code downloaded: ${fileName}`);
-  };
+  const link = document.createElement('a');
+  const fileName = `QR_${qrCodeEquipment.itemCode}_${qrCodeEquipment.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+  link.download = fileName;
+  link.href = qrCodeDataURL;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  console.log(`📥 QR Code downloaded: ${fileName}`);
+};
 
-  const printQRCode = () => {
-    if (!qrCodeDataURL || !qrCodeEquipment) return;
+const printQRCode = () => {
+  if (!qrCodeDataURL || !qrCodeEquipment) return;
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>QR Code - ${qrCodeEquipment.name}</title>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              text-align: center; 
-              padding: 20px;
-              margin: 0;
-              background: white;
-            }
-            .qr-container {
-              display: inline-block;
-              border: 2px solid #333;
-              padding: 20px;
-              margin: 20px;
-              background: white;
-            }
-            .item-info {
-              margin-bottom: 20px;
-            }
-            .item-info h2 {
-              margin: 0 0 10px 0;
-              color: #333;
-              font-size: 20px;
-            }
-            .item-details {
-              text-align: left;
-              margin: 10px 0;
-            }
-            .item-details p {
-              margin: 5px 0;
-              font-size: 14px;
-              color: #333;
-            }
-            .item-details strong {
-              color: #000;
-            }
-            img {
-              max-width: 100%;
-              height: auto;
-              border: 1px solid #ddd;
-            }
-            .footer {
-              margin-top: 15px;
-              font-size: 12px;
-              color: #666;
-            }
-            @media print {
-              body { margin: 0; }
-              .qr-container { border: 2px solid #333; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="qr-container">
-            <div class="item-info">
-              <h2>${qrCodeEquipment.name}</h2>
-              <div class="item-details">
-                <p><strong>Item Code:</strong> ${qrCodeEquipment.itemCode}</p>
-                <p><strong>Useful Life:</strong> ${qrCodeEquipment.usefulLife}</p>
-                <p><strong>Category:</strong> ${qrCodeEquipment.category}</p>
-                <p><strong>Location:</strong> ${qrCodeEquipment.location}</p>
-                <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
-                <p><strong>Date:</strong> ${qrCodeEquipment.date || 'Not specified'}</p>
-                <p><strong>Description:</strong> ${qrCodeEquipment.description}</p>
-              </div>
-            </div>
-            <img src="${qrCodeDataURL}" alt="QR Code for ${qrCodeEquipment.name}" />
-            <div class="footer">
-              <p>Equipment Management System - Generated: ${new Date().toLocaleDateString()}</p>
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Equipment QR Code - ${qrCodeEquipment.name}</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px;
+            margin: 0;
+            background: white;
+          }
+          .qr-container {
+            display: inline-block;
+            border: 2px solid #333;
+            padding: 20px;
+            margin: 20px;
+            background: white;
+          }
+          .item-info {
+            margin-bottom: 20px;
+          }
+          .item-info h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 20px;
+          }
+          .item-details {
+            text-align: left;
+            margin: 10px 0;
+          }
+          .item-details p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #333;
+          }
+          .item-details strong {
+            color: #000;
+          }
+          img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+          }
+          .footer {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+          }
+          .scan-instruction {
+            background: #f0f9ff;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            color: #1e40af;
+            font-size: 13px;
+          }
+          @media print {
+            body { margin: 0; }
+            .qr-container { border: 2px solid #333; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="qr-container">
+          <div class="item-info">
+            <h2>⚙️ ${qrCodeEquipment.name}</h2>
+            <div class="item-details">
+              <p><strong>Item Code:</strong> ${qrCodeEquipment.itemCode}</p>
+              <p><strong>Category:</strong> ${qrCodeEquipment.category}</p>
+              <p><strong>Location:</strong> ${qrCodeEquipment.location || 'Not specified'}</p>
+              <p><strong>Status:</strong> ${qrCodeEquipment.status}</p>
+              <p><strong>Useful Life:</strong> ${qrCodeEquipment.usefulLife} years</p>
+              <p><strong>Amount:</strong> ₱${qrCodeEquipment.amount ? parseFloat(qrCodeEquipment.amount).toFixed(2) : '0.00'}</p>
             </div>
           </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
-  };
+          <img src="${qrCodeDataURL}" alt="QR Code for ${qrCodeEquipment.name}" />
+          <div class="scan-instruction">
+            📱 Scan this QR code to view equipment details and repair history
+          </div>
+          <div class="footer">
+            <p>Universidad De Manila - Equipment Management System</p>
+            <p>Generated: ${new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+};
 
   const handleEquipmentClick = (equipment) => {
     setSelectedEquipment(equipment);
@@ -1593,108 +1608,134 @@ function EquipmentPage() {
       )}
 
       {/* QR Code Modal for Equipment */}
-      {isQRModalOpen && qrCodeEquipment && (
-        <div className="overlay" onClick={handleCloseQRModal}>
-          <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="qr-status">Generated</div>
-            <h3>QR Code - {qrCodeEquipment.name}</h3>
-            
-            <div className="qr-display-section">
-              {/* Compact QR Code Display */}
-              <div className="qr-code-container">
-                <div className="qr-code-wrapper">
-                  <div className="qr-code-display">
-                    <img src={qrCodeDataURL} alt={`QR Code for ${qrCodeEquipment.name}`} />
-                  </div>
-                </div>
-                <div className="qr-brand-text">Equipment Inventory</div>
-                <div className="qr-timestamp">
-                  Generated: {new Date().toLocaleDateString()}
-                </div>
-              </div>
-              
-              {/* Equipment Information */}
-              <div className="qr-item-info">
-                <div className="qr-detail-row">
-                  <span className="qr-detail-label">Item Code:</span>
-                  <span className="qr-detail-value highlight">{qrCodeEquipment.itemCode}</span>
-                </div>
-                
-                <div className="qr-detail-row">
-                  <span className="qr-detail-label">Useful Life (Years):</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.usefulLife}</span>
-                </div>
-                
-                <div className="qr-detail-row">
-                  <span className="qr-detail-label">Category:</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.category}</span>
-                </div>
-                
-                <div className="qr-detail-row">
-                  <span className="qr-detail-label">Location:</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.location || 'Not specified'}</span>
-                </div>
-                
-                <div className="qr-detail-row">
-                  <span className="qr-detail-label">Status:</span>
-                  <span className="qr-detail-value">{qrCodeEquipment.status}</span>
-                </div>
-              </div>
+      // Replace your existing QR Modal in EquipmentPage.js with this version
+
+{isQRModalOpen && qrCodeEquipment && (
+  <div className="overlay" onClick={handleCloseQRModal}>
+    <div className="qr-modal-content" onClick={(e) => e.stopPropagation()} style={{
+      maxWidth: '600px',
+      maxHeight: '90vh',
+      overflowY: 'auto'
+    }}>
+      <div className="qr-status">Generated</div>
+      <h3>Equipment QR Code - {qrCodeEquipment.name}</h3>
+      
+      <div className="qr-display-section">
+        {/* QR Code Display */}
+        <div className="qr-code-container">
+          <div className="qr-code-wrapper">
+            <div className="qr-code-display">
+              <img src={qrCodeDataURL} alt={`QR Code for ${qrCodeEquipment.name}`} />
             </div>
-            
-            {/* Actions */}
-            <div className="qr-actions">
-              <button className="qr-action-btn download-btn" onClick={downloadQRCode}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Download
-              </button>
-              
-              <button className="qr-action-btn print-btn" onClick={printQRCode}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Print
-              </button>
-              
-              <button className="qr-action-btn" onClick={() => {
-                // Copy comprehensive QR data to clipboard
-                const qrData = {
-                  type: 'equipment',
-                  itemCode: qrCodeEquipment.itemCode,
-                  name: qrCodeEquipment.name,
-                  description: qrCodeEquipment.description,
-                  usefulLife: qrCodeEquipment.usefulLife,
-                  category: qrCodeEquipment.category,
-                  location: qrCodeEquipment.location,
-                  status: qrCodeEquipment.status,
-                  quantity: qrCodeEquipment.quantity,
-                  amount: qrCodeEquipment.amount,
-                  id: qrCodeEquipment._id,
-                  timestamp: new Date().toISOString()
-                };
-                navigator.clipboard.writeText(JSON.stringify(qrData, null, 2));
-                alert('QR data copied to clipboard!');
-              }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M5 15H4C3.46957 15 2.96086 14.7893 2.58579 14.4142C2.21071 14.0391 2 13.5304 2 13V4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2H13C13.5304 2 14.0391 2.21071 14.4142 2.58579C14.7893 2.96086 15 3.46957 15 4V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Copy Data
-              </button>
-            </div>
-            
-            <button className="close-qr-btn" onClick={handleCloseQRModal}>
-              ×
-            </button>
+          </div>
+          <div className="qr-brand-text">Equipment Inventory</div>
+          <div className="qr-timestamp">
+            Generated: {new Date().toLocaleDateString()}
           </div>
         </div>
-      )}
+        
+        {/* Equipment Information */}
+        <div className="qr-item-info">
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Item Code:</span>
+            <span className="qr-detail-value highlight">{qrCodeEquipment.itemCode}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Equipment Name:</span>
+            <span className="qr-detail-value">{qrCodeEquipment.name}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Category:</span>
+            <span className="qr-detail-value">{qrCodeEquipment.category}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Location:</span>
+            <span className="qr-detail-value">{qrCodeEquipment.location || 'Not specified'}</span>
+          </div>
+          
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Status:</span>
+            <span className="qr-detail-value" style={{
+              color: qrCodeEquipment.status === 'Within-Useful-Life' ? '#10b981' : 
+                     qrCodeEquipment.status === 'Maintenance' ? '#f59e0b' :
+                     qrCodeEquipment.status === 'Beyond-Useful-Life' ? '#ef4444' : '#ef4444'
+            }}>
+              {qrCodeEquipment.status}
+            </span>
+          </div>
+
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Amount:</span>
+            <span className="qr-detail-value">₱{qrCodeEquipment.amount ? parseFloat(qrCodeEquipment.amount).toFixed(2) : '0.00'}</span>
+          </div>
+
+          <div className="qr-detail-row">
+            <span className="qr-detail-label">Useful Life:</span>
+            <span className="qr-detail-value">{qrCodeEquipment.usefulLife} years</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Actions */}
+      <div className="qr-actions" style={{ marginTop: '20px' }}>
+        <button className="qr-action-btn download-btn" onClick={downloadQRCode}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Download QR
+        </button>
+        
+        <button className="qr-action-btn print-btn" onClick={printQRCode}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Print QR
+        </button>
+        
+        <button 
+          className="qr-action-btn" 
+          onClick={() => {
+            const qrData = {
+              type: 'equipment',
+              itemCode: qrCodeEquipment.itemCode,
+              name: qrCodeEquipment.name,
+              description: qrCodeEquipment.description,
+              usefulLife: qrCodeEquipment.usefulLife,
+              amount: qrCodeEquipment.amount,
+              category: qrCodeEquipment.category,
+              location: qrCodeEquipment.location,
+              status: qrCodeEquipment.status,
+              date: qrCodeEquipment.date,
+              id: qrCodeEquipment._id,
+              repairHistoryCount: qrCodeEquipment.repairHistory?.length || 0,
+              timestamp: new Date().toISOString(),
+              scanUrl: `${process.env.REACT_APP_API_URL}/api/equipment/scan/${qrCodeEquipment._id}`
+            };
+            navigator.clipboard.writeText(JSON.stringify(qrData, null, 2));
+            alert('Equipment data and scan URL copied to clipboard!');
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M5 15H4C3.46957 15 2.96086 14.7893 2.58579 14.4142C2.21071 14.0391 2 13.5304 2 13V4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2H13C13.5304 2 14.0391 2.21071 14.4142 2.58579C14.7893 2.96086 15 3.46957 15 4V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Copy Data
+        </button>
+      </div>
+      
+      <button className="close-qr-btn" onClick={handleCloseQRModal}>
+        ×
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Report Repair Modal */}
 {showReportRepairModal && selectedEquipment && (
