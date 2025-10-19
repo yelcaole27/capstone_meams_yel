@@ -737,6 +737,31 @@ const convertFileToBase64 = (file) => {
   });
 };
 
+// Helper function to pluralize units
+const pluralizeUnit = (quantity, unit) => {
+  if (!unit) return quantity === 1 ? 'unit' : 'units';
+  if (quantity === 1) return unit;
+  
+  // Don't add 's' if already plural
+  if (unit.endsWith('s')) return unit;
+  
+  // Handle special cases
+  const specialPlurals = {
+    'box': 'boxes',
+    'piece': 'pieces',
+    'pack': 'packs',
+    'bottle': 'bottles',
+    'gallon': 'gallons',
+    'set': 'sets',
+    'roll': 'rolls',
+    'bag': 'bags',
+    'meter': 'meters',
+    'ream': 'reams'
+  };
+  
+  return specialPlurals[unit.toLowerCase()] || unit + 's';
+};
+
   // NEW: Threshold management functions
   const handleOpenThresholdModal = () => {
     setThresholdForm({
