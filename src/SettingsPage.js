@@ -118,7 +118,7 @@ function SettingsPage() {
       formData.append('import_type', importType);
 
       // Call the FastAPI bulk import endpoint
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/bulk-import`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/bulk-import`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -262,7 +262,7 @@ function SettingsPage() {
           return;
       }
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${exportUrl}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}${exportUrl}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -329,7 +329,7 @@ const handleSendReport = async () => {
       return;
     }
 
-    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/report-bug`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/api/report-bug`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
