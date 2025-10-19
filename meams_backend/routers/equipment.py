@@ -669,7 +669,7 @@ async def view_equipment_qr(equipment_id: str):
             </div>
             
             <div class="timestamp">
-                📅 Scanned: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+                📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
             </div>
             
             <div class="info-grid">
