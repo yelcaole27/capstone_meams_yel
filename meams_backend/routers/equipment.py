@@ -672,12 +672,12 @@ async def view_equipment_qr(equipment_id: str):
                 📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
 
             {f'''
-         <div class="image-container" style="text-align: center; margin: 30px 0;">
-         <img src="data:{equipment['itemPicture']['contentType']};base64,{equipment['itemPicture']['data']}" 
+<div class="image-container" style="text-align: center; margin: 30px 0;">
+    <img src="data:{equipment['itemPicture']['contentType']};base64,{equipment['itemPicture']['data']}" 
          alt="{equipment['name']}" 
-         style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
-        </div>
-        ''' if equipment.get('itemPicture') and equipment['itemPicture'].get('data') else ''}
+         style="max-width: 70%; max-height: 300px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
+</div>
+''' if equipment.get('itemPicture') and equipment['itemPicture'].get('data') else ''}
             
             <div class="info-grid">
                 <div class="info-card">
