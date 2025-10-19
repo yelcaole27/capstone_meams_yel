@@ -304,12 +304,12 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
 
         // Fetch forecast data (now includes generated 2024 and 2025 forecast)
         const [suppliesForecastRes, equipmentForecastRes] = await Promise.all([
-          fetch('http://localhost:8000/api/forecast-supplies', {
+        fetch(`${process.env.REACT_APP_API_URL}/api/forecast-supplies`, {
             headers: {
               'Authorization': `Bearer ${authToken}`
             }
           }).then(res => res.json()),
-          fetch('http://localhost:8000/api/forecast-equipment', {
+          fetch(`${process.env.REACT_APP_API_URL}/api/forecast-equipment`, {
             headers: {
               'Authorization': `Bearer ${authToken}`
             }
