@@ -359,7 +359,7 @@ const handleCloseDocumentViewer = () => {
   const generateQRCode = async (item) => {
   try {
     // Get your backend URL
-    const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const BACKEND_URL = process.env.REACT_APP_API_URL;
     
     // Create a simple URL that contains only the item ID
     // The backend will fetch CURRENT data when scanned
@@ -389,7 +389,7 @@ const handleCloseDocumentViewer = () => {
 
 
 const startListeningForScans = (scanId) => {
-  const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const BACKEND_URL = process.env.REACT_APP_API_URL;
   
   // Use Server-Sent Events (SSE) for real-time updates
   const eventSource = new EventSource(`${BACKEND_URL}/api/qr/listen/${scanId}`);
