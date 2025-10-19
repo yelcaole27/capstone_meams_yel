@@ -43,7 +43,7 @@ function MainLayout() {
       if (authToken && currentUser) {
         try {
           // Try to get profile data from API
-          const response = await fetch('http://localhost:8000/profile', {
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
             headers: {
               'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ function MainLayout() {
       const imageBase64 = await convertFileToBase64(file);
       setProfilePicture(imageBase64);
 
-      const response = await fetch('http://localhost:8000/profile/picture', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile/picture`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -153,7 +153,7 @@ function MainLayout() {
     try {
       setUploadingPicture(true);
 
-      const response = await fetch('http://localhost:8000/profile/picture', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile/picture`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -186,7 +186,7 @@ function MainLayout() {
       // Call logout endpoint to log the logout action
       if (token) {
         try {
-          await fetch('http://localhost:8000/logout', {
+          await fetch(`${process.env.REACT_APP_API_URL}/logout`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -241,7 +241,7 @@ function MainLayout() {
       return;
     }
 
-    const response = await fetch('http://localhost:8000/api/report-bug', {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/api/report-bug`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
