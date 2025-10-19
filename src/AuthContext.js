@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 
 const AuthContext = createContext();
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -57,7 +58,7 @@ export const AuthProvider = ({ children }) => {
   const checkAccountStatus = async (token) => {
     if (!token) return false;
     try {
-      const response = await fetch('http://localhost:8000/api/accounts/check-status', {
+      const response = await fetch(`${API_BASE_URL}/api/accounts/check-status`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -83,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   const refreshToken = async (currentToken) => {
     try {
       console.log('Attempting to refresh token...');
-      const response = await fetch('http://localhost:8000/api/auth/refresh', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
