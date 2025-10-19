@@ -663,6 +663,7 @@ async def view_equipment_qr(equipment_id: str):
     <body>
         <div class="container">
             <div class="header">
+            
                 {f'''
     <div class="image-container" style="text-align: center; margin: 30px 0;">
         <img src="{equipment.get('image_data', '')}" 

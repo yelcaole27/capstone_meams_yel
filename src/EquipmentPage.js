@@ -1655,12 +1655,11 @@ const printQRCode = () => {
                   cursor: 'pointer',
                   fontWeight: '600',
                   border: 'none',
-                  transition: 'all 0.2s ease',
                   height: '100%',
                   width: '100%'
                 }}
                 onMouseEnter={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.9)'}
-                onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.7)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0)'}
               >
               </button>
             </div>
@@ -1674,7 +1673,7 @@ const printQRCode = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minHeight: '300px',
+                minHeight: '30px',
                 backgroundColor: '#f5f5f5',
                 borderRadius: '8px',
                 color: '#999',
@@ -1697,7 +1696,7 @@ const printQRCode = () => {
                 <path d="M21 15L16 10M3 20L8 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <p style={{ margin: '10px 0 5px 0', fontSize: '16px', fontWeight: '600' }}>No Image</p>
-              <small style={{ color: '#bbb' }}>Click or drag to upload</small>
+              <small style={{ color: '#bbb' }}>Click to upload</small>
             </div>
           )}
           
