@@ -27,42 +27,6 @@ from dependencies import get_current_user
 
 router = APIRouter(prefix="/api/supplies", tags=["supplies"])
 
-def pluralizeUnit(quantity: int, unit: str) -> str:
-    """
-    Pluralize unit based on quantity
-    
-    Args:
-        quantity: The quantity of items
-        unit: The unit name (e.g., 'piece', 'box', 'bottle')
-    
-    Returns:
-        Properly pluralized unit string
-    """
-    if not unit:
-        return 'unit' if quantity == 1 else 'units'
-    
-    if quantity == 1:
-        return unit
-    
-    # Don't add 's' if already plural
-    if unit.endswith('s'):
-        return unit
-    
-    # Handle special cases
-    special_plurals = {
-        'box': 'boxes',
-        'piece': 'pieces',
-        'pack': 'packs',
-        'bottle': 'bottles',
-        'gallon': 'gallons',
-        'set': 'sets',
-        'roll': 'rolls',
-        'bag': 'bags',
-        'meter': 'meters',
-        'ream': 'reams'
-    }
-    
-    return special_plurals.get(unit.lower(), unit + 's')
 
 @router.get("")
 async def list_supplies(token: str = Depends(get_current_user)):
@@ -524,7 +488,7 @@ async def scan_supply_qr(supply_id: str):
                 
                 <div class="info-card">
                     <div class="label">Current Quantity</div>
-                    <div class="quantity">{supply.quantity} {pluralizeUnit(supply.quantity, supply.unit)}</div>
+                    <div class="quantity">{supply.quantity}{(supply.quantity, supply.unit)}</div>
                 </div>
                 
                 <div class="info-card">
