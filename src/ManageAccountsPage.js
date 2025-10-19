@@ -45,7 +45,7 @@ function ManageAccountsPage() {
       const token = getAuthToken();
       if (!token) return null;
 
-      const response = await fetch('http://localhost:8000/profile', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -103,7 +103,7 @@ function ManageAccountsPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/api/accounts', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/accounts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -215,7 +215,7 @@ function ManageAccountsPage() {
       const account = accounts.find(acc => acc._id === accountId);
       if (!account) return;
 
-      const response = await fetch(`http://localhost:8000/api/accounts/${accountId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/accounts/${accountId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -269,7 +269,7 @@ function ManageAccountsPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8000/api/accounts/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/accounts/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -303,7 +303,7 @@ function ManageAccountsPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8000/api/accounts/${id}/reset-password`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/accounts/${id}/reset-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -427,7 +427,7 @@ function ManageAccountsPage() {
         phone_number: formData.phone_number
       };
 
-      const response = await fetch('http://localhost:8000/api/accounts', {
+     const response = await fetch(`${process.env.REACT_APP_API_URL}/api/accounts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -468,7 +468,7 @@ function ManageAccountsPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/accounts/${selectedAccount._id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/accounts/${selectedAccount._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
