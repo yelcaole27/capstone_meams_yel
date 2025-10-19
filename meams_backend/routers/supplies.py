@@ -458,11 +458,11 @@ async def scan_supply_qr(supply_id: str):
             
             {f'''
 <div class="image-container" style="text-align: center; margin: 30px 0;">
-    <img src="data:{supply.get('itemPicture', {}).get('contentType', 'image/jpeg')};base64,{supply.get('itemPicture', {}).get('data', '')}" 
+    <img src="{supply.get('image_data', '')}" 
          alt="{supply['name']}" 
          style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
 </div>
-''' if supply.get('itemPicture') and supply.get('itemPicture', {}).get('data') else ''}
+''' if supply.get('image_data') else ''}
 
             <div class="info-grid">
                 <div class="info-card">
