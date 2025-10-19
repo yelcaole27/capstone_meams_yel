@@ -52,7 +52,7 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
   const fetchProfileData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/profile', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
       setProfileData(prev => ({ ...prev, profilePicture: imageBase64 }));
       setEditData(prev => ({ ...prev, profilePicture: imageBase64 }));
 
-      const response = await fetch('http://localhost:8000/profile/picture', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile/picture`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -178,7 +178,7 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
     try {
       setUploadingPicture(true);
       
-      const response = await fetch('http://localhost:8000/profile/picture', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile/picture`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -222,7 +222,7 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/profile', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/profile/picture`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -272,7 +272,7 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
 
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/change-password', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/change-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
