@@ -6,6 +6,7 @@ from bson import ObjectId
 from fastapi.responses import HTMLResponse
 from datetime import datetime
 from models.supply import SupplyCreate, SupplyUpdate
+from supplies import pluralizeUnit
 from services.supply_service import (
     get_all_supplies,
     create_supply,
