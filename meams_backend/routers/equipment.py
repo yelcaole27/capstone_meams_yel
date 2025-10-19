@@ -551,7 +551,7 @@ async def view_equipment_qr(equipment_id: str):
         <style>
             body {{
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #363636;
                 min-height: 100vh;
                 display: flex;
                 align-items: center;
@@ -571,7 +571,7 @@ async def view_equipment_qr(equipment_id: str):
                 text-align: center;
                 margin-bottom: 30px;
                 padding-bottom: 20px;
-                border-bottom: 3px solid #667eea;
+                border-bottom: 3px solid #fbbf24;
             }}
             .logo {{
                 font-size: 72px;
@@ -588,14 +588,14 @@ async def view_equipment_qr(equipment_id: str):
                 margin-top: 5px;
             }}
             .timestamp {{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #3d9130;
                 color: white;
                 padding: 12px 20px;
                 border-radius: 10px;
                 text-align: center;
                 margin: 20px 0;
                 font-weight: 600;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                box-shadow: 0 4px 12px rgba(61, 145, 48, 0.4);
             }}
             .info-grid {{
                 display: grid;
@@ -607,7 +607,7 @@ async def view_equipment_qr(equipment_id: str):
                 background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
                 padding: 20px;
                 border-radius: 12px;
-                border-left: 4px solid #667eea;
+                border-left: 4px solid #fbbf24;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 transition: transform 0.2s;
             }}
@@ -630,7 +630,7 @@ async def view_equipment_qr(equipment_id: str):
             }}
             .amount {{
                 font-size: 36px;
-                color: #667eea;
+                color: #3d9130;
                 font-weight: 800;
             }}
             .status {{
@@ -655,7 +655,7 @@ async def view_equipment_qr(equipment_id: str):
             }}
             .footer-logo {{
                 font-weight: 700;
-                color: #667eea;
+                color: #fbbf24;
                 margin-top: 10px;
             }}
         </style>
@@ -665,7 +665,7 @@ async def view_equipment_qr(equipment_id: str):
             <div class="header">
                 <div class="logo">⚙️</div>
                 <h1>{equipment['name']}</h1>
-                <p class="subtitle">Universidad De Manila - Equipment Management</p>
+                <p class="subtitle">MEAMS - Equipment Management</p>
             </div>
             
             <div class="timestamp">
@@ -719,7 +719,7 @@ async def view_equipment_qr(equipment_id: str):
             
             <div class="footer">
                 <p>Equipment ID: {equipment['_id']}</p>
-                <p class="footer-logo">Universidad De Manila Equipment Management System</p>
+                <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
             </div>
         </div>
     </body>

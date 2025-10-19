@@ -1080,7 +1080,7 @@ const printQRCode = () => {
               <th style={{ width: '20%' }}>ITEM CODE</th>
               <th style={{ width: '25%' }}>EQUIPMENT NAME</th>
               <th style={{ width: '15%' }}>STATUS</th>
-              <th style={{ width: '15%' }}>LCC REMARKS</th>
+              <th style={{ width: '15%' }}>REMARKS</th>
               <th style={{ width: '15%' }}>AMOUNT</th>
               <th style={{ width: '10%' }}>ACTION</th>
             </tr>
