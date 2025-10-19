@@ -430,7 +430,7 @@ function EquipmentPage() {
     }
   };
 
-  const equipmentCategories = ['Sanitary Equipment', 'Office Equipment', 'Construction Equipment', 'Electrical Equipment'];
+  const equipmentCategories = ['HVAC Carpentry', 'Carpentry Equipment', 'Office Equipment', 'Electrical Equipment', 'Audio/Visual Equipment'];
   // Removed 'Maintenance' from here as it's now dynamically set
   const equipmentStatuses = ['Within-Useful-Life', 'Beyond-Useful-Life']; 
 
