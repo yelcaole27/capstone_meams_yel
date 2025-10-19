@@ -655,7 +655,7 @@ async def view_equipment_qr(equipment_id: str):
             }}
             .footer-logo {{
                 font-weight: 700;
-                color: #fbbf24;
+                color: #3d9130;
                 margin-top: 10px;
             }}
         </style>

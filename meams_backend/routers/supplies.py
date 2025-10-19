@@ -335,8 +335,8 @@ async def scan_supply_qr(supply_id: str):
         <title>{supply['name']} - Stock Card</title>
         <style>
             body {{
-                font-family: Arial, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #363636;
                 min-height: 100vh;
                 display: flex;
                 align-items: center;
@@ -347,80 +347,100 @@ async def scan_supply_qr(supply_id: str):
             .container {{
                 background: white;
                 border-radius: 20px;
-                padding: 30px;
-                max-width: 600px;
+                padding: 40px;
+                max-width: 900px;
                 width: 100%;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             }}
             .header {{
                 text-align: center;
-                margin-bottom: 20px;
-                padding-bottom: 15px;
-                border-bottom: 2px solid #e5e7eb;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #fbbf24;
             }}
             .logo {{
-                font-size: 60px;
-                margin-bottom: 10px;
+                font-size: 72px;
+                margin-bottom: 15px;
             }}
             h1 {{
                 color: #1f2937;
                 margin: 10px 0;
+                font-size: 32px;
+            }}
+            .subtitle {{
+                color: #6b7280;
+                font-size: 16px;
+                margin-top: 5px;
             }}
             .timestamp {{
-                background: #f3f4f6;
-                padding: 10px;
-                border-radius: 8px;
+                background: #3d9130;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 10px;
                 text-align: center;
-                margin: 15px 0;
-                color: #4b5563;
+                margin: 20px 0;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(61, 145, 48, 0.4);
+            }}
+            .info-grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin: 30px 0;
             }}
             .info-card {{
-                background: #f9fafb;
-                padding: 15px;
-                margin: 10px 0;
-                border-radius: 10px;
-                border-left: 4px solid #667eea;
+                background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 4px solid #fbbf24;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transition: transform 0.2s;
+            }}
+            .info-card:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             }}
             .label {{
                 font-size: 12px;
                 color: #6b7280;
                 text-transform: uppercase;
                 font-weight: 600;
+                letter-spacing: 0.5px;
             }}
             .value {{
-                font-size: 18px;
+                font-size: 20px;
                 color: #1f2937;
-                font-weight: 600;
-                margin-top: 5px;
+                font-weight: 700;
+                margin-top: 8px;
             }}
             .quantity {{
-                font-size: 32px;
-                color: #667eea;
+                font-size: 36px;
+                color: #3d9130;
                 font-weight: 800;
             }}
             .status {{
                 display: inline-block;
-                padding: 6px 16px;
+                padding: 8px 20px;
                 border-radius: 20px;
                 font-size: 14px;
                 font-weight: 600;
+                text-transform: uppercase;
             }}
             .status-normal {{ background: #d1fae5; color: #065f46; }}
             .status-understock {{ background: #fee2e2; color: #991b1b; }}
             .status-overstock {{ background: #fef3c7; color: #92400e; }}
-            table {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 10px;
+            .footer {{
+                margin-top: 40px;
+                text-align: center;
+                padding-top: 20px;
+                border-top: 2px solid #e5e7eb;
+                color: #9ca3af;
+                font-size: 14px;
             }}
-            th, td {{
-                padding: 10px;
-                text-align: left;
-                border-bottom: 1px solid #e5e7eb;
-            }}
-            th {{
-                background: #667eea;
-                color: white;
+            .footer-logo {{
+               font-weight: 700;
+               color: #3d9130;
+               margin-top: 10px;
             }}
         </style>
     </head>
@@ -429,56 +449,54 @@ async def scan_supply_qr(supply_id: str):
             <div class="header">
                 <div class="logo">📦</div>
                 <h1>{supply['name']}</h1>
-                <p>Universidad De Manila - Supply Inventory</p>
+                <p class="subtitle">MEAMS - Supply Inventory</p>
             </div>
             
             <div class="timestamp">
-                📅 Scanned: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}
+                📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
             </div>
             
-            <div class="info-card">
-                <div class="label">Item Code</div>
-                <div class="value">{supply.get('itemCode', 'N/A')}</div>
-            </div>
-            
-            <div class="info-card">
-                <div class="label">Stock Number</div>
-                <div class="value">{supply.get('supplier', 'N/A')}</div>
-            </div>
-            
-            <div class="info-card">
-                <div class="label">Category</div>
-                <div class="value">{supply.get('category', 'N/A')}</div>
-            </div>
-            
-            <div class="info-card">
-                <div class="label">Current Quantity</div>
-                <div class="quantity">
-                    {supply.get('quantity', 0)} {supply.get('unit', 'units')}
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="label">Item Code</div>
+                    <div class="value">{supply.get('itemCode', 'N/A')}</div>
                 </div>
-            </div>
-            
-            <div class="info-card">
-                <div class="label">Status</div>
-                <div class="value">
-                    <span class="status status-{supply.get('status', 'normal').lower()}">
-                        {supply.get('status', 'Normal')}
-                    </span>
+                
+                <div class="info-card">
+                    <div class="label">Stock Number</div>
+                    <div class="value">{supply.get('supplier', 'N/A')}</div>
                 </div>
-            </div>
-            
-            <div class="info-card">
-                <div class="label">Location</div>
-                <div class="value">{supply.get('location', 'Not specified')}</div>
+                
+                <div class="info-card">
+                    <div class="label">Category</div>
+                    <div class="value">{supply.get('category', 'N/A')}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Location</div>
+                    <div class="value">{supply.get('location', 'Not specified')}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Current Quantity</div>
+                    <div class="quantity">{supply.get('quantity', 0)} {supply.get('unit', 'units')}</div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="label">Status</div>
+                    <div class="value">
+                        <span class="status status-{supply.get('status', 'normal').lower()}">
+                            {supply.get('status', 'Normal')}
+                        </span>
+                    </div>
+                </div>
             </div>
             
             {transaction_html}
             
-            <div style="margin-top: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-                <p>Item ID: {supply['_id']}</p>
-                <p style="font-weight: 600; color: #667eea;">
-                    Universidad De Manila Inventory System
-                </p>
+            <div class="footer">
+                <p>Supply ID: {supply['_id']}</p>
+                <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
             </div>
         </div>
     </body>
