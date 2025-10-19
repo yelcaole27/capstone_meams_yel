@@ -1,6 +1,8 @@
 // src/services/equipmentApi.js
 import axios from 'axios';
 
+
+// Base URL for your Python FastAPI backend
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://meams.onrender.com';
 
 const apiClient = axios.create({
