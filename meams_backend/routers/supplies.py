@@ -27,6 +27,42 @@ from dependencies import get_current_user
 
 router = APIRouter(prefix="/api/supplies", tags=["supplies"])
 
+def pluralize_unit(quantity: int, unit: str) -> str:
+    """
+    Pluralize unit based on quantity
+    
+    Args:
+        quantity: The quantity of items
+        unit: The unit name (e.g., 'piece', 'box', 'bottle')
+    
+    Returns:
+        Properly pluralized unit string
+    """
+    if not unit:
+        return 'unit' if quantity == 1 else 'units'
+    
+    if quantity == 1:
+        return unit
+    
+    # Don't add 's' if already plural
+    if unit.endswith('s'):
+        return unit
+    
+    # Handle special cases
+    special_plurals = {
+        'box': 'boxes',
+        'piece': 'pieces',
+        'pack': 'packs',
+        'bottle': 'bottles',
+        'gallon': 'gallons',
+        'set': 'sets',
+        'roll': 'rolls',
+        'bag': 'bags',
+        'meter': 'meters',
+        'ream': 'reams'
+    }
+    
+    return special_plurals.get(unit.lower(), unit + 's')
 
 @router.get("")
 async def list_supplies(token: str = Depends(get_current_user)):
@@ -277,239 +313,264 @@ async def scan_supply_qr(supply_id: str):
     from fastapi.responses import HTMLResponse
     from datetime import datetime
     
-    # Validate ID
-    if not ObjectId.is_valid(supply_id):
-        return HTMLResponse(
-            content="<h1>Invalid QR Code</h1>",
-            status_code=400
-        )
-    
-    # Fetch CURRENT data from database
-    supply = get_supply_by_id(supply_id)
-    
-    if not supply:
-        return HTMLResponse(
-            content="<h1>Item Not Found</h1>",
-            status_code=404
-        )
-    
-    # Build transaction history HTML
-    transaction_html = ""
-    if supply.get('transactionHistory'):
-        recent = sorted(supply['transactionHistory'], 
-                       key=lambda x: x.get('date', ''), 
-                       reverse=True)[:5]
+    try:
+        # Validate ID
+        if not ObjectId.is_valid(supply_id):
+            return HTMLResponse(
+                content="<h1>Invalid QR Code</h1>",
+                status_code=400
+            )
         
-        rows = ""
-        for trans in recent:
-            rows += f"""
-            <tr>
-                <td>{trans.get('date', 'N/A')}</td>
-                <td>{trans.get('receipt') or '-'}</td>
-                <td>{trans.get('issue') or '-'}</td>
-                <td style="font-weight: 600;">{trans.get('balance', 0)}</td>
-            </tr>
+        # Fetch CURRENT data from database
+        supply = get_supply_by_id(supply_id)
+        
+        if not supply:
+            return HTMLResponse(
+                content="<h1>Item Not Found</h1>",
+                status_code=404
+            )
+        
+        # Ensure required fields exist with defaults
+        supply.setdefault('quantity', 0)
+        supply.setdefault('unit', 'unit')
+        supply.setdefault('name', 'Unknown Item')
+        supply.setdefault('itemCode', 'N/A')
+        supply.setdefault('category', 'N/A')
+        supply.setdefault('location', 'Not specified')
+        supply.setdefault('status', 'Normal')
+        supply.setdefault('supplier', 'N/A')
+        
+        # Convert ObjectId to string for display
+        supply_id_str = str(supply.get('_id', supply_id))
+        
+        # Get quantity and unit for pluralization
+        qty = supply.get('quantity', 0)
+        unit = supply.get('unit', 'unit')
+        pluralized_unit = pluralize_unit(qty, unit)
+        
+        # Build transaction history HTML
+        transaction_html = ""
+        if supply.get('transactionHistory'):
+            recent = sorted(supply['transactionHistory'], 
+                           key=lambda x: x.get('date', ''), 
+                           reverse=True)[:5]
+            
+            rows = ""
+            for trans in recent:
+                rows += f"""
+                <tr>
+                    <td>{trans.get('date', 'N/A')}</td>
+                    <td>{trans.get('receipt') or '-'}</td>
+                    <td>{trans.get('issue') or '-'}</td>
+                    <td style="font-weight: 600;">{trans.get('balance', 0)}</td>
+                </tr>
+                """
+            
+            transaction_html = f"""
+            <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+                <h3 style="margin: 0 0 10px 0;">Recent Transactions</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="background: #3d9130; color: white;">
+                        <th style="padding: 8px; text-align: left;">Date</th>
+                        <th style="padding: 8px;">Receipt</th>
+                        <th style="padding: 8px;">Issue</th>
+                        <th style="padding: 8px;">Balance</th>
+                    </tr>
+                    {rows}
+                </table>
+            </div>
             """
         
-        transaction_html = f"""
-        <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
-            <h3 style="margin: 0 0 10px 0;">Recent Transactions</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr style="background: #3d9130; color: white;">
-                    <th style="padding: 8px; text-align: left;">Date</th>
-                    <th style="padding: 8px;">Receipt</th>
-                    <th style="padding: 8px;">Issue</th>
-                    <th style="padding: 8px;">Balance</th>
-                </tr>
-                {rows}
-            </table>
-        </div>
-        """
+        # Return beautiful HTML with CURRENT data
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{supply['name']} - Stock Card</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    background: #363636;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    margin: 0;
+                }}
+                .container {{
+                    background: white;
+                    border-radius: 20px;
+                    padding: 40px;
+                    max-width: 900px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                }}
+                .header {{
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 20px;
+                    border-bottom: 3px solid #fbbf24;
+                }}
+                .logo {{
+                    font-size: 72px;
+                    margin-bottom: 15px;
+                }}
+                h1 {{
+                    color: #1f2937;
+                    margin: 10px 0;
+                    font-size: 32px;
+                }}
+                .subtitle {{
+                    color: #6b7280;
+                    font-size: 16px;
+                    margin-top: 5px;
+                }}
+                .timestamp {{
+                    background: #3d9130;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    margin: 20px 0;
+                    font-weight: 600;
+                    box-shadow: 0 4px 12px rgba(61, 145, 48, 0.4);
+                }}
+                .info-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin: 30px 0;
+                }}
+                .info-card {{
+                    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+                    padding: 20px;
+                    border-radius: 12px;
+                    border-left: 4px solid #fbbf24;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    transition: transform 0.2s;
+                }}
+                .info-card:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }}
+                .label {{
+                    font-size: 12px;
+                    color: #6b7280;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
+                }}
+                .value {{
+                    font-size: 20px;
+                    color: #1f2937;
+                    font-weight: 700;
+                    margin-top: 8px;
+                }}
+                .quantity {{
+                    font-size: 36px;
+                    color: #3d9130;
+                    font-weight: 800;
+                }}
+                .status {{
+                    display: inline-block;
+                    padding: 8px 20px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }}
+                .status-normal {{ background: #d1fae5; color: #065f46; }}
+                .status-understock {{ background: #fee2e2; color: #991b1b; }}
+                .status-overstock {{ background: #fef3c7; color: #92400e; }}
+                .footer {{
+                    margin-top: 40px;
+                    text-align: center;
+                    padding-top: 20px;
+                    border-top: 2px solid #e5e7eb;
+                    color: #9ca3af;
+                    font-size: 14px;
+                }}
+                .footer-logo {{
+                   font-weight: 700;
+                   color: #3d9130;
+                   margin-top: 10px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">📦</div>
+                    <h1>{supply['name']}</h1>
+                    <p class="subtitle">MEAMS - Supply Inventory</p>
+                </div>
+                
+                <div class="timestamp">
+                    📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
+                </div>
+                
+                {f'''
+    <div class="image-container" style="text-align: center; margin: 30px 0;">
+        <img src="{supply.get('image_data', '')}" 
+             alt="{supply['name']}" 
+             style="max-width: 70%; max-height: 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
+    </div>
+    ''' if supply.get('image_data') else ''}
     
-    # Return beautiful HTML with CURRENT data
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{supply['name']} - Stock Card</title>
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                background: #363636;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                margin: 0;
-            }}
-            .container {{
-                background: white;
-                border-radius: 20px;
-                padding: 40px;
-                max-width: 900px;
-                width: 100%;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            }}
-            .header {{
-                text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #fbbf24;
-            }}
-            .logo {{
-                font-size: 72px;
-                margin-bottom: 15px;
-            }}
-            h1 {{
-                color: #1f2937;
-                margin: 10px 0;
-                font-size: 32px;
-            }}
-            .subtitle {{
-                color: #6b7280;
-                font-size: 16px;
-                margin-top: 5px;
-            }}
-            .timestamp {{
-                background: #3d9130;
-                color: white;
-                padding: 12px 20px;
-                border-radius: 10px;
-                text-align: center;
-                margin: 20px 0;
-                font-weight: 600;
-                box-shadow: 0 4px 12px rgba(61, 145, 48, 0.4);
-            }}
-            .info-grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin: 30px 0;
-            }}
-            .info-card {{
-                background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-                padding: 20px;
-                border-radius: 12px;
-                border-left: 4px solid #fbbf24;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                transition: transform 0.2s;
-            }}
-            .info-card:hover {{
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }}
-            .label {{
-                font-size: 12px;
-                color: #6b7280;
-                text-transform: uppercase;
-                font-weight: 600;
-                letter-spacing: 0.5px;
-            }}
-            .value {{
-                font-size: 20px;
-                color: #1f2937;
-                font-weight: 700;
-                margin-top: 8px;
-            }}
-            .quantity {{
-                font-size: 36px;
-                color: #3d9130;
-                font-weight: 800;
-            }}
-            .status {{
-                display: inline-block;
-                padding: 8px 20px;
-                border-radius: 20px;
-                font-size: 14px;
-                font-weight: 600;
-                text-transform: uppercase;
-            }}
-            .status-normal {{ background: #d1fae5; color: #065f46; }}
-            .status-understock {{ background: #fee2e2; color: #991b1b; }}
-            .status-overstock {{ background: #fef3c7; color: #92400e; }}
-            .footer {{
-                margin-top: 40px;
-                text-align: center;
-                padding-top: 20px;
-                border-top: 2px solid #e5e7eb;
-                color: #9ca3af;
-                font-size: 14px;
-            }}
-            .footer-logo {{
-               font-weight: 700;
-               color: #3d9130;
-               margin-top: 10px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="logo">📦</div>
-                <h1>{supply['name']}</h1>
-                <p class="subtitle">MEAMS - Supply Inventory</p>
-            </div>
-            
-            <div class="timestamp">
-                📅 Scanned: {datetime.now().strftime('%B %d, %Y')}
-            </div>
-            
-            {f'''
-<div class="image-container" style="text-align: center; margin: 30px 0;">
-    <img src="{supply.get('image_data', '')}" 
-         alt="{supply['name']}" 
-         style="max-width: 70%; max-height: 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
-</div>
-''' if supply.get('image_data') else ''}
-
-            <div class="info-grid">
-                <div class="info-card">
-                    <div class="label">Item Code</div>
-                    <div class="value">{supply.get('itemCode', 'N/A')}</div>
-                </div>
-                
-                <div class="info-card">
-                    <div class="label">Stock Number</div>
-                    <div class="value">{supply.get('supplier', 'N/A')}</div>
-                </div>
-                
-                <div class="info-card">
-                    <div class="label">Category</div>
-                    <div class="value">{supply.get('category', 'N/A')}</div>
-                </div>
-                
-                <div class="info-card">
-                    <div class="label">Location</div>
-                    <div class="value">{supply.get('location', 'Not specified')}</div>
-                </div>
-                
-                <div class="info-card">
-                    <div class="label">Current Quantity</div>
-                    <div class="quantity">{supply.quantity}{(supply.quantity, supply.unit)}</div>
-                </div>
-                
-                <div class="info-card">
-                    <div class="label">Status</div>
-                    <div class="value">
-                        <span class="status status-{supply.get('status', 'normal').lower()}">
-                            {supply.get('status', 'Normal')}
-                        </span>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="label">Item Code</div>
+                        <div class="value">{supply.get('itemCode', 'N/A')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Stock Number</div>
+                        <div class="value">{supply.get('supplier', 'N/A')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Category</div>
+                        <div class="value">{supply.get('category', 'N/A')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Location</div>
+                        <div class="value">{supply.get('location', 'Not specified')}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Current Quantity</div>
+                        <div class="quantity">{qty} {pluralized_unit}</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="label">Status</div>
+                        <div class="value">
+                            <span class="status status-{supply.get('status', 'normal').lower()}">
+                                {supply.get('status', 'Normal')}
+                            </span>
+                        </div>
                     </div>
                 </div>
+                
+                {transaction_html}
+                
+                <div class="footer">
+                    <p>Supply ID: {supply_id_str}</p>
+                    <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
+                </div>
             </div>
-            
-            {transaction_html}
-            
-            <div class="footer">
-                <p>Supply ID: {supply['_id']}</p>
-                <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return HTMLResponse(content=html)
+        </body>
+        </html>
+        """
+        
+        return HTMLResponse(content=html)
+        
+    except Exception as e:
+        return HTMLResponse(
+            content=f"<h1>Error Loading Supply</h1><p>{str(e)}</p>",
+            status_code=500
+        )
