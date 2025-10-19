@@ -503,7 +503,13 @@ async def scan_supply_qr(supply_id: str):
         <body>
             <div class="container">
                 <div class="header">
-                    <div class="logo">📦</div>
+                    {f'''
+    <div class="image-container" style="text-align: center; margin: 30px 0;">
+        <img src="{supply.get('image_data', '')}" 
+             alt="{supply['name']}" 
+             style="max-width: 70%; max-height: 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
+    </div>
+    ''' if supply.get('image_data') else ''}
                     <h1>{supply['name']}</h1>
                     <p class="subtitle">MEAMS - Supply Inventory</p>
                 </div>
