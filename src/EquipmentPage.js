@@ -1595,7 +1595,7 @@ const printQRCode = () => {
               alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
-              minHeight: '300px',
+              minHeight: '30px',
               backgroundColor: '#f5f5f5',
               borderRadius: '8px',
               overflow: 'hidden'
@@ -1648,20 +1648,20 @@ const printQRCode = () => {
                   position: 'absolute',
                   bottom: '10px',
                   right: '10px',
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '8px 12px',
+                  background: 'rgba(0, 0, 0, 0)',
+                  padding: '3px 12px',
                   borderRadius: '6px',
                   fontSize: '12px',
                   cursor: 'pointer',
                   fontWeight: '600',
                   border: 'none',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  height: '100%',
+                  width: '100%'
                 }}
                 onMouseEnter={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.9)'}
                 onMouseLeave={(e) => e.target.style.background = 'rgba(0, 0, 0, 0.7)'}
               >
-                📷 Change Image
               </button>
             </div>
           ) : (
