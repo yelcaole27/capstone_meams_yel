@@ -477,13 +477,25 @@ async def view_equipment_qr(equipment_id: str):
     
     # Fetch CURRENT data from database
     equipment = get_equipment_by_id(equipment_id)
-    
+ 
     if not equipment:
         return HTMLResponse(
-            content="<h1>Equipment Not Found</h1>",
-            status_code=404
-        )
-    
+              content="<h1>Equipment Not Found</h1>",
+             status_code=404
+    )
+
+# FIX IMAGE DATA FORMAT FOR QR SCAN PAGE
+    if equipment.get('image_data'):
+        image_data = equipment['image_data']
+        # If it doesn't start with 'data:', add the proper prefix
+        if not image_data.startswith('data:'):
+           content_type = equipment.get('image_content_type', 'image/jpeg')
+           equipment['image_data'] = f"data:{content_type};base64,{image_data}"
+        print(f"✅ Image ready for display: {equipment.get('image_filename', 'unknown')}")
+    else:
+     print(f"⚠️ No image for equipment: {equipment['name']}")
+
+
     # Build repair history HTML
     repair_html = ""
     if equipment.get('repairHistory'):
@@ -662,7 +674,6 @@ async def view_equipment_qr(equipment_id: str):
     </head>
     <body>
         <div class="container">
-
         {f'''
 <div class="image-container" style="text-align: center; margin: 20px 0;">
     <img src="{equipment.get('image_data', '')}" 
@@ -670,7 +681,6 @@ async def view_equipment_qr(equipment_id: str):
          style="max-width: 70%; max-height: 200px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
 </div>
 ''' if equipment.get('image_data') else ''}
-
             <div class="header">
                 <h1>{equipment['name']}</h1>
                 <p class="subtitle">MEAMS - Equipment Inventory</p>
