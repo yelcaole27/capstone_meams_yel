@@ -2009,13 +2009,6 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
                     fontSize: '12px',
                     fontWeight: 'bold',
                     width: '10%'
-                  }}>Unit</th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    width: '40%'
                   }}>Equipment Name</th>
                   <th style={{
                     border: '1px solid black',
@@ -2060,23 +2053,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   }}
 />
           </td>
-          <td style={{
-  border: '1px solid black',
-  padding: '6px',
-  height: '30px',
-  verticalAlign: 'middle'
-}}>
-            <input
-  type="text"
-  className={`${itemData ? 'form-input-filled' : ''}`}
-  defaultValue={itemData ? itemData.unit : ''}
-  placeholder=""
-  style={{
-    border: 'none',
-    borderBottom: 'none'
-  }}
-/>
-          </td>
+          
           <td style={{
   border: '1px solid black',
   padding: '6px',
