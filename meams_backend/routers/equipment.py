@@ -662,18 +662,18 @@ async def view_equipment_qr(equipment_id: str):
     </head>
     <body>
         <div class="container">
-            <div class="header">
-            
-                {f'''
-    <div class="image-container" style="text-align: center; margin: 30px 0;">
-        <img src="{equipment.get('image_data', '')}" 
-             alt="{equipment['name']}" 
-             style="max-width: 70%; max-height: 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
-    </div>
-    ''' if equipment.get('image_data') else ''}
 
+        {f'''
+<div class="image-container" style="text-align: center; margin: 20px 0;">
+    <img src="{equipment.get('image_data', '')}" 
+         alt="{equipment['name']}" 
+         style="max-width: 70%; max-height: 200px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" />
+</div>
+''' if equipment.get('image_data') else ''}
+
+            <div class="header">
                 <h1>{equipment['name']}</h1>
-                <p class="subtitle">MEAMS - Equipment Management</p>
+                <p class="subtitle">MEAMS - Equipment Inventory</p>
             </div>
             
             <div class="timestamp">
