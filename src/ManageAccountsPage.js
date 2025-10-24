@@ -30,16 +30,16 @@ function ManageAccountsPage() {
 
   // State for accounts from API
   const [accounts, setAccounts] = useState([]);
-  // NEW: State for storing profile pictures
+  // State for storing profile pictures
   const [profilePictures, setProfilePictures] = useState({});
 
-  // Get auth token - FIXED VERSION
+  // Get auth token
   const getAuthToken = () => {
     // Check for admin token first, then regular auth token
     return adminToken || authToken || localStorage.getItem('adminToken') || localStorage.getItem('authToken') || '';
   };
 
-  // NEW: Function to fetch profile picture for current user only (for hardcoded users)
+  // Function to fetch profile picture for current user only
   const fetchCurrentUserProfilePicture = async () => {
     try {
       const token = getAuthToken();
@@ -62,7 +62,7 @@ function ManageAccountsPage() {
     return null;
   };
 
-  // NEW: Function to process all profile pictures from account data
+  // Function to process all profile pictures from account data
   const processProfilePictures = async () => {
   const pictures = {};
   console.log('Processing profile pictures for accounts:', accounts.length);
@@ -124,9 +124,9 @@ function ManageAccountsPage() {
 
       const data = await response.json();
       if (data.success) {
-        console.log('Accounts data received:', data.data); // Debug log
+        console.log('Accounts data received:', data.data);
         setAccounts(data.data || []);
-        setError(''); // Clear any previous errors
+        setError('');
       } else {
         setError('Failed to fetch accounts');
       }
@@ -141,9 +141,9 @@ function ManageAccountsPage() {
   // Load accounts on component mount
   useEffect(() => {
     fetchAccounts();
-  }, [authToken, adminToken]); // Re-fetch when tokens change
+  }, [authToken, adminToken]);
 
-  // NEW: Process profile pictures when accounts change
+  // Process profile pictures when accounts change
   useEffect(() => {
     if (accounts.length > 0) {
       processProfilePictures();
@@ -163,10 +163,10 @@ function ManageAccountsPage() {
     };
   }, [openDropdown]);
 
-  // NEW: Click outside handler for modals
+  // Click outside handler for modals
   useEffect(() => {
     const handleModalClickOutside = (event) => {
-      // Check if click is on modal overlay (not on modal content)
+      // Check if click is on modal overlay
       if (event.target.classList.contains('modal-overlay')) {
         if (showAddModal) {
           handleCloseModal();
@@ -187,7 +187,7 @@ function ManageAccountsPage() {
     };
   }, [showAddModal, showEditModal, showAccountOverview]);
 
-  // NEW: Escape key handler for closing modals
+  // Escape key handler for closing modals
   useEffect(() => {
     const handleEscapeKey = (event) => {
       if (event.key === 'Escape') {
@@ -445,9 +445,9 @@ function ManageAccountsPage() {
       
       if (data.success) {
         setSuccess(data.message);
-        // Refresh accounts list
+
         await fetchAccounts();
-        // Close modal after a short delay to show success message
+
         setTimeout(() => {
           handleCloseModal();
         }, 2000);
@@ -548,7 +548,7 @@ function ManageAccountsPage() {
             onClick={() => handleNameClick(account)}
           >
             <div className="account-avatar">
-              {/* UPDATED: Display profile picture if available, otherwise show default icon */}
+              {/* Display profile picture if available */}
               {profilePictures[account.username] ? (
                 <img 
                   src={profilePictures[account.username]} 
@@ -835,7 +835,7 @@ function ManageAccountsPage() {
             <div className="edit-modal-content">
               <div className="edit-image-section">
                 <div className="edit-image-placeholder">
-                  {/* UPDATED: Show profile picture in edit modal if available */}
+                  {/* Show profile picture in edit modal if available */}
                   {profilePictures[selectedAccount.username] ? (
                     <img 
                       src={profilePictures[selectedAccount.username]} 
@@ -925,7 +925,7 @@ function ManageAccountsPage() {
             <div className="account-overview-content">
               <div className="account-image-section">
                 <div className="account-image-placeholder">
-                  {/* UPDATED: Show profile picture in overview modal if available */}
+                  {/* Show profile picture in overview modal if available */}
                   {profilePictures[selectedAccount.username] ? (
                     <img 
                       src={profilePictures[selectedAccount.username]} 
