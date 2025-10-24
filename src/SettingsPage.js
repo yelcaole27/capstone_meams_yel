@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthContext'; // Import useAuth
+import { useAuth } from './AuthContext';
 import './SettingsPage.css';
 
 function SettingsPage() {
-  const { authToken, adminToken, isAdmin, getCurrentUser } = useAuth(); // Get auth info from context
+  const { authToken, adminToken, isAdmin, getCurrentUser } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [exportOption, setExportOption] = useState('');
@@ -51,7 +51,7 @@ function SettingsPage() {
 
   // Function to get auth token from AuthContext
   const getAuthToken = () => {
-    return adminToken || authToken; // Use admin token first, then regular token
+    return adminToken || authToken;
   };
 
   // Function to download file from blob
