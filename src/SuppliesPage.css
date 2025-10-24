@@ -1,4 +1,4 @@
-/* SuppliesPage.css - Updated with theme variables */
+
 
 .supplies-page-container {
   flex-grow: 1;
@@ -8,7 +8,7 @@
   height: calc(100vh - 60px);
 }
 
-/* Print styles to print only the stock card modal */
+/* Print styles stock card modal */
 @media print {
   body * {
     visibility: hidden;
