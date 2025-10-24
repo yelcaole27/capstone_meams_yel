@@ -28,11 +28,11 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
-  // Profile picture specific states
+
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Helper function for base64 conversion
+
   const convertFileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -340,7 +340,6 @@ function ProfileModal({ isOpen, onClose, onProfilePictureUpdate }) {
     }
   };
 
-  // Don't render anything if modal is not open
   if (!isOpen) return null;
 
   return (
