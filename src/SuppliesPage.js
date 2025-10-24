@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import html2pdf from 'html2pdf.js';
-import SuppliesAPI from './suppliesApi'; // Import the API service
+import SuppliesAPI from './suppliesApi'; 
 import DocumentViewer from './DocumentViewer';
-import supplyThresholdManager from './SupplyThresholdManager'; // Import threshold manager
-import { useTheme } from './ThemeContext'; // Import useTheme
+import supplyThresholdManager from './SupplyThresholdManager'; 
+import { useTheme } from './ThemeContext'; 
 import { useAuth } from './AuthContext';
 import './SuppliesPage.css';
 
 function SuppliesPage() {
   const { getCurrentUser } = useAuth();
   const currentUser = getCurrentUser();
-  const { theme } = useTheme(); // Get current theme
+  const { theme } = useTheme(); 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,9 +23,9 @@ function SuppliesPage() {
     quantity: '', 
     category: '',
     description: '',
-    unit: '', // NEW FIELD
-    location: '', // NEW FIELD
-    status: 'Normal', // NEW FIELD with default value
+    unit: '', 
+    location: '', 
+    status: 'Normal', 
     date: '',
     itemPicture: null
   });
@@ -43,7 +43,7 @@ function SuppliesPage() {
   const [qrScanEvents, setQrScanEvents] = useState([]);
   const [isListeningForScans, setIsListeningForScans] = useState(false);
 
-  // NEW: State for Update Quantity Modal
+  // State for Update Quantity Modal
   const [isUpdateQuantityModalOpen, setIsUpdateQuantityModalOpen] = useState(false);
   const [quantityUpdateForm, setQuantityUpdateForm] = useState({
     date: '',
@@ -71,14 +71,14 @@ function SuppliesPage() {
     date: ''
   });
 
-  // NEW: Pagination states
+  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // NEW: Threshold management states
+  // Threshold management states
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [thresholdForm, setThresholdForm] = useState({
-    type: 'category', // 'category' or 'item'
+    type: 'category',
     category: '',
     itemId: '',
     understock: '',
@@ -95,13 +95,12 @@ function SuppliesPage() {
 
   const categories = ['Sanitary Supply', 'Office Supply', 'Construction Supply', 'Electrical Supply'];
   
-  // NEW: Define unit options
+  // Define unit options
   const unitOptions = ['piece', 'pack', 'box', 'bottle', 'gallon', 'set', 'roll', 'bag', 'meter', 'ream'];
   
-  // Status options (3 levels only)
+  // Status options
   const statusOptions = ['Understock', 'Normal', 'Overstock'];
 
-  // Load supplies from database when component mounts
   useEffect(() => {
     loadSupplies();
   }, []);
@@ -111,17 +110,15 @@ function SuppliesPage() {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
 
-  // ENHANCED: Listen for status change events with better notifications
+  // Listen for status change events with better notifications
   useEffect(() => {
     const handleStatusChange = (event) => {
       const { item, oldStatus, newStatus, quantity, thresholds } = event.detail;
       console.log('📊 Status changed:', event.detail);
       
-      // Show enhanced notification with context
       const urgency = supplyThresholdManager.calculateUrgency(item);
       const urgencyEmoji = urgency === 'critical' ? '🚨' : urgency === 'high' ? '⚠️' : '📋';
       
-      // Create a more informative notification
       if (window.Notification && Notification.permission === 'granted') {
         new Notification(`${urgencyEmoji} Stock Status Changed`, {
           body: `${item.itemName}: ${oldStatus} → ${newStatus}\nCurrent: ${quantity} ${item.unit || 'units'}\nThresholds: ≤${thresholds.understock} | ≥${thresholds.overstock}`,
@@ -129,7 +126,6 @@ function SuppliesPage() {
         });
       }
       
-      // Update recommendations in real-time
       const updatedRecs = supplyThresholdManager.generateRecommendations(suppliesData);
       setRecommendations(updatedRecs);
     };
@@ -146,12 +142,10 @@ function SuppliesPage() {
         });
       }
       
-      // Update recommendations after bulk changes
       const updatedRecs = supplyThresholdManager.generateRecommendations(suppliesData);
       setRecommendations(updatedRecs);
     };
 
-    // Request notification permission on first load
     if (window.Notification && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -193,7 +187,7 @@ function SuppliesPage() {
         date: supply.date || '',
         has_image: supply.image_data ? true : false,
         image_data: supply.image_data || null,
-        transactionHistory: supply.transactionHistory || [] // Add this line
+        transactionHistory: supply.transactionHistory || []
       };
     });
 
@@ -222,7 +216,7 @@ function SuppliesPage() {
   }
 };
 
-  // NEW: Delete supply function
+  // Delete supply function
   const handleDeleteSupply = async (supplyId, supplyName) => {
     if (!window.confirm(`Are you sure you want to delete "${supplyName}"? This action cannot be undone.`)) {
       return;
@@ -254,7 +248,7 @@ function SuppliesPage() {
   // Get unique categories including database data
   const uniqueCategories = ['All Categories', ...new Set(suppliesData.map(item => item.category))];
 
-  // Filter supplies (now works with database data)
+  // Filter supplies 
   const filteredSupplies = suppliesData.filter(item => {
     const matchesSearch = item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -262,20 +256,20 @@ function SuppliesPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // NEW: Pagination calculations
+  // Pagination calculations
   const totalPages = Math.ceil(filteredSupplies.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedSupplies = filteredSupplies.slice(startIndex, endIndex);
 
-  // NEW: Pagination handlers
+  // Pagination handlers
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
 
   const handleItemsPerPageChange = (e) => {
     setItemsPerPage(parseInt(e.target.value));
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
   };
 
   const generatePageNumbers = () => {
@@ -355,7 +349,7 @@ const handleCloseDocumentViewer = () => {
   setIsDocumentViewerOpen(false);
 };
 
-  // QR Code generation function - UPDATED to include new fields
+  // QR Code generation function
   const generateQRCode = async (item) => {
   try {
     // Get your backend URL
@@ -436,7 +430,7 @@ const stopListeningForScans = () => {
 
 // ===== ADD THIS useEffect FOR CLEANUP =====
 useEffect(() => {
-  // Cleanup on unmount
+
   return () => {
     stopListeningForScans();
   };
@@ -546,9 +540,9 @@ const handleCloseStockCard = () => {
         quantity: '', 
         category: '',
         description: '',
-        unit: '', // NEW FIELD
-        location: '', // NEW FIELD
-        status: 'Normal', // NEW FIELD with default
+        unit: '', 
+        location: '', 
+        status: 'Normal', 
         date: '',
         itemPicture: null
       });
@@ -623,7 +617,7 @@ const handleCloseStockCard = () => {
     setNewItem({ ...newItem, itemCode: generatedCode });
   };
 
-  // Updated handleAddItem to save to database - UPDATED with new fields
+  // Updated handleAddItem to save to database
   const handleAddItem = async () => {
   if (!newItem.itemName || !newItem.quantity || !newItem.category || !newItem.unit) {
     alert('Please fill in all required fields (Item Name, Quantity, Category, Unit)');
@@ -762,7 +756,7 @@ const pluralizeUnit = (quantity, unit) => {
   return specialPlurals[unit.toLowerCase()] || unit + 's';
 };
 
-  // NEW: Threshold management functions
+  // Threshold management functions
   const handleOpenThresholdModal = () => {
     setThresholdForm({
       type: 'category',
@@ -842,19 +836,19 @@ const pluralizeUnit = (quantity, unit) => {
     }
   };
 
-  // NEW: Get current thresholds for selected item
+  // Get current thresholds for selected item
   const getCurrentThresholds = (item) => {
     if (!item) return null;
     return supplyThresholdManager.getThresholds(item);
   };
 
-  // NEW: Get detailed status information with trends and percentages
+  // Get detailed status information with trends and percentages
   const getDetailedStatusInfo = (item) => {
     if (!item) return null;
     return supplyThresholdManager.calculateDetailedStatus(item);
   };
 
-  // NEW: Get trend indicator icon
+  // Get trend indicator icon
   const getTrendIcon = (trend) => {
     switch (trend) {
       case 'increasing':
@@ -867,7 +861,7 @@ const pluralizeUnit = (quantity, unit) => {
     }
   };
 
-  // NEW: Get urgency indicator
+  // Get urgency indicator
   const getUrgencyIndicator = (urgency) => {
     switch (urgency) {
       case 'critical':
@@ -898,14 +892,14 @@ const pluralizeUnit = (quantity, unit) => {
     setQrCodeItem(null);
   };
 
-  // NEW: Update Quantity Module Functions
+  // Update Quantity Module Functions
   const handleOpenUpdateQuantity = () => {
     if (selectedItem) {
       setQuantityUpdateForm({
-        date: new Date().toISOString().slice(0, 10), // Current date
+        date: new Date().toISOString().slice(0, 10), 
         receipt: '',
         issue: '',
-        balance: selectedItem.quantity // Initial balance is current quantity
+        balance: selectedItem.quantity 
       });
       setIsUpdateQuantityModalOpen(true);
     }
@@ -1068,7 +1062,7 @@ const handleRemoveImage = async (supplyId) => {
   }
 };
 
-  // NEW: Edit Item Module Functions
+  // Edit Item Module Functions
   const handleOpenEditItem = () => {
     if (selectedItem) {
       setEditItemForm({
@@ -1116,7 +1110,7 @@ const handleRemoveImage = async (supplyId) => {
         date: editItemForm.date
       };
       
-      // Calculate new status based on thresholds (if quantity changed)
+      // Calculate new status based on thresholds
       const itemWithNewStatus = supplyThresholdManager.updateItemStatus(updatedItem);
       
       // Prepare data for API
@@ -1127,7 +1121,7 @@ const handleRemoveImage = async (supplyId) => {
         quantity: parseInt(editItemForm.quantity),
         supplier: editItemForm.stockNo,
         location: editItemForm.location,
-        status: itemWithNewStatus.status, // Use calculated status
+        status: itemWithNewStatus.status, 
         unit: editItemForm.unit,
         date: editItemForm.date,
         itemCode: editItemForm.itemCode
@@ -1207,7 +1201,7 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       )}
       
-      {/* NEW: Real-time Status Dashboard */}
+      {/* Real-time Status Dashboard */}
       {statusStats.total > 0 && (
         <div className="status-dashboard" style={{
           background: theme === 'light' ? '#ffffff' : '#1a1a1a',
@@ -1316,7 +1310,7 @@ const handleRemoveImage = async (supplyId) => {
             )}
           </div>
 
-          {/* NEW: Items per page selector */}
+          {/* Items per page selector */}
           <div className="items-per-page-container">
             <span>Show:</span>
             <select 
@@ -1407,7 +1401,7 @@ const handleRemoveImage = async (supplyId) => {
         </tbody>
       </table>
 
-      {/* NEW: Pagination Controls */}
+      {/* Pagination Controls */}
       {filteredSupplies.length > 0 && (
         <div className="pagination-container">
           <div className="pagination-info">
@@ -1452,7 +1446,7 @@ const handleRemoveImage = async (supplyId) => {
         {loading ? 'Loading...' : 'Add Item Supply'}
       </button>
 
-      {/* Enhanced Overlay Form - UPDATED WITH NEW FIELDS */}
+      {/* Enhanced Overlay For */}
       {isOverlayOpen && (
         <div className="overlay" onClick={handleOverlayToggle}>
           <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
@@ -1718,7 +1712,7 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       )}
 
-      {/* Item Overview Overlay - UPDATED TO SHOW NEW FIELDS */}
+      {/* Item Overview Overlay */}
       {isItemOverviewOpen && selectedItem && (
         <div className="overlay" onClick={handleCloseItemOverview}>
           <div className="item-overview-content" onClick={(e) => e.stopPropagation()}>
@@ -1779,7 +1773,7 @@ const handleRemoveImage = async (supplyId) => {
                   <span className="detail-label">Location:</span>
                   <span className="detail-value">{selectedItem.location || 'N/A'}</span>
                 </div>
-                {/* ENHANCED: STATUS with detailed information */}
+                {/* STATUS with detailed information */}
                 <div className="detail-row">
                   <span className="detail-label">Status:</span>
                   <div className="detail-value" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1801,7 +1795,7 @@ const handleRemoveImage = async (supplyId) => {
                   </div>
                 </div>
                 
-                {/* NEW: Show current thresholds */}
+                {/* Show current thresholds */}
                 {(() => {
                   const thresholds = getCurrentThresholds(selectedItem);
                   return thresholds ? (
@@ -1841,7 +1835,7 @@ const handleRemoveImage = async (supplyId) => {
               
               <button 
   className="action-btn view-docs-btn"
-  onClick={handleViewDocuments}  // ADD THIS LINE
+  onClick={handleViewDocuments}
 >
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1867,7 +1861,7 @@ const handleRemoveImage = async (supplyId) => {
                 Generate QR-code ⚏
               </button>
 
-              {/* NEW: Update Quantity Button */}
+              {/* Update Quantity Button */}
               <button 
                 className="action-btn update-quantity-btn"
                 onClick={handleOpenUpdateQuantity}
@@ -1878,7 +1872,7 @@ const handleRemoveImage = async (supplyId) => {
                 Update Quantity
               </button>
 
-              {/* NEW: Edit Item Button */}
+              {/* Edit Item Button */}
               <button 
                 className="action-btn edit-item-btn"
                 onClick={handleOpenEditItem}
@@ -1889,7 +1883,6 @@ const handleRemoveImage = async (supplyId) => {
                 Edit Item
               </button>
               
-              {/* Delete Supply button removed - delete functionality moved to table action column */}
             </div>
             
             <button className="close-overview-btn" onClick={handleCloseItemOverview}>
@@ -1899,7 +1892,7 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       )}
 
-      {/* NEW: Update Quantity Modal */}
+      {/* Update Quantity Modal */}
       {isUpdateQuantityModalOpen && selectedItem && (
         <div className="overlay" onClick={handleCloseUpdateQuantity}>
           <div className="small-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -1946,7 +1939,7 @@ const handleRemoveImage = async (supplyId) => {
                   name="balance"
                   value={quantityUpdateForm.balance}
                   readOnly
-                  className="item-code-input" // Reusing style for disabled input
+                  className="item-code-input"
                 />
               </div>
             </div>
@@ -1962,7 +1955,7 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       )}
 
-      {/* NEW: Edit Item Modal */}
+      {/* Edit Item Modal */}
       {isEditItemModalOpen && selectedItem && (
         <div className="overlay" onClick={handleCloseEditItem}>
           <div className="overlay-content" onClick={(e) => e.stopPropagation()}> {/* Reusing overlay-content for consistency */}
@@ -2104,7 +2097,7 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       )}
 
-{/* Compact QR Code Modal - UPDATED TO SHOW NEW FIELDS */}
+{/* Compact QR Code Modal */}
 {isQRModalOpen && qrCodeItem && (
   <div className="overlay" onClick={handleCloseQRModal}>
     <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -2125,7 +2118,7 @@ const handleRemoveImage = async (supplyId) => {
           </div>
         </div>
         
-        {/* Item Information - UPDATED WITH NEW FIELDS */}
+        {/* Item Information */}
         <div className="qr-item-info">
           <div className="qr-detail-row">
             <span className="qr-detail-label">Item Code:</span>
@@ -2177,7 +2170,7 @@ const handleRemoveImage = async (supplyId) => {
         </div>
       </div>
       
-      {/* Actions - Matching item overview actions style */}
+      {/* Actions */}
       <div className="qr-actions">
         <button className="qr-action-btn download-btn" onClick={downloadQRCode}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2231,7 +2224,7 @@ const handleRemoveImage = async (supplyId) => {
   </div>
 )}
 
-{/* NEW: Threshold Configuration Modal */}
+{/* Threshold Configuration Modal */}
 {showThresholdModal && (
   <div className="overlay" onClick={handleCloseThresholdModal}>
     <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
@@ -2371,7 +2364,7 @@ const handleRemoveImage = async (supplyId) => {
   </div>
 )}
 
-{/* ENHANCED: Recommendations Modal with detailed information */}
+{/* Recommendations Modal */}
 {showRecommendations && (
   <div className="overlay" onClick={handleCloseRecommendations}>
     <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
@@ -2761,7 +2754,6 @@ const handleRemoveImage = async (supplyId) => {
       position: 'static'
     }}
     onClick={() => {
-            // Create a print-friendly version without opening new tab
             const printWindow = window.open('', '_blank');
             const printContent = `
               <html>
