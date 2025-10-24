@@ -1,4 +1,4 @@
-// src/services/suppliesApi.js
+
 import axios from 'axios';
 
 // Base URL for your Python FastAPI backend
