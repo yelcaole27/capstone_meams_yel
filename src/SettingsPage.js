@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
-import './SettingsPage.css';
+import './DataTransferPage.css';
 
-function SettingsPage() {
+function DataTransferPage() {
   const { authToken, adminToken, isAdmin, getCurrentUser } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -360,9 +360,9 @@ const handleSendReport = async () => {
   const currentUser = getCurrentUser();
 
   return (
-    <div className="settings-page-container">
-      <div className="settings-header">
-        <h1 className="settings-title">Data Transfer</h1>
+    <div className="datatransfer-page-container">
+      <div className="datatransfer-header">
+        <h1 className="datatransfer-title">Data Transfer</h1>
         {currentUser && (
           <div className="user-info" style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
             Logged in as: {currentUser.username} ({currentUser.role})
@@ -370,9 +370,9 @@ const handleSendReport = async () => {
         )}
       </div>
 
-      <div className="settings-content">
+      <div className="datatransfer-content">
         {/* Import Data Section - Admin Only */}
-        <div className="settings-section import-section">
+        <div className="datatransfer-section import-section">
           <h2 className="section-title">
             IMPORT DATA
             {!isAdmin && <span style={{ color: '#e74c3c', fontSize: '14px', marginLeft: '10px' }}>(Admin Only)</span>}
@@ -478,7 +478,7 @@ const handleSendReport = async () => {
         </div>
 
         {/* Export Data Section - Admin Only */}
-        <div className="settings-section export-section">
+        <div className="datatransfer-section export-section">
           <h2 className="section-title">
             EXPORT DATA
             {!isAdmin && <span style={{ color: '#e74c3c', fontSize: '14px', marginLeft: '10px' }}>(Admin Only)</span>}
@@ -575,5 +575,4 @@ const handleSendReport = async () => {
   );
 }
 
-export default SettingsPage;
-
+export default DataTransferPage;
