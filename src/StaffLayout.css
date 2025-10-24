@@ -1,4 +1,4 @@
-/* StaffLayout.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
 
 /* ============================================================
@@ -120,7 +120,7 @@ html, body, #root {
   transform: scale(1.05);
 }
 
-/* Active and visited states - keep white/default color */
+
 .staff-sidebar .logo a:active .logo-text,
 .staff-sidebar .logo a:visited .logo-text,
 .staff-sidebar .logo a:focus .logo-text {
@@ -128,7 +128,7 @@ html, body, #root {
   text-shadow: 0 0 20px var(--accent-glow);
 }
 
-/* Override visited hover to still show accent color */
+
 .staff-sidebar .logo a:visited:hover .logo-text {
   color: var(--accent);
   text-shadow: 0 0 30px var(--accent-glow);
