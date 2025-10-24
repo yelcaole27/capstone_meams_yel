@@ -1,4 +1,4 @@
-/* Help & Support Container */
+
 .help-support-container {
   padding: 0;
   width: 100%;
@@ -217,7 +217,7 @@
   font-weight: 700;
 }
 
-/* DEFAULT/FALLBACK ACCORDION STYLES (if no theme attribute) */
+/* DEFAULT/FALLBACK ACCORDION STYLES */
 .guide-item {
   margin-bottom: 16px;
   border-radius: 8px;
