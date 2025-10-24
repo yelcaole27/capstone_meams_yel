@@ -58,7 +58,6 @@ function LogsPage() {
       if (data.success) {
         setLogsData(data.data || []);
         
-        // Update user options if they're provided
         if (data.usernames) {
           setUserOptions(data.usernames);
         }
@@ -75,7 +74,7 @@ function LogsPage() {
     }
   };
 
-  // Export logs functionality
+  // Export logs function
   const handleExport = async () => {
     try {
       const token = getAuthToken();
@@ -129,7 +128,6 @@ function LogsPage() {
     }
   };
 
-  // Set default date range on component mount
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -138,7 +136,7 @@ function LogsPage() {
     setDateFrom(thirtyDaysAgo.toISOString().split('T')[0]);
   }, []);
 
-  // Fetch logs when component mounts or when filters change
+  // Fetch logs when filters change
   useEffect(() => {
     if (dateFrom && dateTo) {
       fetchLogs();
