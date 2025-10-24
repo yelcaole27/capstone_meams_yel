@@ -1,4 +1,4 @@
-/* MainLayout.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
 
 /* ============================================================
@@ -95,7 +95,6 @@ html, body, #root {
   margin-bottom: 10px;
 }
 
-/* Target the Link wrapper to remove any default link styling */
 .sidebar .logo a {
   text-decoration: none;
   color: inherit;
@@ -104,7 +103,7 @@ html, body, #root {
 .sidebar .logo-text {
   font-family: 'Koulen', cursive;
   font-size: 32px;
-  color: var(--text-primary); /* White/default color */
+  color: var(--text-primary);
   font-weight: 400;
   letter-spacing: 2px;
   text-align: center;
@@ -114,7 +113,7 @@ html, body, #root {
   cursor: pointer;
 }
 
-/* Hover effect - glows in accent color and scales up */
+/* Hover effect */
 .sidebar .logo a:hover .logo-text {
   color: var(--accent);
   text-shadow: 0 0 30px var(--accent-glow);
