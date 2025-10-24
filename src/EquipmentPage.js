@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import QRCode from 'qrcode';
-import EquipmentAPI from './EquipmentApi'; // Import the API service
+import EquipmentAPI from './EquipmentApi';
 import EquipmentDocumentViewer from './EquipmentDocumentViewer';
 import html2pdf from 'html2pdf.js';
 import './EquipmentPage.css';
@@ -24,12 +24,12 @@ function EquipmentPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState(null);
 
-  // NEW: LCC Analysis State
+  // LCC Analysis State
   const [showLCCAnalysis, setShowLCCAnalysis] = useState(false);
   const [lccData, setLccData] = useState(null);
 
 
-  // NEW: LCC Analysis Function
+  // LCC Analysis Function
   const calculateLCCAnalysis = (equipment) => {
     const repairHistory = equipment.repairHistory || [];
     const usefulLife = equipment.usefulLife || 5;
@@ -121,7 +121,7 @@ function EquipmentPage() {
     };
   };
 
-  // NEW: Handler to show LCC analysis
+  // Handler to show LCC analysis
   const handleShowLCCAnalysis = () => {
     if (selectedEquipment) {
       const analysis = calculateLCCAnalysis(selectedEquipment);
@@ -130,13 +130,13 @@ function EquipmentPage() {
     }
   };
 
-  // NEW: Close LCC Analysis modal
+  // Close LCC Analysis modal
   const handleCloseLCCAnalysis = () => {
     setShowLCCAnalysis(false);
     setLccData(null);
   };
 
-  // NEW: Get LCC badge for equipment list
+  // Get LCC badge for equipment list
   const getLCCBadge = (equipment) => {
     const analysis = calculateLCCAnalysis(equipment);
     if (analysis.recommendReplacement) {
@@ -203,7 +203,7 @@ function EquipmentPage() {
     setIsEquipmentDocumentViewerOpen(false);
   };
 
-  // NEW: Pagination states
+  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   
@@ -215,10 +215,10 @@ function EquipmentPage() {
     description: '', 
     category: '',
     location: '',
-    status: '', // Status will be calculated
+    status: '',
     usefulLife: '',
     amount: '',
-    date: '', // Initialize as empty string, will be handled for null if not set
+    date: '',
     itemPicture: null
   });
   const [dragActive, setDragActive] = useState(false);
@@ -400,7 +400,7 @@ function EquipmentPage() {
         repairDate: updateData.repairDate,
         repairDetails: updateData.repairDetails,
         amountUsed: parseFloat(updateData.amountUsed),
-        status: newStatus // Set status back based on useful life
+        status: newStatus 
       });
       
       console.log('Equipment repair updated:', response);
@@ -433,7 +433,7 @@ function EquipmentPage() {
   };
 
   const equipmentCategories = ['HVAC Carpentry', 'Carpentry Equipment', 'Office Equipment', 'Electrical Equipment', 'Audio/Visual Equipment'];
-  // Removed 'Maintenance' from here as it's now dynamically set
+
   const equipmentStatuses = ['Within-Useful-Life', 'Beyond-Useful-Life']; 
 
   useEffect(() => {
@@ -468,7 +468,7 @@ function EquipmentPage() {
       image_data: item.image_data || null,
       image_filename: item.image_filename || null,
       image_content_type: item.image_content_type || null,
-      repairHistory: item.repairHistory || [], // ADDED THIS LINE
+      repairHistory: item.repairHistory || [],
     }));
     setEquipmentData(transformedEquipment);
     console.log(`✅ Loaded ${transformedEquipment.length} equipment items from database`);
@@ -552,10 +552,10 @@ function EquipmentPage() {
         description: '',   
         category: '',
         location: '',
-        status: '', // Reset status
+        status: '',
         usefulLife: '',
         amount: '',
-        date: '', // Reset to empty string
+        date: '',
         itemPicture: null
       });
       setError(null);
@@ -728,7 +728,7 @@ const getImageUrl = (equipment) => {
     return `data:${contentType};base64,${imageData}`;
   }
   
-  // If it looks like it might be base64 (no special characters that aren't base64)
+
   if (/^[A-Za-z0-9+/=]+$/.test(imageData)) {
     return `data:${contentType};base64,${imageData}`;
   }
@@ -754,13 +754,13 @@ const getImageUrl = (equipment) => {
       errors.push('Description is required.');
     }
     
-    // Ensure usefulLife is a number and greater than 0
+    
     const usefulLifeNum = parseInt(newEquipment.usefulLife);
     if (isNaN(usefulLifeNum) || usefulLifeNum <= 0) {
       errors.push('Useful life must be a positive number.');
     }
 
-    // Ensure amount is a number and non-negative
+
     const amountNum = parseFloat(newEquipment.amount);
     if (isNaN(amountNum) || amountNum < 0) {
       errors.push('Amount must be a non-negative number.');
@@ -784,7 +784,7 @@ const getImageUrl = (equipment) => {
       const validationErrors = validateEquipmentForm();
       if (validationErrors.length > 0) {
         alert('Please correct the following issues:\n' + validationErrors.join('\n'));
-        return; // Stop the function if validation fails
+        return;
       }
       // --- End of added validation ---
 
@@ -852,7 +852,7 @@ const getImageUrl = (equipment) => {
         description: newEquipment.description.trim(),
         category: newEquipment.category,
         location: newEquipment.location.trim(),
-        status: initialStatus, // Use the calculated initial status
+        status: initialStatus,
         itemPicture: savedEquipment.image_data,  
         image_data: savedEquipment.image_data,
         image_filename: savedEquipment.image_filename,
@@ -1664,7 +1664,7 @@ const printQRCode = () => {
               </button>
             </div>
           ) : (
-            // No image - show placeholder with click to upload
+
             <div 
               className="placeholder-box" 
               onClick={() => document.getElementById('overviewImageInput').click()}
@@ -1710,7 +1710,7 @@ const printQRCode = () => {
                 console.log('📁 File selected:', file.name, file.size, file.type);
                 handleImageUploadForSelectedEquipment(file);
               }
-              e.target.value = ''; // Reset for re-selection
+              e.target.value = '';
             }}
             accept="image/jpeg,image/png,image/jpg"
             style={{ display: 'none' }}
