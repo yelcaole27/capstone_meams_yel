@@ -1,5 +1,3 @@
-// MultipleFiles/DashboardPage.js
-
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import SuppliesAPI from './suppliesApi';
@@ -29,7 +27,7 @@ function DashboardPage() {
   const [showRepairForm, setShowRepairForm] = useState(false);
   const { theme } = useTheme()
 
-  // Extracted CSS constants to fix ESLint parsing issues with inline template literals
+
   const requisitionCSS = `
     .requisition-form-modal * {
       color: black !important;
@@ -155,10 +153,8 @@ function DashboardPage() {
   const pluralizeUnit = (unit, quantity) => {
   const qty = parseInt(quantity) || 0;
   
-  // If quantity is 1 or less, return singular
-  if (qty <= 1) return unit;  // ← Checks ONLY the number
+  if (qty <= 1) return unit;
   
-  // Your exact unit pluralization rules
   const lowerUnit = unit.toLowerCase();
   
   const plurals = {
@@ -1195,7 +1191,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
       padding: '20px'
     }}
     onClick={(e) => {
-      // Close when clicking outside the modal
+
       if (e.target === e.currentTarget) {
         closeModal();
       }
@@ -1485,7 +1481,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
         </div>
       </div>
 
-      {/* Print Button - positioned in bottom right */}
+      {/* Print Button */}
       <div className="print-hidden" style={{
         display: 'flex',
         justifyContent: 'flex-end',
@@ -1496,13 +1492,13 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   onClick={() => window.print()}
   style={{
     backgroundColor: '#4CAF50',
-    color: '#FFFFFF',  // WHITE TEXT
+    color: '#FFFFFF',
     padding: '10px 20px',
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
-    fontWeight: 'bold',  // BOLD TEXT
+    fontWeight: 'bold',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
@@ -1533,7 +1529,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
       padding: '20px'
     }}
     onClick={(e) => {
-      // Close when clicking outside the modal
+
       if (e.target === e.currentTarget) {
         closeModal();
       }
@@ -1638,6 +1634,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
       </div>
 
       {/* Rest of the form content remains the same, including the same requisitioner section with empty name space */}
+      
       {/* Department Header */}
       <div style={{
         textAlign: 'center',
@@ -1780,7 +1777,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
             borderBottom: '1px solid black',
             width: '200px'
           }}>
-            {/* Name removed - space preserved for user input */}
+            {/* Name removed */}
           </div>
           <div style={{ fontSize: '11px', marginBottom: '5px' }}>
             MED Chief
@@ -1825,7 +1822,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
         </div>
       </div>
 
-      {/* Print Button - positioned in bottom right */}
+      {/* Print Button */}
       <div className="print-hidden" style={{
         display: 'flex',
         justifyContent: 'flex-end',
@@ -1836,13 +1833,13 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   onClick={() => window.print()}
   style={{
     backgroundColor: '#4CAF50',
-    color: '#FFFFFF',  // WHITE TEXT
+    color: '#FFFFFF',
     padding: '10px 20px',
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
-    fontWeight: 'bold',  // BOLD TEXT
+    fontWeight: 'bold',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
@@ -2080,7 +2077,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   <input
   type="text"
   className={`${itemData ? 'form-input-filled' : ''}`}
-  defaultValue={itemData ? (itemData.description || itemData.category || 'N/A') : ''}  // ✅ FIXED - showing description
+  defaultValue={itemData ? (itemData.description || itemData.category || 'N/A') : ''}
   placeholder=""
   style={{
     border: 'none',
@@ -2169,13 +2166,13 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   className="print-btn-purchase"
   style={{
     backgroundColor: '#FF6B35',
-    color: '#FFFFFF',  // WHITE TEXT
+    color: '#FFFFFF',
     padding: '10px 20px',
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
-    fontWeight: 'bold',  // BOLD TEXT
+    fontWeight: 'bold',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
@@ -2188,7 +2185,7 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
         </div>
       )}
 
-      {/* NEW: Repair Form Modal */}
+      {/* Repair Form Modal */}
       {showRepairForm && (
         <div 
           style={{
@@ -2481,13 +2478,13 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
   className="print-btn-repair"
   style={{
     backgroundColor: '#2196F3',
-    color: '#FFFFFF',  // WHITE TEXT
+    color: '#FFFFFF',
     padding: '10px 20px',
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
-    fontWeight: 'bold',  // BOLD TEXT
+    fontWeight: 'bold',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
