@@ -12,7 +12,7 @@ import SuppliesPage from './SuppliesPage';
 import EquipmentPage from './EquipmentPage';
 import LogsPage from './LogsPage';
 import ManageAccountsPage from './ManageAccountsPage';
-import SettingsPage from './SettingsPage';
+import DataTransferPage from './DataTransferPage';
 import HelpSupport from './HelpSupport';
 import AdminLogin from './AdminLogin';
 import StaffLayout from './StaffLayout'; 
@@ -62,7 +62,7 @@ function AppRoutes() {
           <Route path="/equipment" element={<EquipmentPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/manage-accounts" element={<ManageAccountsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/datatransfer" element={<DataTransferPage />} />
           <Route path="help-support" element={<HelpSupport />} />
         </Route>
       )}
@@ -77,7 +77,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/supplies" element={<SuppliesPage />} />
           <Route path="/equipment" element={<EquipmentPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/datatransfer" element={<DataTransferPage />} />
           <Route path="help-support" element={<HelpSupport />} />
 
         </Route>
