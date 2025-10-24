@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from './AuthContext'; // Import useAuth
-import { useTheme } from './ThemeContext'; // Import useTheme
+import { useAuth } from './AuthContext';
+import { useTheme } from './ThemeContext';
 import ProfileModal from './ProfileModal';
 import './MainLayout.css';
 
 function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { getCurrentUser, authToken } = useAuth(); // Get auth functions
-  const { theme, toggleTheme } = useTheme(); // Get theme functions
+  const { getCurrentUser, authToken } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [userDisplayName, setUserDisplayName] = useState('User'); // State for display name
+  const [userDisplayName, setUserDisplayName] = useState('User');
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false); 
   const [bugReport, setBugReport] = useState(''); 
   const [isSendingReport, setIsSendingReport] = useState(false); 
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
 
-  // ? ONLY ADDED: Profile picture states
+  // Profile picture states
   const [profilePicture, setProfilePicture] = useState(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const fileInputRef = useRef(null);
@@ -27,7 +27,7 @@ function MainLayout() {
   // Get current user info
   const currentUser = getCurrentUser();
 
-  // ? ONLY ADDED: Helper function for base64 conversion
+  // Helper function for base64 conversion
   const convertFileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -37,7 +37,7 @@ function MainLayout() {
     });
   };
 
-  // Fetch user display name - MODIFIED to also get profile picture
+  // Fetch user display name and picture
   useEffect(() => {
     const fetchUserDisplayName = async () => {
       if (authToken && currentUser) {
@@ -53,7 +53,7 @@ function MainLayout() {
           if (response.ok) {
             const profileData = await response.json();
             setUserDisplayName(profileData.fullName || currentUser.username || 'User');
-            // ? ONLY ADDED: Set profile picture if exists
+            // Set profile picture if exists
             if (profileData.profilePicture) {
               setProfilePicture(profileData.profilePicture);
             }
@@ -84,13 +84,13 @@ function MainLayout() {
     fetchUserDisplayName();
   }, [authToken, currentUser]);
 
-  // ? NEW: Add this callback function for profile picture updates from modal
+  // Add this callback function for profile picture updates from modal
   const handleProfilePictureUpdate = (newPicture) => {
     console.log('Profile picture updated from modal:', newPicture);
     setProfilePicture(newPicture);
   };
 
-  // ? ONLY ADDED: Profile picture upload functions
+  // Profile picture upload functions
   const handleAvatarClick = () => {
     if (uploadingPicture) return;
     fileInputRef.current?.click();
@@ -139,15 +139,15 @@ function MainLayout() {
     }
   };
 
-  // ? FIXED: Delete profile picture function
+  // Delete profile picture function
   const handleDeleteProfilePicture = async (e) => {
     // Prevent event bubbling to avatar click handler
     e.stopPropagation();
 
-    if (!profilePicture) return; // No picture to delete
+    if (!profilePicture) return;
 
     if (!window.confirm('Are you sure you want to delete your profile picture?')) {
-      return; // User cancelled
+      return;
     }
 
     try {
@@ -162,7 +162,7 @@ function MainLayout() {
       });
 
       if (response.ok) {
-        setProfilePicture(null); // Remove from UI - this should trigger re-render
+        setProfilePicture(null);
         console.log('? Profile picture deleted successfully');
       } else {
         throw new Error('Delete failed');
@@ -183,7 +183,6 @@ function MainLayout() {
     try {
       const token = getAuthToken();
 
-      // Call logout endpoint to log the logout action
       if (token) {
         try {
           await fetch(`${process.env.REACT_APP_API_URL}/logout`, {
@@ -195,7 +194,6 @@ function MainLayout() {
           });
         } catch (error) {
           console.warn('Failed to log logout action:', error);
-          // Continue with logout even if logging fails
         }
       }
 
@@ -223,7 +221,7 @@ function MainLayout() {
   const handleProfileClick = (e) => {
     e.preventDefault();
     setShowProfileModal(true);
-    setShowAdminMenu(false); // Close the dropdown
+    setShowAdminMenu(false);
   };
 
   const handleSendReport = async () => {
@@ -305,7 +303,7 @@ function MainLayout() {
               </div>
             )}
 
-            {/* ? CENTERED: Delete button */}
+            {/* Delete button */}
             <div className="avatar-overlay">
               {uploadingPicture ? (
                 <div className="upload-spinner"></div>
@@ -336,7 +334,7 @@ function MainLayout() {
             </div>
           </div>
 
-          {/* ? ONLY ADDED: Hidden file input */}
+          {/* Hidden file input */}
           <input 
             ref={fileInputRef}
             type="file"
@@ -345,7 +343,7 @@ function MainLayout() {
             style={{ display: 'none' }}
           />
 
-          {/* ? FIXED: Dynamic user name */}
+          {/* Dynamic user name */}
           <p className="admin-name">{userDisplayName}</p>
         </div>
 
@@ -486,13 +484,13 @@ function MainLayout() {
   </div>
 </header>
 
-        {/* ADDED: Wrap Outlet in scrollable container */}
+        {/* Wrap Outlet in scrollable container */}
         <div className="main-content-scrollable">
           <Outlet />
         </div>
       </main>
 
-      {/* ? UPDATED: Profile Modal with callback prop */}
+      {/* Profile Modal with callback prop */}
       <ProfileModal 
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
