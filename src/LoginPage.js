@@ -10,7 +10,7 @@ function LoginPage() {
   const [message, setMessage] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   
-  // Password change modal states
+  // Password change modal
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [authToken, setAuthToken] = useState('');
@@ -22,7 +22,6 @@ function LoginPage() {
   const [newPasswordVisible, setNewPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-  // Updated handleLogin function
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -56,14 +55,14 @@ function LoginPage() {
           setAuthToken(data.access_token);
           setUserRole(role);
           setIsFirstLogin(true);
-          setCurrentPassword(password); // Pre-fill current password
+          setCurrentPassword(password);
           setShowPasswordChange(true);
           setMessage('Please set a new password for your account.');
-          setIsLoading(false); // Important: Stop loading here
-          return; // Don't redirect yet
+          setIsLoading(false);
+          return;
         }
         
-        // Store token based on role (existing logic)
+        // Store token based on role
         if (role === 'admin') {
           localStorage.setItem('adminToken', data.access_token);
           localStorage.setItem('authToken', data.access_token);
@@ -160,7 +159,7 @@ function LoginPage() {
     setIsLoading(false);
   };
 
-  // Close password change modal (only if not first login)
+  // Close password change modal
   const closePasswordChange = () => {
     if (isFirstLogin) {
       console.log('Cannot close modal - first login required');
@@ -174,7 +173,7 @@ function LoginPage() {
     setPasswordChangeMessage('');
   };
 
-  // UPDATED: Forgot password handler with actual API call
+  // Forgot password handler with actual API call
   const handleForgotPassword = async (e) => {
     e.preventDefault();
 
