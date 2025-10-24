@@ -1,6 +1,6 @@
-/* SettingsPage.css - Updated with theme variables */
 
-.settings-page-container {
+
+.datatransfer-page-container {
   flex-grow: 1;
   padding: 20px;
   display: flex;
@@ -10,11 +10,11 @@
   color: var(--text-primary);
 }
 
-.settings-header {
+.datatransfer-header {
   margin-bottom: 40px;
 }
 
-.settings-title {
+.datatransfer-title {
   font-size: 32px;
   font-weight: bold;
   color: var(--text-primary);
@@ -22,14 +22,14 @@
   letter-spacing: 2px;
 }
 
-.settings-content {
+.datatransfer-content {
   display: flex;
   gap: 30px;
   flex-wrap: wrap;
   justify-content: flex-start;
 }
 
-.settings-section {
+.datatransfer-section {
   background: var(--sidebar-bg);
   border-radius: 10px;
   padding: 25px;
@@ -281,26 +281,26 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .settings-content {
+  .datatransfer-content {
     flex-direction: column;
   }
   
-  .settings-section {
+  .datatransfer-section {
     max-width: none;
     min-width: auto;
   }
 }
 
 @media (max-width: 768px) {
-  .settings-page-container {
+  .datatransfer-page-container {
     padding: 15px;
   }
   
-  .settings-title {
+  .datatransfer-title {
     font-size: 28px;
   }
   
-  .settings-section {
+  .datatransfer-section {
     padding: 20px;
   }
   
