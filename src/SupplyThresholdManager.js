@@ -1,4 +1,4 @@
-// SupplyThresholdManager.js - Enhanced Real-time threshold-based status monitoring
+
 class SupplyThresholdManager {
   constructor() {
     // Default thresholds - can be customized per category or item
@@ -27,7 +27,7 @@ class SupplyThresholdManager {
       }
     };
 
-    // NEW: Real-time monitoring settings
+    // Real-time monitoring settings
     this.monitoringSettings = {
       enableRealTimeUpdates: true,
       notificationThreshold: 'critical', // 'critical', 'understock', 'all'
@@ -35,7 +35,7 @@ class SupplyThresholdManager {
       historyTracking: true
     };
 
-    // NEW: Status change history for analytics
+    // Status change history for analytics
     this.statusHistory = new Map();
 
     // Item-specific thresholds (override category defaults)
@@ -124,7 +124,7 @@ class SupplyThresholdManager {
     }
   }
 
-  // NEW: Calculate detailed status with percentage and trend (3 levels only)
+  // Calculate detailed status with percentage and trend (3 levels only)
   calculateDetailedStatus(item) {
     const quantity = parseInt(item.quantity) || 0;
     const thresholds = this.getThresholds(item);
@@ -151,7 +151,7 @@ class SupplyThresholdManager {
     };
   }
 
-  // NEW: Calculate trend based on recent changes
+  // Calculate trend based on recent changes
   calculateTrend(item) {
     const itemKey = `${item.itemCode}_${item.itemName}`;
     const history = this.statusHistory.get(itemKey) || [];
