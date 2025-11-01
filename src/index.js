@@ -1,4 +1,4 @@
-
+// index.js - Update your existing index.js file
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -14,7 +14,6 @@ import LogsPage from './LogsPage';
 import ManageAccountsPage from './ManageAccountsPage';
 import DataTransferPage from './DataTransferPage';
 import HelpSupport from './HelpSupport';
-import AdminLogin from './AdminLogin';
 import StaffLayout from './StaffLayout'; 
 
 // Protected Route Component
@@ -48,7 +47,6 @@ function AppRoutes() {
       {/* Standalone Routes (Not Protected) */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/admin-login" element={<AdminLogin />} />
 
       {/* Admin Protected Routes using MainLayout */}
       {isAdmin && (
