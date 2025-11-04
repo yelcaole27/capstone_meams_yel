@@ -8,6 +8,7 @@ import { useTheme } from './ThemeContext';
 import DynamicRequisitionForm from './DynamicRequisitionForm';
 import DynamicPurchaseForm from './DynamicPurchaseForm';
 import DynamicRepairForm from './DynamicRepairForm';
+import supplyThresholdManager from './SupplyThresholdManager';
 
 function DashboardPage() {
   const { authToken, isAuthenticated, loading: authLoading } = useAuth();
@@ -54,12 +55,39 @@ function DashboardPage() {
   return plurals[lowerUnit] || unit;
 };
 
-  const getUnderstockData = () => {
-    return suppliesData.filter(supply => {
-      const status = supply.status || '';
-      return status.toLowerCase() === 'understock';
-    }).slice(0, 10);
-  };
+ const getUnderstockData = () => {
+  // ✅ FIXED: Apply threshold calculation to ensure accurate status
+  const itemsWithCorrectStatus = suppliesData.map(supply => {
+    // Create a temporary item object for threshold calculation
+    const tempItem = {
+      itemName: supply.itemName || supply.name,
+      category: supply.category,
+      quantity: supply.quantity
+    };
+    
+    // Calculate the correct status using threshold manager
+    const calculatedStatus = supplyThresholdManager.calculateStatus(tempItem);
+    
+    return {
+      ...supply,
+      status: calculatedStatus // Use calculated status instead of raw status
+    };
+  });
+  
+  // Filter items that are actually understock
+  const understockItems = itemsWithCorrectStatus.filter(item => {
+    const status = (item.status || '').toLowerCase().trim();
+    
+    console.log(`✅ Checking ${item.itemName || item.name}: status="${status}", quantity=${item.quantity}`);
+    
+    return status === 'understock';
+  });
+  
+  console.log('📊 Understock items found:', understockItems.length);
+  console.log('📊 Total supplies:', suppliesData.length);
+  
+  return understockItems;
+};
 
   const getEquipmentBeyondLifeData = () => {
     return equipmentData.filter(equipment => {
@@ -143,112 +171,129 @@ function DashboardPage() {
 const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (authLoading) return;
+  const fetchData = async () => {
+    if (authLoading) return;
 
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        if (!isAuthenticated) {
-          console.warn('User  not authenticated, using empty data for charts');
-          setSuppliesData([]);
-          setEquipmentData([]);
-          setSuppliesForecastData([]);
-          setEquipmentForecastData([]);
-          setLoading(false);
-          return;
-        }
-
-        const [supplies, equipment] = await Promise.all([
-          SuppliesAPI.getAllSupplies(authToken).catch(err => {
-            console.warn('Failed to fetch supplies:', err);
-            if (err.message.includes('Authentication failed')) {
-              setError('Please log in to view dashboard data');
-            }
-            return [];
-          }),
-          EquipmentAPI.getAllEquipment(authToken).catch(err => {
-            console.warn('Failed to fetch equipment:', err);
-            if (err.message.includes('Authentication failed')) {
-              setError('Please log in to view dashboard data');
-            }
-            return [];
-          })
-        ]);
-
-        setSuppliesData(supplies || []);
-        setEquipmentData(equipment || []);
-
-        // Fetch forecast data (now includes generated 2024 and 2025 forecast)
-        const [suppliesForecastRes, equipmentForecastRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_URL}/api/forecast-supplies`, {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
-          }).then(res => res.json()),
-          fetch(`${process.env.REACT_APP_API_URL}/api/forecast-equipment`, {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
-          }).then(res => res.json())
-        ]);
-
-        if (suppliesForecastRes.success) {
-          const enrichedSuppliesData = suppliesForecastRes.data.map(item => ({
-            ...item,
-            quantity: parseFloat(item.quantity) || 0,
-            lower_bound: parseFloat(item.lower_bound) || 0,
-            upper_bound: parseFloat(item.upper_bound) || 0,
-            // Assuming forecast_type is provided by the backend
-            forecast_type: item.forecast_type || 'historical' // Default to historical if not specified
-          }));
-          setSuppliesForecastData(enrichedSuppliesData);
-          console.log('Supplies forecast loaded:', enrichedSuppliesData.length, 'months');
-          console.log('Supplies forecast data range:', 
-            enrichedSuppliesData.length > 0 ? new Date(enrichedSuppliesData[0].date).toLocaleDateString() : 'N/A', 
-            'to', 
-            enrichedSuppliesData.length > 0 ? new Date(enrichedSuppliesData[enrichedSuppliesData.length - 1].date).toLocaleDateString() : 'N/A'
-          );
-        } else {
-          console.error('Failed to fetch supplies forecast:', suppliesForecastRes.message);
-          setSuppliesForecastData([]);
-        }
-
-        if (equipmentForecastRes.success) {
-          const enrichedEquipmentData = equipmentForecastRes.data.map(item => ({
-            ...item,
-            quantity: parseFloat(item.quantity) || 0,
-            lower_bound: parseFloat(item.lower_bound) || 0,
-            upper_bound: parseFloat(item.upper_bound) || 0,
-            // Assuming forecast_type is provided by the backend
-            forecast_type: item.forecast_type || 'historical' // Default to historical if not specified
-          }));
-          setEquipmentForecastData(enrichedEquipmentData);
-          console.log('Equipment forecast loaded:', enrichedEquipmentData.length, 'months');
-          console.log('Equipment forecast data range:', 
-            enrichedEquipmentData.length > 0 ? new Date(enrichedEquipmentData[0].date).toLocaleDateString() : 'N/A', 
-            'to', 
-            enrichedEquipmentData.length > 0 ? new Date(enrichedEquipmentData[enrichedEquipmentData.length - 1].date).toLocaleDateString() : 'N/A'
-          );
-        } else {
-          console.error('Failed to fetch equipment forecast:', equipmentForecastRes.message);
-          setEquipmentForecastData([]);
-        }
-
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        if (err.message.includes('Authentication failed')) {
-          setError('Please log in to view dashboard data');
-        } else {
-          setError('Failed to load dashboard data');
-        }
-      } finally {
+      if (!isAuthenticated) {
+        console.warn('User not authenticated, using empty data for charts');
+        setSuppliesData([]);
+        setEquipmentData([]);
+        setSuppliesForecastData([]);
+        setEquipmentForecastData([]);
         setLoading(false);
+        return;
       }
-    };
 
-    fetchData();
-  }, [authToken, isAuthenticated, authLoading]);
+      const [supplies, equipment] = await Promise.all([
+        SuppliesAPI.getAllSupplies(authToken).catch(err => {
+          console.warn('Failed to fetch supplies:', err);
+          if (err.message.includes('Authentication failed')) {
+            setError('Please log in to view dashboard data');
+          }
+          return [];
+        }),
+        EquipmentAPI.getAllEquipment(authToken).catch(err => {
+          console.warn('Failed to fetch equipment:', err);
+          if (err.message.includes('Authentication failed')) {
+            setError('Please log in to view dashboard data');
+          }
+          return [];
+        })
+      ]);
+
+      // ✅ Transform supplies data like in SuppliesPage
+      const transformedSupplies = supplies.map(supply => {
+  let itemCode = supply.itemCode;
+  if (!itemCode) {
+    const categoryPrefix = supply.category ? supply.category.substring(0, 3).toUpperCase() : 'SUP';
+    const randomNum = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    itemCode = `${categoryPrefix}-${randomNum}`;
+  }
+
+  return {
+    _id: supply._id,
+    itemCode: itemCode,
+    stockNo: supply.supplier || Math.floor(Math.random() * 100).toString(),
+    quantity: supply.quantity,
+    itemName: supply.name,
+    name: supply.name,
+    category: supply.category,
+    description: supply.description || '',
+    unit: supply.unit || 'piece',
+    location: supply.location || '',
+    status: supply.status || 'Normal', // This will be recalculated below
+    date: supply.date || '',
+    has_image: supply.image_data ? true : false,
+    image_data: supply.image_data || null,
+    transactionHistory: supply.transactionHistory || []
+  };
+});
+
+      const suppliesWithUpdatedStatus = supplyThresholdManager.updateMultipleItemsStatus(transformedSupplies);
+
+setSuppliesData(suppliesWithUpdatedStatus); // Set state ONCE with corrected status
+setEquipmentData(equipment || []);
+      // Fetch forecast data
+      const [suppliesForecastRes, equipmentForecastRes] = await Promise.all([
+        fetch(`${process.env.REACT_APP_API_URL}/api/forecast-supplies`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }).then(res => res.json()),
+        fetch(`${process.env.REACT_APP_API_URL}/api/forecast-equipment`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }).then(res => res.json())
+      ]);
+
+      if (suppliesForecastRes.success) {
+        const enrichedSuppliesData = suppliesForecastRes.data.map(item => ({
+          ...item,
+          quantity: parseFloat(item.quantity) || 0,
+          lower_bound: parseFloat(item.lower_bound) || 0,
+          upper_bound: parseFloat(item.upper_bound) || 0,
+          forecast_type: item.forecast_type || 'historical'
+        }));
+        setSuppliesForecastData(enrichedSuppliesData);
+        console.log('Supplies forecast loaded:', enrichedSuppliesData.length, 'months');
+      } else {
+        console.error('Failed to fetch supplies forecast:', suppliesForecastRes.message);
+        setSuppliesForecastData([]);
+      }
+
+      if (equipmentForecastRes.success) {
+        const enrichedEquipmentData = equipmentForecastRes.data.map(item => ({
+          ...item,
+          quantity: parseFloat(item.quantity) || 0,
+          lower_bound: parseFloat(item.lower_bound) || 0,
+          upper_bound: parseFloat(item.upper_bound) || 0,
+          forecast_type: item.forecast_type || 'historical'
+        }));
+        setEquipmentForecastData(enrichedEquipmentData);
+        console.log('Equipment forecast loaded:', enrichedEquipmentData.length, 'months');
+      } else {
+        console.error('Failed to fetch equipment forecast:', equipmentForecastRes.message);
+        setEquipmentForecastData([]);
+      }
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      if (err.message.includes('Authentication failed')) {
+        setError('Please log in to view dashboard data');
+      } else {
+        setError('Failed to load dashboard data');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [authToken, isAuthenticated, authLoading]);
 
   const handleGenerateRequisition = () => {
     setShowRequisitionModal(true);
@@ -825,23 +870,28 @@ const equipmentColors = ['#2196F3', '#9C27B0', '#FF5722'];
                 </tr>
               </thead>
               <tbody>
-                {understockData.length > 0 ? (
-                  understockData.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.itemCode || item.id || 'N/A'}</td>
-                      <td>{item.quantity || item.stockNo || 0}</td>
-                      <td>{item.name || item.itemName || 'N/A'}</td>
-                      <td>{item.category || 'N/A'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" style={{textAlign: 'center', color: '#888'}}>
-                      {loading ? 'Loading...' : 'No understock items found'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+  {(() => {
+    const understockData = getUnderstockData();
+    console.log('🔍 Rendering understock table with', understockData.length, 'items');
+    
+    return understockData.length > 0 ? (
+      understockData.map((item, index) => (
+        <tr key={index}>
+          <td>{item.itemCode || item.id || 'N/A'}</td>
+          <td>{item.quantity || item.stockNo || 0}</td>
+          <td>{item.name || item.itemName || 'N/A'}</td>
+          <td>{item.category || 'N/A'}</td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan="4" style={{textAlign: 'center', color: '#888'}}>
+          {loading ? 'Loading...' : 'No understock items found'}
+        </td>
+      </tr>
+    );
+  })()}
+</tbody>
             </table>
             <button
               className="generate-button"
