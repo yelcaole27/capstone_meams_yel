@@ -91,7 +91,7 @@ function DashboardPage() {
       if (recentRepairs >= 3) recommendReplacement = true;
 
       return recommendReplacement;
-    }).slice(0, 10);
+    });
   };
 
   const getEquipmentMaintenanceData = () => {
