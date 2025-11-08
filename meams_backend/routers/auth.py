@@ -18,7 +18,6 @@ from services.log_service import create_log_entry
 from services.email_service import send_email
 from database import get_accounts_collection
 from dependencies import get_current_user
-from config import HARDCODED_USERS, FRONTEND_URL
 
 # Create router WITHOUT prefix since routes include full paths
 router = APIRouter(tags=["authentication"])
@@ -121,6 +120,8 @@ async def refresh_token(request: Request, token: str = Depends(get_current_user)
         accounts_collection = get_accounts_collection()
         
         # Check if it's a hardcoded user or database user
+        from config import HARDCODED_USERS
+        
         if username in HARDCODED_USERS:
             user = {
                 "username": username,
@@ -264,8 +265,7 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
         }
     )
     
-    # FIXED: Use FRONTEND_URL from environment variable
-    reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+    reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
     
     email_subject = "MEAMS - Password Reset Request"
     email_body = f"""
