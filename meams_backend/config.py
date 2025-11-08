@@ -11,7 +11,7 @@ load_dotenv()
 API_TITLE = "MEAMS API"
 API_VERSION = "1.0.0"
 API_HOST = "0.0.0.0"
-API_PORT = int(os.getenv("API_PORT", "8000"))
+API_PORT = 8000
 
 # Security
 SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
@@ -19,7 +19,12 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # CORS Settings
-ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://meams.onrender.com",
+    "https://meams-frontend.onrender.com",
+]
 
 # Frontend URL (for email links)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
