@@ -39,9 +39,9 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 # Email Configuration
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
-EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "your-email@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "your-app-password")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <your-email@gmail.com>")
+EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "meamsds42@gmail.com")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "gpgn iabt vewu zxmi")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <meamsds42@gmail.com")
 
 # File Upload Settings
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
