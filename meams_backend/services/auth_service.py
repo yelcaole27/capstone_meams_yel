@@ -75,19 +75,6 @@ def authenticate_user(username: str, password: str):
         return user  # Return full user object
     
     return None
-    
-    # Check database users
-    user = accounts_collection.find_one({"username": username})
-    if user and verify_password(password, user.get("password_hash", "")):
-        return {
-    "username": username,
-    "role": user.get("role", "staff"),
-    "first_login": user.get("first_login", True),
-    "status": user.get("status", True),  # ADD THIS LINE
-    "_id": user.get("_id")  # Also good to include this
-}
-    
-    return None
 
 def get_user_by_username(username: str):
     """Get user data by username"""
