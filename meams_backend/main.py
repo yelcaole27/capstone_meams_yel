@@ -73,6 +73,35 @@ async def root():
         "version": API_VERSION
     }
 
+
+@app.get("/test-email-config")
+async def test_email_config():
+    """Test email configuration and send test email"""
+    from services.email_service import test_email_configuration, send_email
+    
+    # Test configuration
+    config_test = await test_email_configuration()
+    
+    if not config_test["success"]:
+        return {
+            "config": config_test,
+            "test_email_sent": False,
+            "message": "Fix configuration first"
+        }
+    
+    # Send test email
+    test_sent = await send_email(
+        "meamsds42@gmail.com",
+        "MEAMS - Configuration Test",
+        "<h1>Success!</h1><p>Your email configuration is working correctly!</p>"
+    )
+    
+    return {
+        "config": config_test,
+        "test_email_sent": test_sent,
+        "message": "Check inbox!" if test_sent else "Check Render logs for error details"
+    }
+
 @app.get("/health")
 async def health_check():
     from database import client

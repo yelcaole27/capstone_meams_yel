@@ -14,7 +14,7 @@ API_HOST = "0.0.0.0"
 API_PORT = 8000
 
 # Security
-SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
+SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_change_in_production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -27,7 +27,7 @@ ALLOWED_ORIGINS = [
 ]
 
 # Frontend URL (for email links)
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://meams-udm.onrender.com")
 
 # MongoDB
 MONGODB_URL = os.getenv(
@@ -40,7 +40,7 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "meamsds42@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "gpgn iabt vewu zxmi")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "gpgniabtvewuzxmi")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <meamsds42@gmail.com")
 
 # File Upload Settings
