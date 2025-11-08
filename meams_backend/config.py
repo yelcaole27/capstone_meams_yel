@@ -19,12 +19,8 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # CORS Settings
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://meams.onrender.com",
-    "https://meams-udm.onrender.com",
-]
+# CORS Settings
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
 # MongoDB
 MONGODB_URL = os.getenv(
