@@ -356,3 +356,18 @@ async def reset_password(request_data: ResetPasswordRequest, request: Request):
         "success": True,
         "message": "Password reset successfully. You can now log in with your new password."
     }
+
+
+@router.get("/test-email")
+async def test_email_endpoint():
+    """Test email configuration"""
+    try:
+        from services.email_service import send_email
+        result = await send_email(
+            "yelcaole27@gmail.com",
+            "Test Email",
+            "<h1>Test from MEAMS Backend</h1>"
+        )
+        return {"success": result, "message": "Check logs"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}

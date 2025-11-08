@@ -1,30 +1,25 @@
 """
 Email service - handles email sending operations
 """
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
-from config import EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_FROM
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
 
 async def send_email(to_email: str, subject: str, body: str) -> bool:
-    """Send email with HTML body"""
+    """Send email using SendGrid API"""
     try:
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_FROM
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'html'))
+        message = Mail(
+            from_email=os.getenv('EMAIL_FROM', 'noreply@yourdomain.com'),
+            to_emails=to_email,
+            subject=subject,
+            html_content=body
+        )
         
-        context = ssl.create_default_context()
-        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
-            server.starttls(context=context)
-            server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_FROM, to_email, msg.as_string())
+        sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+        response = sg.send(message)
         
-        print(f"✓ Email sent successfully to {to_email}")
-        return True
+        print(f"✓ Email sent successfully to {to_email} (Status: {response.status_code})")
+        return response.status_code == 202
     except Exception as e:
         print(f"✗ Failed to send email to {to_email}: {str(e)}")
         return False
