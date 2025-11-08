@@ -11,10 +11,10 @@ app = FastAPI(title=API_TITLE, version=API_VERSION)
 # CORS Middleware - uses ALLOWED_ORIGINS from config.py
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=ALLOWED_ORIGINS,  # Uses the config
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  
+    allow_headers=["*"],  
 )
 
 
