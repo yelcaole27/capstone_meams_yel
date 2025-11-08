@@ -18,6 +18,7 @@ from services.log_service import create_log_entry
 from services.email_service import send_email
 from database import get_accounts_collection
 from dependencies import get_current_user
+from config import FRONTEND_URL  # Import FRONTEND_URL
 
 # Create router WITHOUT prefix since routes include full paths
 router = APIRouter(tags=["authentication"])
@@ -265,7 +266,8 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
         }
     )
     
-    reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
+    # Use FRONTEND_URL from config instead of hardcoded localhost
+    reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     
     email_subject = "MEAMS - Password Reset Request"
     email_body = f"""
@@ -281,14 +283,23 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     </html>
     """
     
-    email_sent = await send_email(request_data.email, email_subject, email_body)
-    
-    await create_log_entry(
-        user.get('username', 'Unknown'),
-        "Password reset requested.",
-        f"Reset link sent to: {request_data.email}" if email_sent else "Failed to send reset email",
-        client_ip
-    )
+    try:
+        email_sent = await send_email(request_data.email, email_subject, email_body)
+        
+        await create_log_entry(
+            user.get('username', 'Unknown'),
+            "Password reset requested.",
+            f"Reset link sent to: {request_data.email}" if email_sent else "Failed to send reset email",
+            client_ip
+        )
+    except Exception as e:
+        # Log the error but don't reveal it to the user
+        await create_log_entry(
+            user.get('username', 'Unknown'),
+            "Password reset email error.",
+            f"Error: {str(e)}",
+            client_ip
+        )
     
     return {
         "success": True,
