@@ -90,14 +90,14 @@ async def health_check():
             "error": str(e)
         }
 
-# 🔥 EMAIL TEST ENDPOINT - ADD THIS!
+# 🔥 EMAIL TEST ENDPOINT - UPDATED FOR RESEND
 @app.get("/test-email-config")
 async def test_email_config():
-    """Test email configuration and send test email"""
+    """Test Resend email configuration"""
     from services.email_service import test_email_configuration, send_email
     
     print("\n" + "="*70)
-    print("EMAIL CONFIGURATION TEST STARTED")
+    print("RESEND EMAIL CONFIGURATION TEST")
     print("="*70)
     
     # Test configuration first
@@ -111,49 +111,69 @@ async def test_email_config():
             "config": config_test,
             "test_email_sent": False,
             "message": "Configuration error - fix this first",
-            "action": config_test.get("action", "Check environment variables")
+            "action": config_test.get("action", "Check RESEND_API_KEY in .env")
         }
     
-    # Configuration is good, try sending test email
+    # Configuration is good, try sending test email to your actual email
     print("\n" + "="*70)
-    print("ATTEMPTING TO SEND TEST EMAIL")
+    print("SENDING TEST EMAIL TO YOUR INBOX")
     print("="*70)
     
     test_sent = await send_email(
-        "meamsds42@gmail.com",
-        "MEAMS - Email Test SUCCESS!",
+        "meamsds42@gmail.com",  # Your email
+        "MEAMS - Resend Email Test SUCCESS! ✅",
         """
         <html>
-        <body style="font-family: Arial, sans-serif; padding: 20px;">
-            <h1 style="color: #28a745;">✅ Email Configuration Working!</h1>
-            <p>Your MEAMS email service is configured correctly.</p>
-            <p>Password reset emails will now work properly.</p>
-            <hr>
-            <p style="color: #666; font-size: 12px;">
-                This is a test email from your MEAMS backend.
-            </p>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h1 style="color: #28a745; margin-top: 0;">✅ Resend Configuration Working!</h1>
+                <p style="font-size: 16px;">Your MEAMS email service is now using <strong>Resend</strong> and working correctly.</p>
+                <p style="font-size: 16px;">Password reset emails will now be delivered instantly!</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <h3 style="color: #007bff;">What changed:</h3>
+                <ul style="font-size: 14px; color: #666;">
+                    <li>✅ Switched from Gmail SMTP to Resend API</li>
+                    <li>✅ Faster email delivery</li>
+                    <li>✅ Better reliability</li>
+                    <li>✅ No more network timeout issues</li>
+                </ul>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="color: #666; font-size: 12px; margin-bottom: 0;">
+                    This is a test email from your MEAMS backend using Resend API
+                </p>
+            </div>
         </body>
         </html>
         """
     )
     
-    return {
-        "success": test_sent,
-        "config": config_test,
-        "test_email_sent": test_sent,
-        "message": "✅ Check inbox! Email sent successfully!" if test_sent else "❌ Failed to send - check logs below",
-        "next_step": "Try forgot password now!" if test_sent else "Check Render logs for detailed error"
-    }
+    if test_sent:
+        return {
+            "success": True,
+            "config": config_test,
+            "test_email_sent": True,
+            "message": "✅ SUCCESS! Check your inbox at meamsds42@gmail.com",
+            "next_step": "Try the forgot password feature now!"
+        }
+    else:
+        return {
+            "success": False,
+            "config": config_test,
+            "test_email_sent": False,
+            "message": "❌ Failed to send test email",
+            "action": "Check Render logs for detailed error"
+        }
 
-# 🔥 QUICK FORGOT PASSWORD TEST
+# 🔥 FORGOT PASSWORD TEST - UPDATED FOR RESEND
 @app.post("/test-forgot-password")
 async def test_forgot_password(email: str):
-    """Quick test of forgot password flow"""
+    """Quick test of forgot password flow with Resend"""
     from database import get_accounts_collection
-    from services.email_service import send_email
+    from services.email_service import send_password_reset_email
     from config import FRONTEND_URL
     import secrets
     from datetime import datetime, timedelta
+    from models.password_reset import create_password_reset_token, is_token_valid
     
     print(f"\n{'='*70}")
     print(f"TESTING FORGOT PASSWORD FOR: {email}")
@@ -186,78 +206,61 @@ async def test_forgot_password(email: str):
     
     # Generate reset token
     reset_token = secrets.token_urlsafe(32)
-    reset_expires = datetime.utcnow() + timedelta(hours=1)
     
     print(f"✓ Token generated: {reset_token[:20]}...")
     
-    # Update database
+    # Create token data
+    token_data = create_password_reset_token(reset_token, expires_in_hours=1)
+    
+    # Update database with token
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
             "$set": {
-                "password_reset_token": reset_token,
-                "password_reset_expires": reset_expires,
+                **token_data,
                 "updated_at": datetime.utcnow()
             }
         }
     )
     
-    print(f"✓ Database updated")
+    print(f"✓ Database updated with reset token")
     
     # Create reset link
     reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     print(f"✓ Reset link: {reset_link}")
     
-    # Send email
-    email_subject = "MEAMS - Password Reset Request"
-    email_body = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>Password Reset Request</h2>
-        <p>Hello {user.get('name', 'User')},</p>
-        <p>Click the button below to reset your password:</p>
-        <p style="margin: 30px 0;">
-            <a href="{reset_link}" 
-               style="background-color: #007bff; 
-                      color: white; 
-                      padding: 12px 30px; 
-                      text-decoration: none; 
-                      border-radius: 5px;
-                      display: inline-block;">
-                Reset Password
-            </a>
-        </p>
-        <p>Or copy and paste this link:</p>
-        <p style="background-color: #f5f5f5; padding: 10px; word-break: break-all;">
-            {reset_link}
-        </p>
-        <p style="color: #d32f2f; margin-top: 20px;">
-            ⏰ This link expires in 1 hour.
-        </p>
-        <p style="color: #666;">
-            If you didn't request this, please ignore this email.
-        </p>
-    </body>
-    </html>
-    """
+    # Send email using Resend
+    print("📧 Sending email via Resend...")
     
-    print("📧 Sending email...")
-    
-    email_sent = await send_email(email, email_subject, email_body)
+    email_sent = await send_password_reset_email(
+        to_email=email,
+        reset_token=reset_token,
+        user_name=user.get('name', 'User')
+    )
     
     print(f"{'='*70}\n")
     
-    return {
-        "success": email_sent,
-        "user_found": True,
-        "username": user.get('username'),
-        "name": user.get('name'),
-        "email": email,
-        "reset_token": reset_token,
-        "reset_link": reset_link,
-        "email_sent": email_sent,
-        "message": "✅ Password reset email sent! Check inbox." if email_sent else "❌ Failed to send email - check logs"
-    }
+    if email_sent:
+        return {
+            "success": True,
+            "user_found": True,
+            "username": user.get('username'),
+            "name": user.get('name'),
+            "email": email,
+            "reset_token": reset_token,
+            "reset_link": reset_link,
+            "email_sent": True,
+            "message": "✅ Password reset email sent via Resend! Check inbox.",
+            "check_inbox": "meamsds42@gmail.com" if email == "meamsds42@gmail.com" else email
+        }
+    else:
+        return {
+            "success": False,
+            "user_found": True,
+            "email_sent": False,
+            "message": "❌ Failed to send email via Resend - check logs",
+            "action": "Check Render logs for Resend API error details"
+        }
 
 if __name__ == "__main__":
     import uvicorn

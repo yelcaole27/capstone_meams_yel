@@ -36,12 +36,28 @@ MONGODB_URL = os.getenv(
 )
 DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 
-# Email Configuration
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "meamsds42@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "gpgniabtvewuzxmi")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <meamsds42@gmail.com")
+# ============================================================================
+# EMAIL CONFIGURATION - RESEND (UPDATED)
+# ============================================================================
+# New: Resend API Configuration
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+
+# Email "From" address
+# For testing: use "MEAMS System <onboarding@resend.dev>"
+# For production: use your own domain like "MEAMS System <noreply@yourdomain.com>"
+EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <onboarding@resend.dev>")
+
+# ============================================================================
+# OLD EMAIL CONFIGURATION - GMAIL SMTP (DEPRECATED - NO LONGER USED)
+# ============================================================================
+# These are kept for reference but NOT used anymore
+# You can delete these lines after confirming Resend works
+EMAIL_HOST = "smtp.gmail.com"  # Not needed for Resend
+EMAIL_PORT = 587  # Not needed for Resend
+EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "meamsds42@gmail.com")  # Not needed for Resend
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")  # Not needed for Resend
+
+# ============================================================================
 
 # File Upload Settings
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -52,3 +68,29 @@ HARDCODED_USERS = {
     "admin": {"password": "password123", "role": "admin"},
     "staff": {"password": "staff123", "role": "staff"},
 }
+
+# ============================================================================
+# EMAIL SERVICE STATUS
+# ============================================================================
+def get_email_service_status():
+    """Check which email service is configured"""
+    if RESEND_API_KEY:
+        return {
+            "service": "Resend",
+            "status": "active",
+            "api_key_set": True,
+            "from_email": EMAIL_FROM
+        }
+    elif EMAIL_PASSWORD:
+        return {
+            "service": "Gmail SMTP (Deprecated)",
+            "status": "legacy",
+            "warning": "Consider switching to Resend",
+            "from_email": EMAIL_FROM
+        }
+    else:
+        return {
+            "service": "None",
+            "status": "not_configured",
+            "error": "No email service configured"
+        }
