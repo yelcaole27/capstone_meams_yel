@@ -1,6 +1,5 @@
 """
 Authentication router - handles login, logout, password reset
-INCLUDES COMPLETE PASSWORD RESET FUNCTIONALITY WITH RESEND EMAIL
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, EmailStr
@@ -236,40 +235,24 @@ async def change_password_api(
     
     return {"success": True, "message": "Password changed successfully"}
 
-# ============================================================================
-# PASSWORD RESET ENDPOINTS - NEW FUNCTIONALITY WITH RESEND EMAIL
-# ============================================================================
-
 @router.post("/api/auth/forgot-password")
 async def forgot_password(request_data: ForgotPasswordRequest, request: Request):
-    """
-    Send password reset email using Resend
-    User enters their email, receives reset link
-    """
+    """Send password reset email"""
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     accounts_collection = get_accounts_collection()
     
-    # Find user by email
     user = accounts_collection.find_one({"email": request_data.email})
     
     if not user:
-        # Security: Don't reveal if email doesn't exist
-        await create_log_entry(
-            "unknown",
-            "Password reset attempted.",
-            f"Email not found: {request_data.email}",
-            client_ip
-        )
+        # Don't reveal if email doesn't exist
         return {
             "success": True,
             "message": "If an account with that email exists, we've sent a password reset link."
         }
     
-    # Generate secure reset token
     reset_token = secrets.token_urlsafe(32)
     reset_expires = datetime.utcnow() + timedelta(hours=1)
     
-    # Save token to database
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
@@ -281,76 +264,32 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
         }
     )
     
-    # Create reset link (FRONTEND_URL from your .env file)
+    # FIXED: Use FRONTEND_URL from environment variable
     reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     
-    # Create HTML email
     email_subject = "MEAMS - Password Reset Request"
     email_body = f"""
-    <!DOCTYPE html>
     <html>
-    <head>
-        <style>
-            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .button {{ 
-                display: inline-block;
-                padding: 12px 24px;
-                background-color: #007bff;
-                color: white;
-                text-decoration: none;
-                border-radius: 5px;
-                margin: 20px 0;
-            }}
-            .footer {{ margin-top: 30px; font-size: 12px; color: #666; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>Password Reset Request</h2>
-            <p>Hello {user.get('name', 'User')},</p>
-            <p>You requested to reset your password for your MEAMS account.</p>
-            <p>Click the button below to reset your password:</p>
-            <a href="{reset_link}" class="button">Reset Password</a>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all; color: #007bff;">{reset_link}</p>
-            <p><strong>This link expires in 1 hour.</strong></p>
-            <div class="footer">
-                <p>If you didn't request this password reset, please ignore this email and your password will remain unchanged.</p>
-                <p>For security reasons, never share this link with anyone.</p>
-            </div>
-        </div>
+    <body style="font-family: Arial, sans-serif;">
+        <h2>Password Reset Request</h2>
+        <p>Hello {user.get('name', 'User')},</p>
+        <p>Click the link below to reset your password:</p>
+        <p><a href="{reset_link}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a></p>
+        <p>This link expires in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
     </body>
     </html>
     """
     
-    # Send email using Resend
-    try:
-        email_sent = await send_email(request_data.email, email_subject, email_body)
-        
-        if email_sent:
-            await create_log_entry(
-                user.get('username', 'Unknown'),
-                "Password reset requested.",
-                f"Reset link sent to: {request_data.email}",
-                client_ip
-            )
-        else:
-            await create_log_entry(
-                user.get('username', 'Unknown'),
-                "Password reset email failed.",
-                f"Failed to send to: {request_data.email}",
-                client_ip
-            )
-    except Exception as e:
-        await create_log_entry(
-            user.get('username', 'Unknown'),
-            "Password reset email error.",
-            f"Error: {str(e)}",
-            client_ip
-        )
+    email_sent = await send_email(request_data.email, email_subject, email_body)
     
-    # Always return success message (security best practice)
+    await create_log_entry(
+        user.get('username', 'Unknown'),
+        "Password reset requested.",
+        f"Reset link sent to: {request_data.email}" if email_sent else "Failed to send reset email",
+        client_ip
+    )
+    
     return {
         "success": True,
         "message": "If an account with that email exists, we've sent a password reset link."
@@ -358,70 +297,39 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
 
 @router.get("/api/auth/validate-reset-token/{token}")
 async def validate_reset_token(token: str):
-    """
-    Validate password reset token
-    Called when user clicks the reset link
-    """
+    """Validate password reset token"""
     accounts_collection = get_accounts_collection()
     
-    # Find user with valid token
     user = accounts_collection.find_one({
         "password_reset_token": token,
         "password_reset_expires": {"$gt": datetime.utcnow()}
     })
     
-    if user:
-        return {
-            "success": True,
-            "valid": True,
-            "message": "Token is valid",
-            "email": user.get("email", "")
-        }
-    else:
-        return {
-            "success": True,
-            "valid": False,
-            "message": "Invalid or expired token"
-        }
+    return {
+        "success": True,
+        "valid": user is not None,
+        "message": "Token is valid" if user else "Invalid or expired token"
+    }
 
 @router.post("/api/auth/reset-password")
 async def reset_password(request_data: ResetPasswordRequest, request: Request):
-    """
-    Reset password using token
-    User submits new password with the token
-    """
+    """Reset password using token"""
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     accounts_collection = get_accounts_collection()
     
-    # Find user with valid token
     user = accounts_collection.find_one({
         "password_reset_token": request_data.token,
         "password_reset_expires": {"$gt": datetime.utcnow()}
     })
     
     if not user:
-        await create_log_entry(
-            "unknown",
-            "Password reset failed.",
-            "Invalid or expired token",
-            client_ip
-        )
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid or expired reset token. Please request a new password reset."
-        )
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
-    # Validate new password
     if len(request_data.new_password) < 8:
-        raise HTTPException(
-            status_code=400,
-            detail="Password must be at least 8 characters long"
-        )
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
     
-    # Hash new password
     new_password_hash = hash_password(request_data.new_password)
     
-    # Update password and clear reset token
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
