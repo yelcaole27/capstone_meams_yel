@@ -2,7 +2,7 @@
 Email service - handles email sending operations using Brevo API
 """
 import httpx
-from config import BREVO_API_KEY, EMAIL_FROM, FRONTEND_URL
+from config import BREVO_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME
 
 async def send_email(to_email: str, subject: str, body: str) -> bool:
     """Send email using Brevo API"""
@@ -15,8 +15,8 @@ async def send_email(to_email: str, subject: str, body: str) -> bool:
         
         data = {
             "sender": {
-                "email": EMAIL_FROM,
-                "name": "MEAMS"
+                "email": EMAIL_FROM,  # meamsds42@gmail.com
+                "name": EMAIL_FROM_NAME  # MEAMS
             },
             "to": [
                 {"email": to_email}
@@ -65,14 +65,20 @@ async def send_bug_report_notification(user_email: str, bug_description: str, us
     </html>
     """
     
+    # Send to the verified sender email (your support email)
     support_email = EMAIL_FROM
     return await send_email(support_email, subject, body)
 
 
-async def send_password_reset_email(to_email: str, reset_token: str, user_name: str = None) -> bool:
-    """Send password reset email with reset link"""
-    reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+async def send_password_reset_email(to_email: str, reset_link: str, user_name: str = None) -> bool:
+    """
+    Send password reset email with reset link
     
+    Args:
+        to_email: Recipient email address
+        reset_link: Complete reset link (already formatted)
+        user_name: Optional user name for personalization
+    """
     subject = "Reset Your MEAMS Password"
     
     body = f"""
