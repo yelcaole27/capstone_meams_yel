@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from bson import ObjectId
 from fastapi.responses import HTMLResponse
 from datetime import datetime
+from typing import Optional
+from fastapi import Header
 from models.supply import SupplyCreate, SupplyUpdate
 from services.supply_service import (
     get_all_supplies,
@@ -306,12 +308,30 @@ async def remove_document(
 
 
 @router.get("/scan/{supply_id}", response_class=HTMLResponse)
-async def scan_supply_qr(supply_id: str):
+async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(None)):
     """
     Handle QR code scan - fetches CURRENT data from database
+    NOW REQUIRES AUTHENTICATION
     """
     from fastapi.responses import HTMLResponse
     from datetime import datetime
+    
+    # Check for authorization token
+    if not authorization:
+        return HTMLResponse(
+            content=generate_auth_required_html("supply", supply_id),
+            status_code=200
+        )
+    
+    # Verify token
+    try:
+        token = authorization.replace("Bearer ", "")
+        verify_token(token)
+    except:
+        return HTMLResponse(
+            content=generate_auth_required_html("supply", supply_id),
+            status_code=200
+        )
     
     try:
         # Validate ID
@@ -573,3 +593,280 @@ async def scan_supply_qr(supply_id: str):
             content=f"<h1>Error Loading Supply</h1><p>{str(e)}</p>",
             status_code=500
         )
+    
+
+
+
+
+@router.post("/verify-scan-access")
+async def verify_scan_access(credentials: dict):
+    """
+    Verify user credentials for QR code access
+    Returns a temporary access token if valid
+    """
+    from services.auth_service import authenticate_user, create_access_token
+    from datetime import timedelta
+    
+    username = credentials.get('username')
+    password = credentials.get('password')
+    
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username and password required")
+    
+    # Authenticate user
+    user = authenticate_user(username, password)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check if account is active
+    if user.get("status") == False:
+        raise HTTPException(status_code=403, detail="Account is deactivated")
+    
+    # Create temporary access token (valid for 30 minutes)
+    access_token = create_access_token(
+        data={"sub": user["username"], "role": user["role"]},
+        expires_delta=timedelta(minutes=30)
+    )
+    
+    return {
+        "success": True,
+        "access_token": access_token,
+        "user": {
+            "username": user["username"],
+            "role": user["role"]
+        }
+    }
+
+
+def generate_auth_required_html(item_type: str, item_id: str) -> str:
+    """Generate HTML page that requires authentication"""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Authentication Required</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                margin: 0;
+            }}
+            .auth-container {{
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 400px;
+                width: 100%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }}
+            .logo {{
+                text-align: center;
+                font-size: 48px;
+                margin-bottom: 10px;
+            }}
+            h2 {{
+                text-align: center;
+                color: #1f2937;
+                margin: 0 0 10px 0;
+            }}
+            .subtitle {{
+                text-align: center;
+                color: #6b7280;
+                font-size: 14px;
+                margin-bottom: 30px;
+            }}
+            .form-group {{
+                margin-bottom: 20px;
+            }}
+            label {{
+                display: block;
+                color: #374151;
+                font-weight: 600;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }}
+            input {{
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+                box-sizing: border-box;
+            }}
+            input:focus {{
+                outline: none;
+                border-color: #667eea;
+            }}
+            .btn {{
+                width: 100%;
+                padding: 14px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.2s;
+                margin-top: 10px;
+            }}
+            .btn:hover {{
+                transform: translateY(-2px);
+            }}
+            .btn:disabled {{
+                opacity: 0.6;
+                cursor: not-allowed;
+            }}
+            .error {{
+                color: #dc2626;
+                font-size: 14px;
+                margin-top: 10px;
+                text-align: center;
+                display: none;
+            }}
+            .error.show {{
+                display: block;
+            }}
+            .info {{
+                background: #dbeafe;
+                border-left: 4px solid #3b82f6;
+                padding: 12px;
+                margin-bottom: 20px;
+                border-radius: 4px;
+                font-size: 13px;
+                color: #1e40af;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="auth-container">
+            <div class="logo">🔒</div>
+            <h2>Authentication Required</h2>
+            <p class="subtitle">Please login to view this information</p>
+            
+            <div class="info">
+                ℹ️ This content is protected. Enter your MEAMS credentials to continue.
+            </div>
+            
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                    />
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    />
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    Access Information
+                </button>
+                
+                <div class="error" id="errorMsg"></div>
+            </form>
+        </div>
+        
+        <script>
+            const API_URL = window.location.origin;
+            const ITEM_TYPE = '{item_type}';
+            const ITEM_ID = '{item_id}';
+            
+            document.getElementById('authForm').addEventListener('submit', async (e) => {{
+                e.preventDefault();
+                
+                const submitBtn = document.getElementById('submitBtn');
+                const errorMsg = document.getElementById('errorMsg');
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Verifying...';
+                errorMsg.classList.remove('show');
+                
+                try {{
+                    // Authenticate user
+                    const authResponse = await fetch(`${{API_URL}}/api/supplies/verify-scan-access`, {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json'
+                        }},
+                        body: JSON.stringify({{
+                            username: email.split('@')[0], // Extract username from email
+                            password: password
+                        }})
+                    }});
+                    
+                    if (!authResponse.ok) {{
+                        const errorData = await authResponse.json();
+                        throw new Error(errorData.detail || 'Authentication failed');
+                    }}
+                    
+                    const authData = await authResponse.json();
+                    
+                    // Store token temporarily
+                    sessionStorage.setItem('qr_access_token', authData.access_token);
+                    
+                    // Reload page with authorization header
+                    window.location.href = `${{API_URL}}/api/supplies/scan/${{ITEM_ID}}?token=${{authData.access_token}}`;
+                    
+                }} catch (error) {{
+                    console.error('Authentication error:', error);
+                    errorMsg.textContent = error.message || 'Invalid email or password';
+                    errorMsg.classList.add('show');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Access Information';
+                }}
+            }});
+            
+            // Check if we have a token in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            
+            if (token) {{
+                // Redirect to authenticated endpoint
+                fetch(`${{API_URL}}/api/supplies/scan/${{ITEM_ID}}`, {{
+                    headers: {{
+                        'Authorization': `Bearer ${{token}}`
+                    }}
+                }})
+                .then(response => response.text())
+                .then(html => {{
+                    document.open();
+                    document.write(html);
+                    document.close();
+                }})
+                .catch(error => {{
+                    console.error('Error:', error);
+                    document.getElementById('errorMsg').textContent = 'Session expired. Please login again.';
+                    document.getElementById('errorMsg').classList.add('show');
+                }});
+            }}
+        </script>
+    </body>
+    </html>
+    """
