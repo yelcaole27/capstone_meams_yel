@@ -5,7 +5,7 @@ import EquipmentAPI from './EquipmentApi';
 import EquipmentDocumentViewer from './EquipmentDocumentViewer';
 import html2pdf from 'html2pdf.js';
 import './EquipmentPage.css';
-import QRAuthModal from './QRAuthModal';
+
 
 function EquipmentPage() {
   const { getCurrentUser } = useAuth();
