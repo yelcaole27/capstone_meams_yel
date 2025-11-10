@@ -27,7 +27,7 @@ ALLOWED_ORIGINS = [
 ]
 
 # Frontend URL (for email links)
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://meams-udm.onrender.com")
 
 # MongoDB
 MONGODB_URL = os.getenv(
