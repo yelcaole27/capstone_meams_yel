@@ -774,29 +774,31 @@ async def verify_scan_access(credentials: dict):
     from datetime import timedelta
     from database import get_accounts_collection
     
-    email = credentials.get('email')  # Changed from 'username'
+    email = credentials.get('email')
     password = credentials.get('password')
     
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email and password required")
     
-    # Find user by email first
+    # Find user by email
     accounts_collection = get_accounts_collection()
     user_doc = accounts_collection.find_one({"email": email})
     
     if not user_doc:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Get username and authenticate
     username = user_doc.get('username')
     user = authenticate_user(username, password)
     
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Check if account is active
     if user.get("status") == False:
         raise HTTPException(status_code=403, detail="Account is deactivated")
     
+    # Create temporary access token (valid for 30 minutes)
     access_token = create_access_token(
         data={"sub": user["username"], "role": user["role"]},
         expires_delta=timedelta(minutes=30)
