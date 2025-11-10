@@ -23,7 +23,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://meams.onrender.com",
-    "https://meams-frontend.onrender.com",
+    "https://meams-udm.onrender.com",
 ]
 
 # Frontend URL (for email links)
