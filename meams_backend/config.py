@@ -36,12 +36,9 @@ MONGODB_URL = os.getenv(
 )
 DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 
-# Email Configuration
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USERNAME = os.getenv("EMAIL_USERNAME", "your-email@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "your-app-password")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS System <your-email@gmail.com>")
+# Brevo Configuration
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "noreply@meams.com")
 
 # File Upload Settings
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
