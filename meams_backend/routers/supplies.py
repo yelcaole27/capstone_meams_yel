@@ -606,18 +606,27 @@ async def verify_scan_access(credentials: dict):
     """
     from services.auth_service import authenticate_user, create_access_token
     from datetime import timedelta
+    from database import get_accounts_collection
     
-    username = credentials.get('username')
+    email = credentials.get('email')
     password = credentials.get('password')
     
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Username and password required")
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password required")
     
-    # Authenticate user
+    # Find user by email
+    accounts_collection = get_accounts_collection()
+    user_doc = accounts_collection.find_one({"email": email})
+    
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Get username and authenticate
+    username = user_doc.get('username')
     user = authenticate_user(username, password)
     
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Check if account is active
     if user.get("status") == False:
@@ -816,7 +825,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                             'Content-Type': 'application/json'
                         }},
                         body: JSON.stringify({{
-                            username: email.split('@')[0], // Extract username from email
+                            email: email,  // Send full email
                             password: password
                         }})
                     }});
