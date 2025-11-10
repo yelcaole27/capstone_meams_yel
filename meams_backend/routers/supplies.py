@@ -5,8 +5,6 @@ from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from bson import ObjectId
 from fastapi.responses import HTMLResponse
 from datetime import datetime
-from fastapi import Header
-from typing import Optional
 from models.supply import SupplyCreate, SupplyUpdate
 from services.supply_service import (
     get_all_supplies,
@@ -574,47 +572,4 @@ async def scan_supply_qr(supply_id: str):
         return HTMLResponse(
             content=f"<h1>Error Loading Supply</h1><p>{str(e)}</p>",
             status_code=500
-        )
-
-
-@router.get("/scan/{supply_id}", response_class=HTMLResponse)
-async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(None)):
-    """Handle authenticated QR scan"""
-    # Verify authentication first
-    try:
-        payload = verify_qr_token(authorization)
-    except HTTPException:
-        # Return auth required page
-        return HTMLResponse(
-            content="""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Authentication Required</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        min-height: 100vh;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    }
-                    .container {
-                        background: white;
-                        padding: 40px;
-                        border-radius: 20px;
-                        text-align: center;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>🔒 Authentication Required</h1>
-                    <p>Please authenticate through the app to view this supply information.</p>
-                </div>
-            </body>
-            </html>
-            """,
-            status_code=401
         )
