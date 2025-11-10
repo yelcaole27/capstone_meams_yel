@@ -11,7 +11,7 @@ from services.auth_service import verify_token, hash_password, generate_secure_p
 from services.log_service import create_log_entry
 from services.email_service import send_email
 from database import get_accounts_collection
-from dependencies import require_admin  # ← CHANGED: Use require_admin instead of get_current_user
+from dependencies import require_admin, get_current_user  # ← CHANGED: Import get_current_user for check-status
 
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
@@ -38,9 +38,9 @@ def account_helper(account) -> dict:
     }
 
 @router.get("")
-async def get_all_accounts(token: str = Depends(require_admin)):  # ← SECURED
+async def get_all_accounts(token: str = Depends(require_admin)):
     """Get all accounts - admin only"""
-    payload = verify_token(token)  # Get username for logging if needed
+    payload = verify_token(token)
     
     collection = get_accounts_collection()
     accounts = [account_helper(account) for account in collection.find()]
@@ -50,7 +50,7 @@ async def get_all_accounts(token: str = Depends(require_admin)):  # ← SECURED
 async def create_account(
     account: AccountCreate,
     request: Request,
-    token: str = Depends(require_admin)  # ← SECURED
+    token: str = Depends(require_admin)
 ):
     """Create a new account - admin only"""
     payload = verify_token(token)
@@ -143,7 +143,7 @@ async def update_account(
     account_id: str,
     account_update: AccountUpdate,
     request: Request,
-    token: str = Depends(require_admin)  # ← SECURED
+    token: str = Depends(require_admin)
 ):
     """Update an account - admin only"""
     payload = verify_token(token)
@@ -216,7 +216,7 @@ async def update_account(
 async def delete_account(
     account_id: str,
     request: Request,
-    token: str = Depends(require_admin)  # ← SECURED
+    token: str = Depends(require_admin)
 ):
     """Delete an account - admin only"""
     payload = verify_token(token)
@@ -251,7 +251,7 @@ async def delete_account(
 async def reset_account_password(
     account_id: str,
     request: Request,
-    token: str = Depends(require_admin)  # ← SECURED
+    token: str = Depends(require_admin)
 ):
     """Reset an account's password - admin only"""
     payload = verify_token(token)
@@ -319,12 +319,23 @@ async def reset_account_password(
     return {"success": True, "message": message}
 
 @router.get("/check-status")
-async def check_account_status(token: str = Depends(require_admin)):  # ← SECURED (admin only makes sense)
-    """Check if current user's account is still active - admin only"""
+async def check_account_status(token: str = Depends(get_current_user)):  # ← CHANGED: Use get_current_user instead of require_admin
+    """Check if current user's account is still active - all authenticated users can access"""
     try:
         payload = verify_token(token)
         username = payload["username"]
         
+        # Check hardcoded users first
+        from config import HARDCODED_USERS
+        if username in HARDCODED_USERS:
+            return {
+                "success": True,
+                "active": True,
+                "username": username,
+                "role": HARDCODED_USERS[username]["role"]
+            }
+        
+        # Check database users
         collection = get_accounts_collection()
         user = collection.find_one({"username": username})
         
@@ -337,5 +348,7 @@ async def check_account_status(token: str = Depends(require_admin)):  # ← SECU
             "username": username,
             "role": user.get("role", "staff")
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
