@@ -1,5 +1,5 @@
 """
-Authentication router - UPDATED with QR access verification
+Authentication router - handles login, logout, password reset
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, EmailStr
@@ -15,11 +15,12 @@ from services.auth_service import (
     update_last_login
 )
 from services.log_service import create_log_entry
-from services.email_service import send_password_reset_email
+from services.email_service import send_password_reset_email  # FIXED: Import correct function
 from database import get_accounts_collection
 from dependencies import get_current_user
 from config import HARDCODED_USERS, FRONTEND_URL
 
+# Create router WITHOUT prefix since routes include full paths
 router = APIRouter(tags=["authentication"])
 
 class LoginRequest(BaseModel):
@@ -36,11 +37,6 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
-
-# NEW: QR Access Verification Request
-class QRAccessRequest(BaseModel):
-    email: str
-    password: str
 
 @router.post("/login")
 async def login(credentials: LoginRequest, request: Request):
@@ -61,6 +57,7 @@ async def login(credentials: LoginRequest, request: Request):
             detail="Invalid username or password"
         )
     
+    # Check if account is active
     if user.get("status") == False:
         await create_log_entry(
             credentials.username,
@@ -96,146 +93,6 @@ async def login(credentials: LoginRequest, request: Request):
         "first_login": user.get("first_login", False)
     }
 
-# NEW: QR Access Verification Endpoint
-@router.post("/api/auth/verify-qr-access")
-async def verify_qr_access(credentials: QRAccessRequest, request: Request):
-    """
-    Verify email and password for QR code access
-    Returns a temporary access token if credentials are valid
-    """
-    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    accounts_collection = get_accounts_collection()
-    
-    # Find user by email
-    user = accounts_collection.find_one({"email": credentials.email})
-    
-    # Check hardcoded users by email pattern (e.g., admin@meams.com)
-    if not user:
-        for username, user_data in HARDCODED_USERS.items():
-            if credentials.email == f"{username}@meams.com":
-                if credentials.password == user_data["password"]:
-                    user = {
-                        "username": username,
-                        "email": credentials.email,
-                        "role": user_data["role"],
-                        "status": True,
-                        "_id": "hardcoded"
-                    }
-                    break
-    
-    if not user:
-        await create_log_entry(
-            "unknown",
-            "Failed QR access attempt.",
-            f"Email not found: {credentials.email}",
-            client_ip
-        )
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
-        )
-    
-    # Check if account is active
-    if user.get("status") == False:
-        await create_log_entry(
-            user.get("username", "unknown"),
-            "Failed QR access attempt.",
-            "Account is deactivated",
-            client_ip
-        )
-        raise HTTPException(
-            status_code=403,
-            detail="Your account has been deactivated"
-        )
-    
-    # Verify password
-    password_valid = False
-    if user.get("_id") == "hardcoded":
-        password_valid = credentials.password == HARDCODED_USERS[user["username"]]["password"]
-    else:
-        password_valid = verify_password(credentials.password, user.get("password_hash", ""))
-    
-    if not password_valid:
-        await create_log_entry(
-            user.get("username", "unknown"),
-            "Failed QR access attempt.",
-            "Invalid password",
-            client_ip
-        )
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
-        )
-    
-    # Create temporary access token (shorter expiration for QR access)
-    access_token = create_access_token(
-        data={
-            "sub": user.get("username", "unknown"),
-            "role": user.get("role", "staff"),
-            "userId": str(user.get("_id", "")),
-            "qr_access": True  # Flag to identify QR access tokens
-        },
-        expires_delta=timedelta(minutes=15)  # 15 minutes for QR access
-    )
-    
-    await create_log_entry(
-        user.get("username", "unknown"),
-        "QR access granted.",
-        f"Email: {credentials.email}",
-        client_ip
-    )
-    
-    return {
-        "success": True,
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": {
-            "username": user.get("username", "Unknown"),
-            "email": user.get("email", ""),
-            "role": user.get("role", "staff")
-        }
-    }
-
-# NEW: Check if email exists (for two-step authentication)
-@router.post("/api/auth/check-email")
-async def check_email(request_data: dict, request: Request):
-    """
-    Check if an email exists in the system
-    Used for the first step of QR authentication
-    """
-    email = request_data.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    
-    client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    accounts_collection = get_accounts_collection()
-    
-    # Check database
-    user = accounts_collection.find_one({"email": email})
-    
-    # Check hardcoded users
-    if not user:
-        for username in HARDCODED_USERS.keys():
-            if email == f"{username}@meams.com":
-                user = {"email": email, "exists": True}
-                break
-    
-    exists = user is not None
-    
-    if not exists:
-        await create_log_entry(
-            "unknown",
-            "Email check for QR access.",
-            f"Email not found: {email}",
-            client_ip
-        )
-    
-    return {
-        "success": True,
-        "exists": exists,
-        "message": "Email found" if exists else "Email not found"
-    }
-
 @router.post("/logout")
 async def logout(request: Request, token: str = Depends(get_current_user)):
     """Logout endpoint"""
@@ -248,16 +105,22 @@ async def logout(request: Request, token: str = Depends(get_current_user)):
 
 @router.post("/api/auth/refresh")
 async def refresh_token(request: Request, token: str = Depends(get_current_user)):
-    """Refresh JWT token endpoint"""
+    """
+    Refresh JWT token endpoint
+    Validates current token and issues a new one with extended expiration
+    """
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
     try:
+        # Verify the current token
         payload = verify_token(token)
         username = payload["username"]
         role = payload["role"]
         
+        # Get user from database to verify account is still active
         accounts_collection = get_accounts_collection()
         
+        # Check if it's a hardcoded user or database user
         if username in HARDCODED_USERS:
             user = {
                 "username": username,
@@ -268,6 +131,7 @@ async def refresh_token(request: Request, token: str = Depends(get_current_user)
         else:
             user = accounts_collection.find_one({"username": username})
         
+        # Verify user still exists and is active
         if not user:
             await create_log_entry(
                 username,
@@ -280,6 +144,7 @@ async def refresh_token(request: Request, token: str = Depends(get_current_user)
                 detail="User not found"
             )
         
+        # Check if account is still active
         if user.get("status") == False:
             await create_log_entry(
                 username,
@@ -292,6 +157,7 @@ async def refresh_token(request: Request, token: str = Depends(get_current_user)
                 detail="Account has been deactivated"
             )
         
+        # Create new access token with fresh expiration
         new_access_token = create_access_token(
             data={
                 "sub": username,
@@ -313,6 +179,7 @@ async def refresh_token(request: Request, token: str = Depends(get_current_user)
         }
         
     except HTTPException as e:
+        # Re-raise HTTP exceptions
         raise e
     except Exception as e:
         await create_log_entry(
@@ -374,18 +241,22 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     accounts_collection = get_accounts_collection()
     
+    # Find user by email
     user = accounts_collection.find_one({"email": request_data.email})
     
     if not user:
+        # Security: Don't reveal if email doesn't exist
         print(f"⚠️ Password reset requested for non-existent email: {request_data.email}")
         return {
             "success": True,
             "message": "If an account with that email exists, we've sent a password reset link."
         }
     
+    # Generate secure reset token
     reset_token = secrets.token_urlsafe(32)
     reset_expires = datetime.utcnow() + timedelta(hours=1)
     
+    # Save token to database
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
@@ -397,12 +268,14 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
         }
     )
     
+    # Create reset link with frontend URL
     reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     
     print(f"🔐 Password reset requested for: {user.get('username', 'Unknown')}")
     print(f"📧 Sending reset email to: {request_data.email}")
     print(f"🔗 Reset link: {reset_link}")
     
+    # FIXED: Use dedicated password reset email function
     email_sent = await send_password_reset_email(request_data.email, reset_link)
     
     if email_sent:
@@ -410,6 +283,7 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     else:
         print(f"❌ Failed to send password reset email to {request_data.email}")
     
+    # Log the action
     await create_log_entry(
         user.get('username', 'Unknown'),
         "Password reset requested.",
@@ -417,6 +291,7 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
         client_ip
     )
     
+    # Always return success to prevent email enumeration
     return {
         "success": True,
         "message": "If an account with that email exists, we've sent a password reset link."
@@ -449,6 +324,7 @@ async def reset_password(request_data: ResetPasswordRequest, request: Request):
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     accounts_collection = get_accounts_collection()
     
+    # Find user with valid token
     user = accounts_collection.find_one({
         "password_reset_token": request_data.token,
         "password_reset_expires": {"$gt": datetime.utcnow()}
@@ -458,11 +334,14 @@ async def reset_password(request_data: ResetPasswordRequest, request: Request):
         print(f"❌ Reset attempt with invalid/expired token: {request_data.token[:20]}...")
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
+    # Validate password length
     if len(request_data.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
     
+    # Hash new password
     new_password_hash = hash_password(request_data.new_password)
     
+    # Update password and remove reset token
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
