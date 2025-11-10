@@ -38,7 +38,9 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "MEAMS")
 
 # Brevo Configuration
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "MEAMS <meamsds42@gmail.com>")
+# FIXED: Email must be just the address, not in "Name <email>" format
+EMAIL_FROM = os.getenv("EMAIL_FROM", "meamsds42@gmail.com")
+EMAIL_FROM_NAME = "MEAMS"  # Separate name field for Brevo API
 
 # File Upload Settings
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
