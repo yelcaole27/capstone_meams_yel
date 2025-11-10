@@ -1,47 +1,66 @@
 """
-Email service - handles email sending operations using Resend API
-Resend is more reliable than Gmail SMTP for production deployments
+Email service - Using SendGrid API
+SendGrid free tier: 100 emails/day to ANY email address
+No domain verification needed!
 """
 import os
 import httpx
 from typing import Optional
-from config import EMAIL_FROM, FRONTEND_URL
+from config import FRONTEND_URL
 
-# Get Resend API key from environment
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+# Get SendGrid API key from environment
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "meamsds42@gmail.com")
 
 async def send_email(to_email: str, subject: str, body: str) -> bool:
     """
-    Send email using Resend API (more reliable than SMTP)
-    Sign up at https://resend.com/api-keys to get your API key
+    Send email using SendGrid API
+    
+    SendGrid Free Tier Benefits:
+    - 100 emails/day FREE
+    - Send to ANY email address (no verification needed)
+    - Works reliably on all hosting platforms
+    - Professional delivery
+    
+    Get API key from: https://app.sendgrid.com/settings/api_keys
     """
-    if not RESEND_API_KEY:
-        print("❌ ERROR: RESEND_API_KEY not configured in .env file")
-        print("📝 Get your API key from: https://resend.com/api-keys")
+    if not SENDGRID_API_KEY:
+        print("❌ ERROR: SENDGRID_API_KEY not configured in .env file")
+        print("📝 Get your FREE API key from: https://app.sendgrid.com/settings/api_keys")
+        print("   Sign up: https://signup.sendgrid.com/")
         return False
     
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "https://api.resend.com/emails",
+                "https://api.sendgrid.com/v3/mail/send",
                 headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Authorization": f"Bearer {SENDGRID_API_KEY}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "from": EMAIL_FROM,
-                    "to": [to_email],
-                    "subject": subject,
-                    "html": body,
+                    "personalizations": [
+                        {
+                            "to": [{"email": to_email}],
+                            "subject": subject
+                        }
+                    ],
+                    "from": {"email": EMAIL_FROM, "name": "MEAMS System"},
+                    "content": [
+                        {
+                            "type": "text/html",
+                            "value": body
+                        }
+                    ]
                 },
                 timeout=30.0
             )
             
-            if response.status_code == 200:
+            if response.status_code == 202:  # SendGrid returns 202 for success
                 print(f"✅ Email sent successfully to {to_email}")
                 return True
             else:
-                print(f"❌ Resend API error: {response.status_code}")
+                print(f"❌ SendGrid API error: {response.status_code}")
                 print(f"Response: {response.text}")
                 return False
                 
@@ -178,23 +197,28 @@ async def send_bug_report_notification(admin_email: str, bug_report: dict) -> bo
 
 async def test_email_configuration() -> dict:
     """Test email configuration"""
-    if not RESEND_API_KEY:
+    if not SENDGRID_API_KEY:
         return {
             "success": False,
-            "error": "RESEND_API_KEY not configured",
-            "action": "Add RESEND_API_KEY to your .env file. Get it from https://resend.com/api-keys"
+            "error": "SENDGRID_API_KEY not configured",
+            "action": "Add SENDGRID_API_KEY to your .env file",
+            "get_key_url": "https://app.sendgrid.com/settings/api_keys",
+            "signup_url": "https://signup.sendgrid.com/"
         }
     
     if not EMAIL_FROM:
         return {
             "success": False,
             "error": "EMAIL_FROM not configured",
-            "action": "Add EMAIL_FROM to your .env file (e.g., 'MEAMS <onboarding@resend.dev>')"
+            "action": "Add EMAIL_FROM to your .env file (use your Gmail: meamsds42@gmail.com)"
         }
     
     return {
         "success": True,
-        "message": "Email configuration looks good",
+        "message": "SendGrid email configuration looks good",
         "api_key_set": "Yes (✓)",
-        "from_address": EMAIL_FROM
+        "from_address": EMAIL_FROM,
+        "provider": "SendGrid",
+        "free_tier": "100 emails/day",
+        "can_send_to": "ANY email address"
     }
