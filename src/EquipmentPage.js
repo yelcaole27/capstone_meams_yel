@@ -5,6 +5,7 @@ import EquipmentAPI from './EquipmentApi';
 import EquipmentDocumentViewer from './EquipmentDocumentViewer';
 import html2pdf from 'html2pdf.js';
 import './EquipmentPage.css';
+import QRAuthModal from './QRAuthModal';
 
 function EquipmentPage() {
   const { getCurrentUser } = useAuth();
@@ -45,6 +46,11 @@ function EquipmentPage() {
     
     // Calculate repair frequency (repairs per year)
     const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+
+    // QRCODE
+    const [showQRAuthModal, setShowQRAuthModal] = useState(false);
+const [pendingQRData, setPendingQRData] = useState(null);
+const [qrAccessToken, setQrAccessToken] = useState(null);
 
     // Calculate cost thresholds
     const costThreshold = purchasePrice * 0.5; // 50% of purchase price
@@ -877,6 +883,30 @@ const getImageUrl = (equipment) => {
     }
   };
 
+
+  const handleQRAuthenticated = async (accessToken, user) => {
+  console.log('✅ Authenticated:', user);
+  setQrAccessToken(accessToken);
+  
+  if (pendingQRData) {
+    // Now generate the actual QR code
+    const BACKEND_URL = process.env.REACT_APP_API_URL || 'https://meams.onrender.com';
+    
+    // Create authenticated scan URL
+    const scanUrl = `${BACKEND_URL}/api/equipment/view/${pendingQRData.id}`;
+    
+    const qrDataURL = await QRCode.toDataURL(scanUrl, {
+      width: 300,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+    });
+
+    setQrCodeDataURL(qrDataURL);
+    setQrCodeEquipment(pendingQRData.data);
+    setIsQRModalOpen(true);
+    setPendingQRData(null);
+  }
+};
   const handleDeleteEquipment = async (equipmentId, equipmentName) => {
     if (!window.confirm(`Are you sure you want to delete "${equipmentName}"? This action cannot be undone.`)) {
       return;
@@ -907,20 +937,21 @@ const getImageUrl = (equipment) => {
   try {
     const BACKEND_URL = process.env.REACT_APP_API_URL || 'https://meams.onrender.com';
     
-    // Change to /view/ endpoint instead of /scan/
-    const scanUrl = `${BACKEND_URL}/api/equipment/view/${equipment._id}`;
-    
-    console.log('📱 Generating QR code with URL:', scanUrl);
-    
-    const qrDataURL = await QRCode.toDataURL(scanUrl, {
-      width: 300,
-      margin: 2,
-      errorCorrectionLevel: 'H',
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
+    // Store equipment data for after authentication
+    setPendingQRData({
+      type: 'equipment',
+      id: equipment._id,
+      data: equipment
     });
+    
+    // Show authentication modal
+    setShowQRAuthModal(true);
+    
+  } catch (error) {
+    console.error('❌ QR code generation failed:', error);
+    alert('Failed to generate QR code: ' + error.message);
+  }
+};
 
     setQrCodeDataURL(qrDataURL);
     setQrCodeEquipment(equipment);
