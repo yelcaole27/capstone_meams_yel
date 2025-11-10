@@ -96,7 +96,7 @@ async def login(credentials: LoginRequest, request: Request):
 @router.post("/logout")
 async def logout(request: Request, token: str = Depends(get_current_user)):
     """Logout endpoint"""
-    payload = verify_token(token)
+    payload = verify_token(token)  # This will work now!
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     

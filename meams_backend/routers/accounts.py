@@ -1,5 +1,6 @@
 """
 Accounts router - handles user account management (admin only)
+UPDATED WITH SECURE require_admin DEPENDENCY
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from bson import ObjectId
@@ -10,7 +11,7 @@ from services.auth_service import verify_token, hash_password, generate_secure_p
 from services.log_service import create_log_entry
 from services.email_service import send_email
 from database import get_accounts_collection
-from dependencies import get_current_user
+from dependencies import require_admin  # ← CHANGED: Use require_admin instead of get_current_user
 
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
@@ -31,20 +32,15 @@ def account_helper(account) -> dict:
         "first_login": account.get("first_login", True),
         "created_at": account.get("created_at", datetime.utcnow()),
         "updated_at": account.get("updated_at", datetime.utcnow()),
-        # Keep the same format as before - raw fields
         "profile_picture": account.get("profile_picture"),
         "profile_picture_content_type": account.get("profile_picture_content_type"),
         "profile_picture_filename": account.get("profile_picture_filename")
     }
 
 @router.get("")
-async def get_all_accounts(token: str = Depends(get_current_user)):
+async def get_all_accounts(token: str = Depends(require_admin)):  # ← SECURED
     """Get all accounts - admin only"""
-    payload = verify_token(token)
-    user_role = payload.get("role", "staff")
-    
-    if user_role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
+    payload = verify_token(token)  # Get username for logging if needed
     
     collection = get_accounts_collection()
     accounts = [account_helper(account) for account in collection.find()]
@@ -54,16 +50,12 @@ async def get_all_accounts(token: str = Depends(get_current_user)):
 async def create_account(
     account: AccountCreate,
     request: Request,
-    token: str = Depends(get_current_user)
+    token: str = Depends(require_admin)  # ← SECURED
 ):
     """Create a new account - admin only"""
     payload = verify_token(token)
-    user_role = payload.get("role", "staff")
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    
-    if user_role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     
     collection = get_accounts_collection()
     
@@ -151,16 +143,12 @@ async def update_account(
     account_id: str,
     account_update: AccountUpdate,
     request: Request,
-    token: str = Depends(get_current_user)
+    token: str = Depends(require_admin)  # ← SECURED
 ):
     """Update an account - admin only"""
     payload = verify_token(token)
-    user_role = payload.get("role", "staff")
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    
-    if user_role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     
     if not ObjectId.is_valid(account_id):
         raise HTTPException(status_code=400, detail="Invalid account ID format")
@@ -171,12 +159,11 @@ async def update_account(
     if not account_before:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    # Build update data - FIXED to handle boolean False properly
+    # Build update data
     update_data = {}
-    update_dict = account_update.dict(exclude_unset=True)  # Only get fields that were actually set
+    update_dict = account_update.dict(exclude_unset=True)
     
     for field, value in update_dict.items():
-        # Include the field if it's not None, OR if it's a boolean (including False)
         if value is not None or isinstance(value, bool):
             update_data[field] = value
     
@@ -229,16 +216,12 @@ async def update_account(
 async def delete_account(
     account_id: str,
     request: Request,
-    token: str = Depends(get_current_user)
+    token: str = Depends(require_admin)  # ← SECURED
 ):
     """Delete an account - admin only"""
     payload = verify_token(token)
-    user_role = payload.get("role", "staff")
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    
-    if user_role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     
     if not ObjectId.is_valid(account_id):
         raise HTTPException(status_code=400, detail="Invalid account ID format")
@@ -268,16 +251,12 @@ async def delete_account(
 async def reset_account_password(
     account_id: str,
     request: Request,
-    token: str = Depends(get_current_user)
+    token: str = Depends(require_admin)  # ← SECURED
 ):
     """Reset an account's password - admin only"""
     payload = verify_token(token)
-    user_role = payload.get("role", "staff")
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
-    
-    if user_role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
     
     if not ObjectId.is_valid(account_id):
         raise HTTPException(status_code=400, detail="Invalid account ID format")
@@ -340,8 +319,8 @@ async def reset_account_password(
     return {"success": True, "message": message}
 
 @router.get("/check-status")
-async def check_account_status(token: str = Depends(get_current_user)):
-    """Check if current user's account is still active"""
+async def check_account_status(token: str = Depends(require_admin)):  # ← SECURED (admin only makes sense)
+    """Check if current user's account is still active - admin only"""
     try:
         payload = verify_token(token)
         username = payload["username"]
