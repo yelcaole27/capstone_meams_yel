@@ -15,7 +15,7 @@ from services.auth_service import (
     update_last_login
 )
 from services.log_service import create_log_entry
-from services.email_service import send_email
+from services.email_service import send_password_reset_email  # FIXED: Import correct function
 from database import get_accounts_collection
 from dependencies import get_current_user
 from config import HARDCODED_USERS, FRONTEND_URL
@@ -96,7 +96,7 @@ async def login(credentials: LoginRequest, request: Request):
 @router.post("/logout")
 async def logout(request: Request, token: str = Depends(get_current_user)):
     """Logout endpoint"""
-    payload = verify_token(token)  # This will work now!
+    payload = verify_token(token)
     username = payload["username"]
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     
@@ -241,18 +241,22 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     accounts_collection = get_accounts_collection()
     
+    # Find user by email
     user = accounts_collection.find_one({"email": request_data.email})
     
     if not user:
-        # Don't reveal if email doesn't exist
+        # Security: Don't reveal if email doesn't exist
+        print(f"⚠️ Password reset requested for non-existent email: {request_data.email}")
         return {
             "success": True,
             "message": "If an account with that email exists, we've sent a password reset link."
         }
     
+    # Generate secure reset token
     reset_token = secrets.token_urlsafe(32)
     reset_expires = datetime.utcnow() + timedelta(hours=1)
     
+    # Save token to database
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
@@ -264,32 +268,30 @@ async def forgot_password(request_data: ForgotPasswordRequest, request: Request)
         }
     )
     
-    # FIXED: Use FRONTEND_URL from environment variable
+    # Create reset link with frontend URL
     reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     
-    email_subject = "MEAMS - Password Reset Request"
-    email_body = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif;">
-        <h2>Password Reset Request</h2>
-        <p>Hello {user.get('name', 'User')},</p>
-        <p>Click the link below to reset your password:</p>
-        <p><a href="{reset_link}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a></p>
-        <p>This link expires in 1 hour.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-    </body>
-    </html>
-    """
+    print(f"🔐 Password reset requested for: {user.get('username', 'Unknown')}")
+    print(f"📧 Sending reset email to: {request_data.email}")
+    print(f"🔗 Reset link: {reset_link}")
     
-    email_sent = await send_email(request_data.email, email_subject, email_body)
+    # FIXED: Use dedicated password reset email function
+    email_sent = await send_password_reset_email(request_data.email, reset_link)
     
+    if email_sent:
+        print(f"✅ Password reset email sent successfully to {request_data.email}")
+    else:
+        print(f"❌ Failed to send password reset email to {request_data.email}")
+    
+    # Log the action
     await create_log_entry(
         user.get('username', 'Unknown'),
         "Password reset requested.",
-        f"Reset link sent to: {request_data.email}" if email_sent else "Failed to send reset email",
+        f"Reset link {'sent to' if email_sent else 'FAILED to send to'}: {request_data.email}",
         client_ip
     )
     
+    # Always return success to prevent email enumeration
     return {
         "success": True,
         "message": "If an account with that email exists, we've sent a password reset link."
@@ -305,6 +307,11 @@ async def validate_reset_token(token: str):
         "password_reset_expires": {"$gt": datetime.utcnow()}
     })
     
+    if user:
+        print(f"✅ Valid reset token for user: {user.get('username', 'Unknown')}")
+    else:
+        print(f"❌ Invalid or expired reset token: {token[:20]}...")
+    
     return {
         "success": True,
         "valid": user is not None,
@@ -317,19 +324,24 @@ async def reset_password(request_data: ResetPasswordRequest, request: Request):
     client_ip = request.client.host if hasattr(request, 'client') else "unknown"
     accounts_collection = get_accounts_collection()
     
+    # Find user with valid token
     user = accounts_collection.find_one({
         "password_reset_token": request_data.token,
         "password_reset_expires": {"$gt": datetime.utcnow()}
     })
     
     if not user:
+        print(f"❌ Reset attempt with invalid/expired token: {request_data.token[:20]}...")
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
+    # Validate password length
     if len(request_data.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
     
+    # Hash new password
     new_password_hash = hash_password(request_data.new_password)
     
+    # Update password and remove reset token
     accounts_collection.update_one(
         {"_id": user["_id"]},
         {
@@ -344,6 +356,8 @@ async def reset_password(request_data: ResetPasswordRequest, request: Request):
             }
         }
     )
+    
+    print(f"✅ Password successfully reset for user: {user.get('username', 'Unknown')}")
     
     await create_log_entry(
         user.get('username', 'Unknown'),
