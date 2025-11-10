@@ -1,14 +1,14 @@
 """
-Equipment router - handles all equipment-related endpoints
+Equipment router - UPDATED with QR authentication
 """
-from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Body
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Body, Header
+from fastapi.responses import StreamingResponse, HTMLResponse
 from bson import ObjectId
 from typing import Optional
 import asyncio
 import json
 from datetime import datetime
-from fastapi.responses import HTMLResponse
+
 from database import get_equipment_collection
 from services.equipment_service import equipment_helper
 from models.equipment import EquipmentCreate, EquipmentUpdate
@@ -33,8 +33,21 @@ from dependencies import get_current_user
 
 router = APIRouter(prefix="/api/equipment", tags=["equipment"])
 
-# Store for scan events (in production, use Redis or similar)
 scan_events = {}
+
+# Helper function to verify QR access token
+def verify_qr_token(authorization: Optional[str] = Header(None)):
+    """Verify QR access token from Authorization header"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header required")
+    
+    try:
+        # Extract token from "Bearer <token>"
+        token = authorization.replace("Bearer ", "")
+        payload = verify_token(token)
+        return payload
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 @router.get("")
 async def list_equipment(token: str = Depends(get_current_user)):
@@ -75,13 +88,16 @@ async def get_single_equipment(equipment_id: str, token: str = Depends(get_curre
     equipment = get_equipment_by_id(equipment_id)
     return {"success": True, "message": "Equipment found", "data": equipment}
 
-# NEW: QR Code Scan Endpoint
+# UPDATED: QR Scan endpoint now requires authentication
 @router.get("/scan/{equipment_id}")
-async def scan_equipment(equipment_id: str):
+async def scan_equipment(equipment_id: str, authorization: Optional[str] = Header(None)):
     """
-    Endpoint called when a QR code is scanned.
-    Returns current equipment data and triggers real-time notifications.
+    Endpoint called when a QR code is scanned - REQUIRES AUTHENTICATION
+    Returns current equipment data after verifying user credentials
     """
+    # Verify authentication
+    payload = verify_qr_token(authorization)
+    
     if not ObjectId.is_valid(equipment_id):
         raise HTTPException(status_code=400, detail="Invalid equipment ID format")
     
@@ -100,7 +116,8 @@ async def scan_equipment(equipment_id: str):
             "amount": equipment.get("amount", 0),
             "useful_life": equipment.get("usefulLife", 0),
             "timestamp": datetime.utcnow().isoformat(),
-            "scan_type": "equipment"
+            "scan_type": "equipment",
+            "scanned_by": payload.get("username", "Unknown")
         }
         
         # Notify all listeners for this equipment
@@ -108,7 +125,15 @@ async def scan_equipment(equipment_id: str):
             for queue in scan_events[equipment_id]:
                 await queue.put(scan_data)
         
-        print(f"📱 QR Code scanned for equipment: {equipment['name']} ({equipment['itemCode']})")
+        print(f"📱 QR Code scanned for equipment: {equipment['name']} by {payload.get('username')}")
+        
+        # Log the scan
+        await create_log_entry(
+            payload.get("username", "unknown"),
+            "Scanned equipment QR code.",
+            f"Equipment: {equipment['name']} ({equipment['itemCode']})",
+            "qr_scan"
+        )
         
         return {
             "success": True,
@@ -120,21 +145,15 @@ async def scan_equipment(equipment_id: str):
         print(f"❌ Error scanning equipment: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# NEW: Real-time Scan Listener Endpoint (Server-Sent Events)
 @router.get("/listen/{equipment_id}")
 async def listen_for_scans(equipment_id: str):
-    """
-    Server-Sent Events endpoint for real-time scan notifications.
-    Frontend connects to this to receive live scan events.
-    """
+    """Server-Sent Events endpoint for real-time scan notifications"""
     if not ObjectId.is_valid(equipment_id):
         raise HTTPException(status_code=400, detail="Invalid equipment ID format")
     
     async def event_generator():
-        # Create a queue for this listener
         queue = asyncio.Queue()
         
-        # Register this listener
         if equipment_id not in scan_events:
             scan_events[equipment_id] = []
         scan_events[equipment_id].append(queue)
@@ -142,23 +161,18 @@ async def listen_for_scans(equipment_id: str):
         try:
             print(f"👂 New listener connected for equipment {equipment_id}")
             
-            # Send initial connection message
             yield f"data: {json.dumps({'type': 'connected', 'equipment_id': equipment_id})}\n\n"
             
-            # Keep connection alive and send events
             while True:
                 try:
-                    # Wait for scan event (with timeout to keep connection alive)
                     scan_data = await asyncio.wait_for(queue.get(), timeout=30.0)
                     yield f"data: {json.dumps(scan_data)}\n\n"
                 except asyncio.TimeoutError:
-                    # Send keepalive
                     yield f": keepalive\n\n"
                     
         except asyncio.CancelledError:
             print(f"👋 Listener disconnected for equipment {equipment_id}")
         finally:
-            # Clean up
             if equipment_id in scan_events:
                 scan_events[equipment_id].remove(queue)
                 if not scan_events[equipment_id]:
@@ -173,6 +187,257 @@ async def listen_for_scans(equipment_id: str):
             "X-Accel-Buffering": "no"
         }
     )
+
+# NEW: QR View endpoint - shows data after authentication
+@router.get("/view/{equipment_id}", response_class=HTMLResponse)  
+async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = Header(None)):
+    """
+    Handle authenticated QR code view - returns HTML page with equipment details
+    REQUIRES valid QR access token
+    """
+    # Verify authentication
+    try:
+        payload = verify_qr_token(authorization)
+    except HTTPException:
+        # Return auth required page if no valid token
+        return HTMLResponse(
+            content="""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Authentication Required</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    }
+                    .container {
+                        background: white;
+                        padding: 40px;
+                        border-radius: 20px;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                        text-align: center;
+                        max-width: 400px;
+                    }
+                    h1 { color: #1f2937; margin-bottom: 20px; }
+                    p { color: #6b7280; margin-bottom: 30px; }
+                    .icon { font-size: 64px; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="icon">🔒</div>
+                    <h1>Authentication Required</h1>
+                    <p>Please authenticate through the app to view this equipment information.</p>
+                </div>
+            </body>
+            </html>
+            """,
+            status_code=401
+        )
+    
+    # Validate ID
+    if not ObjectId.is_valid(equipment_id):
+        return HTMLResponse(
+            content="<h1>Invalid QR Code</h1>",
+            status_code=400
+        )
+    
+    # Fetch equipment data
+    equipment = get_equipment_by_id(equipment_id)
+ 
+    if not equipment:
+        return HTMLResponse(
+            content="<h1>Equipment Not Found</h1>",
+            status_code=404
+        )
+
+    # Fix image data format
+    if equipment.get('image_data'):
+        image_data = equipment['image_data']
+        if not image_data.startswith('data:'):
+            content_type = equipment.get('image_content_type', 'image/jpeg')
+            equipment['image_data'] = f"data:{content_type};base64,{image_data}"
+
+    # Build repair history HTML
+    repair_html = ""
+    if equipment.get('repairHistory'):
+        recent = sorted(equipment['repairHistory'], 
+                       key=lambda x: x.get('repairDate', ''), 
+                       reverse=True)[:10]
+        
+        rows = ""
+        total_cost = 0
+        for repair in recent:
+            amount = float(repair.get('amountUsed', 0))
+            total_cost += amount
+            rows += f"""
+            <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDate', 'N/A')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDetails', '-')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #059669;">₱{amount:.2f}</td>
+            </tr>
+            """
+        
+        repair_html = f"""
+        <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; border-bottom: 3px solid #667eea; padding-bottom: 10px;">
+                📋 Repair History
+            </h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563;">Repair Date</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563;">Details</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600; color: #4b5563;">Amount Used</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f3f4f6; font-weight: bold; border-top: 2px solid #e5e7eb;">
+                        <td colspan="2" style="padding: 12px;">Total Repairs: {len(recent)}</td>
+                        <td style="padding: 12px; text-align: right; color: #059669;">₱{total_cost:.2f}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        """
+    else:
+        repair_html = """
+        <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;">
+            <h3 style="margin: 0 0 10px 0; color: #6b7280;">No Repair History</h3>
+            <p style="margin: 0; color: #9ca3af; font-size: 14px;">This equipment has not been repaired yet</p>
+        </div>
+        """
+    
+    # Return HTML with authenticated data
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{equipment['name']} - Equipment Details</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                margin: 0;
+            }}
+            .container {{
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 900px;
+                width: 100%;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #667eea;
+            }}
+            .auth-badge {{
+                background: #10b981;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                display: inline-block;
+                margin-bottom: 15px;
+            }}
+            h1 {{ color: #1f2937; margin: 10px 0; font-size: 32px; }}
+            .subtitle {{ color: #6b7280; font-size: 16px; margin-top: 5px; }}
+            .info-grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin: 30px 0;
+            }}
+            .info-card {{
+                background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 4px solid #667eea;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }}
+            .label {{
+                font-size: 12px;
+                color: #6b7280;
+                text-transform: uppercase;
+                font-weight: 600;
+            }}
+            .value {{
+                font-size: 20px;
+                color: #1f2937;
+                font-weight: 700;
+                margin-top: 8px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="auth-badge">✅ Authenticated View</div>
+                <h1>{equipment['name']}</h1>
+                <p class="subtitle">MEAMS - Equipment Inventory</p>
+                <p style="font-size: 12px; color: #9ca3af; margin-top: 10px;">
+                    Viewed by: {payload.get('username', 'Unknown')}
+                </p>
+            </div>
+            
+            {f'<div style="text-align: center; margin: 20px 0;"><img src="{equipment.get("image_data", "")}" alt="{equipment["name"]}" style="max-width: 70%; max-height: 200px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain;" /></div>' if equipment.get('image_data') else ''}
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="label">Item Code</div>
+                    <div class="value">{equipment.get('itemCode', 'N/A')}</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Category</div>
+                    <div class="value">{equipment.get('category', 'N/A')}</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Status</div>
+                    <div class="value">{equipment.get('status', 'Operational')}</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Location</div>
+                    <div class="value">{equipment.get('location', 'Not specified')}</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Purchase Amount</div>
+                    <div class="value">₱{float(equipment.get('amount', 0)):.2f}</div>
+                </div>
+                <div class="info-card">
+                    <div class="label">Useful Life</div>
+                    <div class="value">{equipment.get('usefulLife', 0)} years</div>
+                </div>
+            </div>
+            
+            {repair_html}
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
 
 @router.put("/{equipment_id}")
 async def update_existing_equipment(
