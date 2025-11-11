@@ -1835,7 +1835,6 @@ const printQRCode = () => {
       )}
 
       {/* QR Code Modal for Equipment */}
-      // Replace your existing QR Modal in EquipmentPage.js with this version
 
 {isQRModalOpen && qrCodeEquipment && (
   <div className="overlay" onClick={handleCloseQRModal}>
