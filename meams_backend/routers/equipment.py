@@ -502,7 +502,7 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
              status_code=404
     )
 
-# FIX IMAGE DATA FORMAT FOR QR SCAN PAGE
+    # FIX IMAGE DATA FORMAT FOR QR SCAN PAGE
     if equipment.get('image_data'):
         image_data = equipment['image_data']
         # If it doesn't start with 'data:', add the proper prefix
@@ -983,13 +983,14 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                 errorMsg.classList.remove('show');
                 
                 try {{
+                    // Step 1: Authenticate and get token
                     const authResponse = await fetch(`${{API_URL}}/api/equipment/verify-scan-access`, {{
                         method: 'POST',
                         headers: {{
                             'Content-Type': 'application/json'
                         }},
                         body: JSON.stringify({{
-                            email: email,  // Send full email
+                            email: email,
                             password: password
                         }})
                     }});
@@ -1000,8 +1001,23 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                     }}
                     
                     const authData = await authResponse.json();
-                    sessionStorage.setItem('qr_access_token', authData.access_token);
-                    window.location.href = `${{API_URL}}/api/equipment/view/${{ITEM_ID}}?token=${{authData.access_token}}`;
+                    
+                    // Step 2: Fetch equipment page with token in header (NOT URL)
+                    const equipmentResponse = await fetch(`${{API_URL}}/api/equipment/view/${{ITEM_ID}}`, {{
+                        headers: {{
+                            'Authorization': `Bearer ${{authData.access_token}}`
+                        }}
+                    }});
+                    
+                    if (!equipmentResponse.ok) {{
+                        throw new Error('Failed to load equipment details');
+                    }}
+                    
+                    // Step 3: Replace current page with equipment details
+                    const html = await equipmentResponse.text();
+                    document.open();
+                    document.write(html);
+                    document.close();
                     
                 }} catch (error) {{
                     console.error('Authentication error:', error);
@@ -1011,28 +1027,6 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                     submitBtn.textContent = 'Access Information';
                 }}
             }});
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            
-            if (token) {{
-                fetch(`${{API_URL}}/api/equipment/view/${{ITEM_ID}}`, {{
-                    headers: {{
-                        'Authorization': `Bearer ${{token}}`
-                    }}
-                }})
-                .then(response => response.text())
-                .then(html => {{
-                    document.open();
-                    document.write(html);
-                    document.close();
-                }})
-                .catch(error => {{
-                    console.error('Error:', error);
-                    document.getElementById('errorMsg').textContent = 'Session expired. Please login again.';
-                    document.getElementById('errorMsg').classList.add('show');
-                }}
-            }}
         </script>
     </body>
     </html>
