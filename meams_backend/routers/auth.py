@@ -193,7 +193,7 @@ async def refresh_token(request: Request, token: str = Depends(get_current_user)
             detail="Could not refresh token"
         )
 
-@router.post("/change-password")
+@router.post("/api/change-password")
 async def change_password_api(
     password_data: PasswordChangeRequest,
     request: Request,
