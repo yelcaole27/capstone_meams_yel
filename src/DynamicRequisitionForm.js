@@ -473,8 +473,22 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
         </button>
 
         <div className="print-hidden" style={{ marginBottom: '20px', textAlign: 'right' }}>
-     <button onClick={addRow}>➕ Add Row</button>
-   </div>
+          <button
+            onClick={addRow}
+            style={{
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 'bold'
+            }}
+          >
+            ➕ Add Row
+          </button>
+        </div>
 
         {paginatedRows.map((pageRows, pageIndex) => (
           <div key={pageIndex} className="print-page-wrapper">
