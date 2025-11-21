@@ -1024,7 +1024,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                     errorMsg.textContent = error.message || 'Invalid email or password';
                     errorMsg.classList.add('show');
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Access Information';
+                    submitBtn.textContent = 'Access Equipment Information';
                 }}
             }});
         </script>
