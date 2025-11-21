@@ -958,7 +958,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                 </div>
                 
                 <button type="submit" class="btn" id="submitBtn">
-                    Access Information
+                    Access Equipment Information
                 </button>
                 
                 <div class="error" id="errorMsg"></div>
