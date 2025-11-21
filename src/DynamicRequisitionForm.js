@@ -472,9 +472,8 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
           ×
         </button>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="print-hidden" style={{ marginBottom: '20px', textAlign: 'right' }}>
      <button onClick={addRow}>➕ Add Row</button>
-     <button onClick={() => window.print()}>🖨️ Print Requisition</button>
    </div>
 
         {paginatedRows.map((pageRows, pageIndex) => (
