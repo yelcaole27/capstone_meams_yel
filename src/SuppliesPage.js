@@ -249,11 +249,18 @@ function SuppliesPage() {
   const uniqueCategories = ['All Categories', ...new Set(suppliesData.map(item => item.category))];
 
   // Filter supplies 
-  const filteredSupplies = suppliesData.filter(item => {
+  const filteredSupplies = suppliesData
+  .filter(item => {
     const matchesSearch = item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
+                          item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'All Categories' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
+  })
+  .sort((a, b) => {
+    if (a._id && b._id) {
+      return b._id.toString().localeCompare(a._id.toString());
+    }
+    return 0;
   });
 
   // Pagination calculations
@@ -618,7 +625,7 @@ const handleCloseStockCard = () => {
   };
 
   // Updated handleAddItem to save to database
-  const handleAddItem = async () => {
+ const handleAddItem = async () => {
   if (!newItem.itemName || !newItem.quantity || !newItem.category || !newItem.unit) {
     alert('Please fill in all required fields (Item Name, Quantity, Category, Unit)');
     return;
@@ -702,9 +709,10 @@ const handleCloseStockCard = () => {
       transactionHistory: savedSupply.transactionHistory || []
     };
 
-    setSuppliesData([...suppliesData, newSupplyItem]);
+    // --- CHANGE IS HERE: Place newSupplyItem at the start of the array ---
+    setSuppliesData([newSupplyItem, ...suppliesData]);
     
-    const updatedSupplies = [...suppliesData, newSupplyItem];
+    const updatedSupplies = [newSupplyItem, ...suppliesData];
     const stats = supplyThresholdManager.getStatusStatistics(updatedSupplies);
     setStatusStats(stats);
     
