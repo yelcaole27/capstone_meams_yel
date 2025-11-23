@@ -462,7 +462,7 @@ async def remove_document(
 
 
 @router.get("/view/{equipment_id}", response_class=HTMLResponse)  
-async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = Header(None)):
+async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = Header(None), show_full: bool = False):
     """
     Handle QR code scan - NOW REQUIRES AUTHENTICATION
     """
@@ -517,13 +517,16 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
     # Build repair history HTML
     repair_html = ""
     if equipment.get('repairHistory'):
-        recent = sorted(equipment['repairHistory'], 
+        all_repairs = sorted(equipment['repairHistory'], 
                        key=lambda x: x.get('repairDate', ''), 
-                       reverse=True)[:10]
+                       reverse=True)
+        
+        # Show only recent 10 or all based on show_full parameter
+        repairs_to_show = all_repairs if show_full else all_repairs[:10]
         
         rows = ""
         total_cost = 0
-        for repair in recent:
+        for repair in repairs_to_show:
             amount = float(repair.get('amountUsed', 0))
             total_cost += amount
             rows += f"""
@@ -534,10 +537,36 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
             </tr>
             """
         
+        # Calculate total for ALL repairs
+        total_all_repairs = sum(float(r.get('amountUsed', 0)) for r in all_repairs)
+        
+        # Show button only if there are more than 10 repairs and not showing full
+        view_full_button = ""
+        if len(all_repairs) > 10 and not show_full:
+            view_full_button = f"""
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="window.location.href='/api/equipment/view/{equipment_id}?show_full=true'" 
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                               color: white; 
+                               padding: 12px 30px; 
+                               border: none; 
+                               border-radius: 8px; 
+                               font-size: 16px; 
+                               font-weight: 600; 
+                               cursor: pointer;
+                               box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                               transition: transform 0.2s;">
+                    📋 View Full Repair History ({len(all_repairs)} repairs)
+                </button>
+            </div>
+            """
+        
+        showing_text = f"Showing All {len(all_repairs)} Repairs" if show_full else f"Recent 10 of {len(all_repairs)} Repairs"
+        
         repair_html = f"""
         <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <h3 style="margin: 0 0 20px 0; color: #1f2937; border-bottom: 3px solid #667eea; padding-bottom: 10px;">
-                📋 Repair History
+                📋 Repair History {f'<span style="font-size: 14px; color: #6b7280; font-weight: normal;">({showing_text})</span>' if len(all_repairs) > 10 else ''}
             </h3>
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
@@ -552,11 +581,12 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
                 </tbody>
                 <tfoot>
                     <tr style="background: #f3f4f6; font-weight: bold; border-top: 2px solid #e5e7eb;">
-                        <td colspan="2" style="padding: 12px;">Total Repairs: {len(recent)}</td>
-                        <td style="padding: 12px; text-align: right; color: #059669;">₱{total_cost:.2f}</td>
+                        <td colspan="2" style="padding: 12px;">Total Repairs: {len(all_repairs)}</td>
+                        <td style="padding: 12px; text-align: right; color: #059669;">₱{total_all_repairs:.2f}</td>
                     </tr>
                 </tfoot>
             </table>
+            {view_full_button}
         </div>
         """
     else:
@@ -688,6 +718,9 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
                 color: #3d9130;
                 margin-top: 10px;
             }}
+            button:hover {{
+                transform: translateY(-2px) !important;
+            }}
         </style>
     </head>
     <body>
@@ -768,31 +801,38 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
 async def verify_scan_access(credentials: dict):
     """
     Verify user credentials for QR code access
+    Accepts BOTH email OR username with password
     Returns a temporary access token if valid
     """
     from services.auth_service import authenticate_user, create_access_token
     from datetime import timedelta
     from database import get_accounts_collection
     
-    email = credentials.get('email')
+    identifier = credentials.get('identifier')  # Can be email OR username
     password = credentials.get('password')
     
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="Email and password required")
+    if not identifier or not password:
+        raise HTTPException(status_code=400, detail="Username/Email and password required")
     
-    # Find user by email
     accounts_collection = get_accounts_collection()
-    user_doc = accounts_collection.find_one({"email": email})
+    
+    # Try to find user by email OR username
+    user_doc = accounts_collection.find_one({
+        "$or": [
+            {"email": identifier},
+            {"username": identifier}
+        ]
+    })
     
     if not user_doc:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Get username and authenticate
     username = user_doc.get('username')
     user = authenticate_user(username, password)
     
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Check if account is active
     if user.get("status") == False:
@@ -934,14 +974,14 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
             
             <form id="authForm">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
+                    <label for="identifier">Username or Email</label>
                     <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="Enter your email"
+                        type="text" 
+                        id="identifier" 
+                        name="identifier" 
+                        placeholder="Enter username or email"
                         required
-                        autocomplete="email"
+                        autocomplete="username"
                     />
                 </div>
                 
@@ -975,7 +1015,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                 
                 const submitBtn = document.getElementById('submitBtn');
                 const errorMsg = document.getElementById('errorMsg');
-                const email = document.getElementById('email').value;
+                const identifier = document.getElementById('identifier').value;
                 const password = document.getElementById('password').value;
                 
                 submitBtn.disabled = true;
@@ -990,7 +1030,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                             'Content-Type': 'application/json'
                         }},
                         body: JSON.stringify({{
-                            email: email,
+                            identifier: identifier,
                             password: password
                         }})
                     }});
@@ -1002,7 +1042,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                     
                     const authData = await authResponse.json();
                     
-                    // Step 2: Fetch equipment page with token in header (NOT URL)
+                    // Step 2: Fetch equipment page with token in header
                     const equipmentResponse = await fetch(`${{API_URL}}/api/equipment/view/${{ITEM_ID}}`, {{
                         headers: {{
                             'Authorization': `Bearer ${{authData.access_token}}`
@@ -1021,7 +1061,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                     
                 }} catch (error) {{
                     console.error('Authentication error:', error);
-                    errorMsg.textContent = error.message || 'Invalid email or password';
+                    errorMsg.textContent = error.message || 'Invalid credentials';
                     errorMsg.classList.add('show');
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Access Equipment Information';
