@@ -5,7 +5,7 @@ function DynamicPurchaseForm({ initialData, onClose }) {
     if (initialData && initialData.length > 0) {
       return initialData;
     }
-    return Array(12).fill(null).map(() => ({
+    return Array(20).fill(null).map(() => ({
       quantity: '',
       equipmentName: '',
       description: '',
@@ -31,7 +31,7 @@ function DynamicPurchaseForm({ initialData, onClose }) {
     setRows(newRows);
   };
 
-  const ROWS_PER_PAGE = 15;
+  const ROWS_PER_PAGE = 20;
   const paginatedRows = [];
   for (let i = 0; i < rows.length; i += ROWS_PER_PAGE) {
     paginatedRows.push(rows.slice(i, i + ROWS_PER_PAGE));
@@ -279,6 +279,11 @@ function DynamicPurchaseForm({ initialData, onClose }) {
             visibility: hidden !important;
           }
           
+          .print-only {
+            display: block !important;
+            visibility: visible !important;
+          }
+          
           .print-page-wrapper {
             page-break-after: always !important;
             break-after: page !important;
@@ -362,6 +367,10 @@ function DynamicPurchaseForm({ initialData, onClose }) {
             margin-bottom: 40px;
             padding-bottom: 40px;
             border-bottom: 3px dashed #999;
+          }
+          
+          .print-only {
+            display: none !important;
           }
           
           .print-page-wrapper:last-of-type {
@@ -452,16 +461,6 @@ function DynamicPurchaseForm({ initialData, onClose }) {
         {paginatedRows.map((pageRows, pageIndex) => (
           <div key={pageIndex} className="print-page-wrapper">
             {renderHeader()}
-
-            <div className="print-hidden" style={{
-              textAlign: 'center',
-              fontSize: '12px',
-              color: '#666',
-              marginBottom: '10px',
-              fontWeight: 'bold'
-            }}>
-              Page {pageIndex + 1} of {paginatedRows.length}
-            </div>
 
             <table style={{
               width: '100%',
@@ -601,7 +600,17 @@ function DynamicPurchaseForm({ initialData, onClose }) {
               </tbody>
             </table>
 
-            {renderFooter()}
+            {pageIndex === paginatedRows.length - 1 && renderFooter()}
+            
+            <div className="print-only" style={{
+              textAlign: 'right',
+              fontSize: '10px',
+              marginTop: '15px',
+              color: 'black'
+            }}>
+              <div>Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+              <div>Page {pageIndex + 1} of {paginatedRows.length}</div>
+            </div>
           </div>
         ))}
 
