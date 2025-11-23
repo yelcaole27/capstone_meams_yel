@@ -1,7 +1,7 @@
 """
 Supplies router - handles all supply-related endpoints including documents
 """
-from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Query
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from bson import ObjectId
 from fastapi.responses import HTMLResponse
 from datetime import datetime
@@ -17,7 +17,6 @@ from services.supply_service import (
     add_supply_image,
     get_supply_image,
     delete_supply_image,
-    # NEW: Document functions
     add_supply_document,
     get_supply_documents,
     get_supply_document,
@@ -30,27 +29,16 @@ from dependencies import get_current_user
 router = APIRouter(prefix="/api/supplies", tags=["supplies"])
 
 def pluralize_unit(quantity: int, unit: str) -> str:
-    """
-    Pluralize unit based on quantity
-    
-    Args:
-        quantity: The quantity of items
-        unit: The unit name (e.g., 'piece', 'box', 'bottle')
-    
-    Returns:
-        Properly pluralized unit string
-    """
+    """Pluralize unit based on quantity"""
     if not unit:
         return 'unit' if quantity == 1 else 'units'
     
     if quantity == 1:
         return unit
     
-    # Don't add 's' if already plural
     if unit.endswith('s'):
         return unit
     
-    # Handle special cases
     special_plurals = {
         'box': 'boxes',
         'piece': 'pieces',
@@ -218,7 +206,7 @@ async def remove_image(
     
     return {"success": True, "message": "Image deleted successfully", "data": updated_supply}
 
-# NEW: DOCUMENT ENDPOINTS
+# DOCUMENT ENDPOINTS
 
 @router.post("/{supply_id}/documents")
 async def upload_document(
@@ -308,13 +296,10 @@ async def remove_document(
 
 
 @router.get("/scan/{supply_id}", response_class=HTMLResponse)
-async def scan_supply_qr(
-    supply_id: str, 
-    authorization: Optional[str] = Header(None),
-    show_full: bool = Query(False)
-):
+async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(None)):
     """
     Handle QR code scan - fetches CURRENT data from database
+    Shows supply summary with recent 5 transactions
     NOW REQUIRES AUTHENTICATION
     """
     from fastapi.responses import HTMLResponse
@@ -330,7 +315,7 @@ async def scan_supply_qr(
     # Verify token
     try:
         token = authorization.replace("Bearer ", "")
-        verify_token(token)
+        payload = verify_token(token)
     except:
         return HTMLResponse(
             content=generate_auth_required_html("supply", supply_id),
@@ -372,18 +357,16 @@ async def scan_supply_qr(
         unit = supply.get('unit', 'unit')
         pluralized_unit = pluralize_unit(qty, unit)
         
-        # Build transaction history HTML
+        # Build transaction history HTML - SHOW ONLY 5 RECENT
         transaction_html = ""
         if supply.get('transactionHistory'):
             all_transactions = sorted(supply['transactionHistory'], 
                            key=lambda x: x.get('date', ''), 
                            reverse=True)
-            
-            # Show only recent 5 or all based on show_full parameter
-            transactions_to_show = all_transactions if show_full else all_transactions[:5]
+            recent = all_transactions[:5]  # Only 5
             
             rows = ""
-            for trans in transactions_to_show:
+            for trans in recent:
                 rows += f"""
                 <tr>
                     <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{trans.get('date', 'N/A')}</td>
@@ -393,13 +376,13 @@ async def scan_supply_qr(
                 </tr>
                 """
             
-            # Show button only if there are more than 5 transactions and not showing full
+            # Show button if more than 5 transactions
             view_full_button = ""
-            if len(all_transactions) > 5 and not show_full:
+            if len(all_transactions) > 5:
                 view_full_button = f"""
                 <div style="text-align: center; margin-top: 20px;">
-                    <button onclick="window.location.href='/api/supplies/scan/{supply_id}?show_full=true'" 
-                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    <a href="/api/supplies/stock-card/{supply_id}" style="text-decoration: none;">
+                        <button style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                                    color: white; 
                                    padding: 12px 30px; 
                                    border: none; 
@@ -408,18 +391,23 @@ async def scan_supply_qr(
                                    font-weight: 600; 
                                    cursor: pointer;
                                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-                                   transition: transform 0.2s;">
-                        📊 View Full Stock Card ({len(all_transactions)} transactions)
-                    </button>
+                                   transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='translateY(0)'">
+                            📊 View Full Stock Card ({len(all_transactions)} transactions)
+                        </button>
+                    </a>
                 </div>
+                <script>
+                    // Store token for next page
+                    sessionStorage.setItem('auth_token', '{token}');
+                </script>
                 """
-            
-            showing_text = f"Showing All {len(all_transactions)} Transactions" if show_full else f"Recent 5 of {len(all_transactions)} Transactions"
             
             transaction_html = f"""
             <div style="margin-top: 20px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <h3 style="margin: 0 0 15px 0; color: #1f2937; border-bottom: 3px solid #667eea; padding-bottom: 10px;">
-                    📊 Transaction History {f'<span style="font-size: 14px; color: #6b7280; font-weight: normal;">({showing_text})</span>' if len(all_transactions) > 5 else ''}
+                    📊 Transaction History {f'<span style="font-size: 14px; color: #6b7280; font-weight: normal;">(Recent 5 of {len(all_transactions)})</span>' if len(all_transactions) > 5 else ''}
                 </h3>
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
@@ -466,10 +454,6 @@ async def scan_supply_qr(
                     margin-bottom: 30px;
                     padding-bottom: 20px;
                     border-bottom: 3px solid #fbbf24;
-                }}
-                .logo {{
-                    font-size: 72px;
-                    margin-bottom: 15px;
                 }}
                 h1 {{
                     color: #1f2937;
@@ -551,9 +535,6 @@ async def scan_supply_qr(
                    color: #3d9130;
                    margin-top: 10px;
                 }}
-                button:hover {{
-                    transform: translateY(-2px) !important;
-                }}
             </style>
         </head>
         <body>
@@ -629,9 +610,222 @@ async def scan_supply_qr(
             content=f"<h1>Error Loading Supply</h1><p>{str(e)}</p>",
             status_code=500
         )
+
+
+# NEW ENDPOINT: Full Stock Card Page
+@router.get("/stock-card/{supply_id}", response_class=HTMLResponse)
+async def view_full_stock_card(supply_id: str):
+    """
+    Separate page showing FULL stock card (all transactions)
+    """
+    from fastapi.responses import HTMLResponse
+    from datetime import datetime
     
-
-
+    # Validate ID
+    if not ObjectId.is_valid(supply_id):
+        return HTMLResponse(
+            content="<h1>Invalid Supply ID</h1>",
+            status_code=400
+        )
+    
+    # Fetch supply data
+    supply = get_supply_by_id(supply_id)
+    
+    if not supply:
+        return HTMLResponse(
+            content="<h1>Supply Not Found</h1>",
+            status_code=404
+        )
+    
+    # Get quantity and unit
+    qty = supply.get('quantity', 0)
+    unit = supply.get('unit', 'unit')
+    pluralized_unit = pluralize_unit(qty, unit)
+    
+    # Build FULL transaction table
+    transaction_rows = ""
+    
+    if supply.get('transactionHistory'):
+        all_transactions = sorted(supply['transactionHistory'], 
+                       key=lambda x: x.get('date', ''), 
+                       reverse=True)
+        
+        for trans in all_transactions:
+            transaction_rows += f"""
+            <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{trans.get('date', 'N/A')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">{trans.get('receipt') or '-'}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">{trans.get('issue') or '-'}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600; color: #059669;">{trans.get('balance', 0)}</td>
+            </tr>
+            """
+    else:
+        transaction_rows = """
+        <tr>
+            <td colspan="4" style="padding: 40px; text-align: center; color: #9ca3af;">
+                No transaction history available
+            </td>
+        </tr>
+        """
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Full Stock Card - {supply['name']}</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #363636;
+                min-height: 100vh;
+                padding: 20px;
+                margin: 0;
+            }}
+            .container {{
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 1200px;
+                margin: 0 auto;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #667eea;
+            }}
+            h1 {{
+                color: #1f2937;
+                margin: 10px 0;
+                font-size: 32px;
+            }}
+            .subtitle {{
+                color: #6b7280;
+                font-size: 16px;
+                margin-top: 5px;
+            }}
+            .back-button {{
+                display: inline-block;
+                margin-bottom: 20px;
+                padding: 10px 20px;
+                background: #6b7280;
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: background 0.3s;
+            }}
+            .back-button:hover {{
+                background: #4b5563;
+            }}
+            .info-box {{
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                gap: 20px;
+            }}
+            .info-item {{
+                text-align: center;
+            }}
+            .info-label {{
+                font-size: 12px;
+                color: #6b7280;
+                text-transform: uppercase;
+                font-weight: 600;
+            }}
+            .info-value {{
+                font-size: 24px;
+                color: #1f2937;
+                font-weight: 700;
+                margin-top: 5px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }}
+            thead {{
+                background: #f9fafb;
+                border-bottom: 2px solid #e5e7eb;
+            }}
+            th {{
+                padding: 12px;
+                text-align: left;
+                font-weight: 600;
+                color: #4b5563;
+            }}
+            .footer {{
+                margin-top: 40px;
+                text-align: center;
+                padding-top: 20px;
+                border-top: 2px solid #e5e7eb;
+                color: #9ca3af;
+                font-size: 14px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="javascript:history.back()" class="back-button">← Back to Supply</a>
+            
+            <div class="header">
+                <h1>📊 Complete Stock Card</h1>
+                <p class="subtitle">{supply['name']} ({supply.get('itemCode', 'N/A')})</p>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-item">
+                    <div class="info-label">Current Quantity</div>
+                    <div class="info-value" style="color: #3d9130;">{qty} {pluralized_unit}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Category</div>
+                    <div class="info-value">{supply.get('category', 'N/A')}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Location</div>
+                    <div class="info-value">{supply.get('location', 'N/A')}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">{supply.get('status', 'Normal')}</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th style="text-align: center;">Receipt</th>
+                        <th style="text-align: center;">Issue</th>
+                        <th style="text-align: center;">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {transaction_rows}
+                </tbody>
+            </table>
+            
+            <div class="footer">
+                <p>Total Transactions: {len(supply.get('transactionHistory', []))}</p>
+                <p>Supply ID: {supply.get('_id')}</p>
+                <p style="font-weight: 700; color: #3d9130; margin-top: 10px;">
+                    Maintenance And Engineering Asset Management System
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
 
 
 @router.post("/verify-scan-access")
@@ -855,7 +1049,6 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                 const identifier = document.getElementById('identifier').value;
                 const password = document.getElementById('password').value;
                 
-                // Disable button and show loading
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Verifying...';
                 errorMsg.classList.remove('show');
