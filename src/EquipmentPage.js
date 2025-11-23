@@ -57,7 +57,7 @@ function EquipmentPage() {
     let riskLevel = 'Low';
     let recommendReplacement = false;
 
-    // Check for costly repairs (total repair cost exceeds 50% of purchase price)
+    // Check for costly repairs (total Repair Cost exceeds 50% of purchase price)
     if (totalRepairCost >= costThreshold) {
       lccRemarks.push('Costly Repair');
       riskLevel = 'High';
@@ -377,7 +377,7 @@ function EquipmentPage() {
       }
       
       if (!updateData.amountUsed || parseFloat(updateData.amountUsed) < 0) {
-        alert('Amount used must be a valid non-negative number');
+        alert('Repair Cost must be a valid non-negative number');
         return;
       }
 
@@ -2073,7 +2073,7 @@ const printQRCode = () => {
         </div>
 
         <div className="form-group">
-          <label>Amount Used: *</label>
+          <label>Repair Cost: *</label>
           <div className="amount-container">
             <span className="currency-symbol">₱</span>
             <input 
@@ -2150,7 +2150,7 @@ const printQRCode = () => {
       <tr>
         <th className="date-repair-col">Repair Date</th>
         <th className="details-col">Repair Details</th>
-        <th className="amount-col">Amount Used</th>
+        <th className="amount-col">Repair Cost</th>
       </tr>
     </thead>
     <tbody>
@@ -2240,7 +2240,7 @@ const printQRCode = () => {
                 <tr>
                   <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 25%;">Repair Date</th>
                   <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 50%;">Repair Details</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 25%;">Amount Used</th>
+                  <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 25%;">Repair Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -2434,7 +2434,7 @@ const printQRCode = () => {
                   <tr>
                     <th class="date-col">Repair Date</th>
                     <th class="details-col">Repair Details</th>
-                    <th class="amount-col">Amount Used</th>
+                    <th class="amount-col">Repair Cost</th>
                   </tr>
                 </thead>
                 <tbody>
