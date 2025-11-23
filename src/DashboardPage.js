@@ -91,94 +91,100 @@ function DashboardPage() {
 };
 
   const getEquipmentBeyondLifeData = () => {
-    return equipmentData.filter(equipment => {
-      const repairHistory = equipment.repairHistory || [];
-      const usefulLife = equipment.usefulLife || 5;
-      const purchasePrice = equipment.amount || 0;
-      const currentDate = new Date();
-      const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
-      const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+  const replacementEquipment = equipmentData.filter(equipment => {
+    const repairHistory = equipment.repairHistory || [];
+    const usefulLife = equipment.usefulLife || 5;
+    const purchasePrice = equipment.amount || 0;
+    const currentDate = new Date();
+    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
 
-      const totalRepairs = repairHistory.length;
-      const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
-      const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
-      const costThreshold = purchasePrice * 0.5;
+    const totalRepairs = repairHistory.length;
+    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+    const costThreshold = purchasePrice * 0.5;
 
-      let recommendReplacement = false;
+    let recommendReplacement = false;
 
-      if (totalRepairCost >= costThreshold) recommendReplacement = true;
-      if (repairFrequency > 3) recommendReplacement = true;
-      if (ageInYears >= usefulLife) recommendReplacement = true;
+    if (totalRepairCost >= costThreshold) recommendReplacement = true;
+    if (repairFrequency > 3) recommendReplacement = true;
+    if (ageInYears >= usefulLife) recommendReplacement = true;
 
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const recentRepairs = repairHistory.filter(repair => {
-        const repairDate = new Date(repair.repairDate);
-        return repairDate >= sixMonthsAgo;
-      }).length;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentRepairs = repairHistory.filter(repair => {
+      const repairDate = new Date(repair.repairDate);
+      return repairDate >= sixMonthsAgo;
+    }).length;
 
-      if (recentRepairs >= 3) recommendReplacement = true;
+    if (recentRepairs >= 3) recommendReplacement = true;
 
-      return recommendReplacement;
-    });
-    // ✅ NEW: Sort by age (oldest equipment first = most critical)
+    return recommendReplacement;
+  });
+  
+  // ✅ Sort by age (oldest equipment first = most critical)
   return replacementEquipment.sort((a, b) => {
     const dateA = a.date ? new Date(a.date) : new Date();
     const dateB = b.date ? new Date(b.date) : new Date();
-    // Sort oldest first (most critical for replacement)
-    return dateA - dateB;
+    return dateA - dateB; // Oldest first
   });
 };
 
   const getEquipmentMaintenanceData = () => {
-    return equipmentData.filter(equipment => {
-      return equipment.reportDate || 
-             equipment.status?.toLowerCase().includes('maintenance') || 
-             equipment.status?.toLowerCase().includes('repair') ||
-             equipment.status?.toLowerCase().includes('service');
-    });
-  // ✅ NEW: Sort by report date (most recent first)
+  const maintenanceEquipment = equipmentData.filter(equipment => {
+    return equipment.reportDate || 
+           equipment.status?.toLowerCase().includes('maintenance') || 
+           equipment.status?.toLowerCase().includes('repair') ||
+           equipment.status?.toLowerCase().includes('service');
+  });
+  
+  // ✅ Sort by report date (most recent first)
   return maintenanceEquipment.sort((a, b) => {
     const dateA = a.reportDate ? new Date(a.reportDate) : new Date(0);
     const dateB = b.reportDate ? new Date(b.reportDate) : new Date(0);
-    // Sort newest report first
-    return dateB - dateA;
+    return dateB - dateA; // Newest first
   });
 };
 
   const getEquipmentPurchaseData = () => {
-    return equipmentData.filter(equipment => {
-      const repairHistory = equipment.repairHistory || [];
-      const usefulLife = equipment.usefulLife || 5;
-      const purchasePrice = equipment.amount || 0;
-      const currentDate = new Date();
-      const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
-      const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
+  const purchaseEquipment = equipmentData.filter(equipment => {
+    const repairHistory = equipment.repairHistory || [];
+    const usefulLife = equipment.usefulLife || 5;
+    const purchasePrice = equipment.amount || 0;
+    const currentDate = new Date();
+    const purchaseDate = equipment.date ? new Date(equipment.date) : currentDate;
+    const ageInYears = (currentDate - purchaseDate) / (1000 * 60 * 60 * 24 * 365);
 
-      const totalRepairs = repairHistory.length;
-      const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
-      const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
-      const costThreshold = purchasePrice * 0.5;
+    const totalRepairs = repairHistory.length;
+    const totalRepairCost = repairHistory.reduce((sum, repair) => sum + (parseFloat(repair.amountUsed) || 0), 0);
+    const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
+    const costThreshold = purchasePrice * 0.5;
 
-      let recommendReplacement = false;
+    let recommendReplacement = false;
 
-      if (totalRepairCost >= costThreshold) recommendReplacement = true;
-      if (repairFrequency > 3) recommendReplacement = true;
-      if (ageInYears >= usefulLife) recommendReplacement = true;
+    if (totalRepairCost >= costThreshold) recommendReplacement = true;
+    if (repairFrequency > 3) recommendReplacement = true;
+    if (ageInYears >= usefulLife) recommendReplacement = true;
 
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const recentRepairs = repairHistory.filter(repair => {
-        const repairDate = new Date(repair.repairDate);
-        return repairDate >= sixMonthsAgo;
-      }).length;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const recentRepairs = repairHistory.filter(repair => {
+      const repairDate = new Date(repair.repairDate);
+      return repairDate >= sixMonthsAgo;
+    }).length;
 
-      if (recentRepairs >= 3) recommendReplacement = true;
+    if (recentRepairs >= 3) recommendReplacement = true;
 
-      return recommendReplacement;
-    });
-  };
-
+    return recommendReplacement;
+  });
+  
+  // ✅ Sort by age (oldest equipment first = most critical to replace)
+  return purchaseEquipment.sort((a, b) => {
+    const dateA = a.date ? new Date(a.date) : new Date();
+    const dateB = b.date ? new Date(b.date) : new Date();
+    return dateA - dateB; // Oldest first
+  });
+};
   const understockData = getUnderstockData();
   const equipmentLifeData = getEquipmentBeyondLifeData();
 
