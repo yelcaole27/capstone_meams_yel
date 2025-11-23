@@ -295,6 +295,11 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
             visibility: hidden !important;
           }
           
+          .print-only {
+            display: block !important;
+            visibility: visible !important;
+          }
+          
           .print-page-wrapper {
             page-break-after: always !important;
             break-after: page !important;
@@ -387,6 +392,10 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
             border-bottom: 3px dashed #999;
           }
           
+          .print-only {
+            display: none !important;
+          }
+          
           .print-page-wrapper:last-of-type {
             border-bottom: none;
             margin-bottom: 0;
@@ -472,37 +481,9 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
           ×
         </button>
 
-        <div className="print-hidden" style={{ marginBottom: '20px', textAlign: 'right' }}>
-          <button
-            onClick={addRow}
-            style={{
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: 'bold'
-            }}
-          >
-            ➕ Add Row
-          </button>
-        </div>
-
         {paginatedRows.map((pageRows, pageIndex) => (
           <div key={pageIndex} className="print-page-wrapper">
             {renderHeader()}
-
-            <div className="print-hidden" style={{
-              textAlign: 'center',
-              fontSize: '12px',
-              color: '#666',
-              marginBottom: '10px',
-              fontWeight: 'bold'
-            }}>
-              Page {pageIndex + 1} of {paginatedRows.length}
-            </div>
 
             <table style={{
               width: '100%',
@@ -643,6 +624,16 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
             </table>
 
             {renderFooter()}
+            
+            <div className="print-only" style={{
+              textAlign: 'right',
+              fontSize: '10px',
+              marginTop: '15px',
+              color: 'black'
+            }}>
+              <div>Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+              <div>Page {pageIndex + 1} of {paginatedRows.length}</div>
+            </div>
           </div>
         ))}
 
@@ -655,24 +646,44 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
           <div style={{ fontSize: '12px', color: '#666' }}>
             Total rows: <strong>{rows.length}</strong> | Pages: <strong>{paginatedRows.length}</strong>
           </div>
-          <button
-            onClick={() => window.print()}
-            style={{
-              backgroundColor: '#4CAF50',
-              color: '#FFFFFF',
-              padding: '12px 24px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            🖨️ Print Requisition ({paginatedRows.length} page{paginatedRows.length > 1 ? 's' : ''})
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={addRow}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                padding: '12px 24px',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              ➕ Add Row
+            </button>
+            <button
+              onClick={() => window.print()}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: '#FFFFFF',
+                padding: '12px 24px',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              🖨️ Print Requisition ({paginatedRows.length} page{paginatedRows.length > 1 ? 's' : ''})
+            </button>
+          </div>
         </div>
       </div>
     </div>
