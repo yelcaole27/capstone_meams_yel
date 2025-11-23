@@ -19,8 +19,8 @@ export const AuthProvider = ({ children }) => {
   const lastActivityRef = useRef(Date.now());
   const tokenRefreshTimerRef = useRef(null);
 
-  // Idle timeout duration in milliseconds (3 minutes)
-  const IDLE_TIMEOUT = 3 * 60 * 1000;
+  // Idle timeout duration in milliseconds (5 minutes)
+  const IDLE_TIMEOUT = 5 * 60 * 1000;
   // Refresh token 5 minutes before expiration
   const REFRESH_BUFFER = 5 * 60 * 1000;
 
@@ -184,7 +184,7 @@ export const AuthProvider = ({ children }) => {
       idleTimerRef.current = setTimeout(() => {
         const timeSinceLastActivity = Date.now() - lastActivityRef.current;
         if (timeSinceLastActivity >= IDLE_TIMEOUT) {
-          console.log('User idle for 3 minutes, logging out...');
+          console.log('User idle for 5 minutes, logging out...');
           alert('You have been logged out due to inactivity.');
           logout();
           window.location.href = '/login';
