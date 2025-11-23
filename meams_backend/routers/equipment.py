@@ -462,7 +462,7 @@ async def remove_document(
 
 
 @router.get("/view/{equipment_id}", response_class=HTMLResponse)  
-async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = Header(None), show_full: bool = False):
+async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = Header(None)):
     """
     Handle QR code scan - NOW REQUIRES AUTHENTICATION
     """
@@ -514,19 +514,19 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
      print(f"⚠️ No image for equipment: {equipment['name']}")
 
 
-    # Build repair history HTML
+    # Build repair history HTML - SHOW ONLY RECENT 10
     repair_html = ""
     if equipment.get('repairHistory'):
         all_repairs = sorted(equipment['repairHistory'], 
                        key=lambda x: x.get('repairDate', ''), 
                        reverse=True)
         
-        # Show only recent 10 or all based on show_full parameter
-        repairs_to_show = all_repairs if show_full else all_repairs[:10]
+        # Show only recent 10
+        recent = all_repairs[:10]
         
         rows = ""
         total_cost = 0
-        for repair in repairs_to_show:
+        for repair in recent:
             amount = float(repair.get('amountUsed', 0))
             total_cost += amount
             rows += f"""
@@ -540,12 +540,12 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
         # Calculate total for ALL repairs
         total_all_repairs = sum(float(r.get('amountUsed', 0)) for r in all_repairs)
         
-        # Show button only if there are more than 10 repairs and not showing full
+        # Show button only if there are more than 10 repairs
         view_full_button = ""
-        if len(all_repairs) > 10 and not show_full:
+        if len(all_repairs) > 10:
             view_full_button = f"""
             <div style="text-align: center; margin-top: 20px;">
-                <button onclick="window.location.href='/api/equipment/view/{equipment_id}?show_full=true'" 
+                <button onclick="navigateToFullHistory()" 
                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                                color: white; 
                                padding: 12px 30px; 
@@ -559,9 +559,25 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
                     📋 View Full Repair History ({len(all_repairs)} repairs)
                 </button>
             </div>
+            <script>
+                function navigateToFullHistory() {{
+                    // Pass token to next page via fetch with Authorization header
+                    fetch('/api/equipment/repair-history/{equipment_id}', {{
+                        headers: {{
+                            'Authorization': 'Bearer {token}'
+                        }}
+                    }})
+                    .then(response => response.text())
+                    .then(html => {{
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    }});
+                }}
+            </script>
             """
         
-        showing_text = f"Showing All {len(all_repairs)} Repairs" if show_full else f"Recent 10 of {len(all_repairs)} Repairs"
+        showing_text = f"Recent 10 of {len(all_repairs)} Repairs" if len(all_repairs) > 10 else ""
         
         repair_html = f"""
         <div style="margin-top: 30px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -790,6 +806,281 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
                 <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
             </div>
         </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
+
+
+# NEW ENDPOINT: Full Repair History Page
+@router.get("/repair-history/{equipment_id}", response_class=HTMLResponse)
+async def view_full_repair_history(equipment_id: str, authorization: Optional[str] = Header(None)):
+    """
+    Separate page showing FULL repair history (all repairs)
+    Requires authentication like the main QR view
+    """
+    from fastapi.responses import HTMLResponse
+    from datetime import datetime
+    
+    # Check for authorization
+    if not authorization:
+        return HTMLResponse(
+            content=generate_auth_required_html("equipment", equipment_id),
+            status_code=200
+        )
+    
+    # Verify token
+    try:
+        token = authorization.replace("Bearer ", "")
+        verify_token(token)
+    except:
+        return HTMLResponse(
+            content=generate_auth_required_html("equipment", equipment_id),
+            status_code=200
+        )
+    
+    # Validate ID
+    if not ObjectId.is_valid(equipment_id):
+        return HTMLResponse(
+            content="<h1>Invalid Equipment ID</h1>",
+            status_code=400
+        )
+    
+    # Fetch equipment data
+    equipment = get_equipment_by_id(equipment_id)
+    
+    if not equipment:
+        return HTMLResponse(
+            content="<h1>Equipment Not Found</h1>",
+            status_code=404
+        )
+    
+    # Build FULL repair history table
+    repair_rows = ""
+    total_cost = 0
+    
+    if equipment.get('repairHistory'):
+        all_repairs = sorted(equipment['repairHistory'], 
+                       key=lambda x: x.get('repairDate', ''), 
+                       reverse=True)
+        
+        for repair in all_repairs:
+            amount = float(repair.get('amountUsed', 0))
+            total_cost += amount
+            repair_rows += f"""
+            <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDate', 'N/A')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{repair.get('repairDetails', '-')}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #059669;">₱{amount:,.2f}</td>
+            </tr>
+            """
+    else:
+        repair_rows = """
+        <tr>
+            <td colspan="3" style="padding: 40px; text-align: center; color: #9ca3af;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto 15px; opacity: 0.3;">
+                    <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <p style="font-weight: 600; margin: 0 0 5px 0;">No Repair History</p>
+                <p style="margin: 0; font-size: 14px;">This equipment has not been repaired yet</p>
+            </td>
+        </tr>
+        """
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Full Repair History - {equipment['name']}</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: #363636;
+                min-height: 100vh;
+                padding: 20px;
+                margin: 0;
+            }}
+            .container {{
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 1200px;
+                margin: 0 auto;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #667eea;
+            }}
+            h1 {{
+                color: #1f2937;
+                margin: 10px 0;
+                font-size: 32px;
+            }}
+            .subtitle {{
+                color: #6b7280;
+                font-size: 16px;
+                margin-top: 5px;
+            }}
+            .back-button {{
+                display: inline-block;
+                margin-bottom: 20px;
+                padding: 10px 20px;
+                background: #6b7280;
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: background 0.3s;
+            }}
+            .back-button:hover {{
+                background: #4b5563;
+            }}
+            .info-box {{
+                background: #f9fafb;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                gap: 20px;
+            }}
+            .info-item {{
+                text-align: center;
+            }}
+            .info-label {{
+                font-size: 12px;
+                color: #6b7280;
+                text-transform: uppercase;
+                font-weight: 600;
+            }}
+            .info-value {{
+                font-size: 24px;
+                color: #1f2937;
+                font-weight: 700;
+                margin-top: 5px;
+            }}
+            .status {{
+                display: inline-block;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }}
+            .status-operational {{ background: #d1fae5; color: #065f46; }}
+            .status-maintenance {{ background: #fef3c7; color: #92400e; }}
+            .status-beyond {{ background: #fee2e2; color: #991b1b; }}
+            .status-within {{ background: #dbeafe; color: #1e40af; }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }}
+            thead {{
+                background: #f9fafb;
+                border-bottom: 2px solid #e5e7eb;
+            }}
+            th {{
+                padding: 12px;
+                text-align: left;
+                font-weight: 600;
+                color: #4b5563;
+            }}
+            tfoot {{
+                background: #f3f4f6;
+                font-weight: bold;
+                border-top: 2px solid #e5e7eb;
+            }}
+            tfoot td {{
+                padding: 12px;
+            }}
+            .footer {{
+                margin-top: 40px;
+                text-align: center;
+                padding-top: 20px;
+                border-top: 2px solid #e5e7eb;
+                color: #9ca3af;
+                font-size: 14px;
+            }}
+            .footer-logo {{
+                font-weight: 700;
+                color: #3d9130;
+                margin-top: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="javascript:history.back()" class="back-button">← Back to Equipment</a>
+            
+            <div class="header">
+                <h1>🔧 Complete Repair History</h1>
+                <p class="subtitle">{equipment['name']} ({equipment.get('itemCode', 'N/A')})</p>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">
+                        <span class="status status-{equipment.get('status', 'operational').lower().replace(' ', '-').replace('_', '-')}">
+                            {equipment.get('status', 'Operational')}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Location</div>
+                    <div class="info-value">{equipment.get('location', 'N/A')}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Purchase Amount</div>
+                    <div class="info-value" style="color: #3d9130;">₱{float(equipment.get('amount', 0)):,.2f}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Useful Life</div>
+                    <div class="info-value">{equipment.get('usefulLife', 0)} years</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Repair Date</th>
+                        <th>Details</th>
+                        <th style="text-align: right;">Amount Used</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {repair_rows}
+                </tbody>
+                {f'''
+                <tfoot>
+                    <tr>
+                        <td colspan="2">Total Repairs: {len(equipment.get('repairHistory', []))}</td>
+                        <td style="text-align: right; color: #059669;">₱{total_cost:,.2f}</td>
+                    </tr>
+                </tfoot>
+                ''' if equipment.get('repairHistory') else ''}
+            </table>
+            
+            <div class="footer">
+                <p>Total Repairs: {len(equipment.get('repairHistory', []))}</p>
+                <p>Equipment ID: {equipment.get('_id')}</p>
+                <p class="footer-logo">Maintenance And Engineering Asset Management System</p>
+            </div>
+        </div>
+        
+        <script>
+            // Store token for navigation
+            const token = '{token}';
+            sessionStorage.setItem('auth_token', token);
+        </script>
     </body>
     </html>
     """
