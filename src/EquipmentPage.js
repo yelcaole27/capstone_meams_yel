@@ -48,7 +48,7 @@ function EquipmentPage() {
     const repairFrequency = ageInYears > 0 ? totalRepairs / ageInYears : 0;
 
     // Calculate cost thresholds
-    const costThreshold = purchasePrice * 0.5; // 50% of purchase price
+    const costlyRepairThreshold = purchasePrice * 1.5; // 150% of purchase price
     const totalCostOfOwnership = purchasePrice + totalRepairCost;
     const costRatio = purchasePrice > 0 ? totalRepairCost / purchasePrice : 0;
 
@@ -58,18 +58,21 @@ function EquipmentPage() {
     let recommendReplacement = false;
 
     // Check for costly repairs (total Repair Cost exceeds 50% of purchase price)
-    if (totalRepairCost >= costThreshold) {
-      lccRemarks.push('Costly Repair');
-      riskLevel = 'High';
-      recommendReplacement = true;
-    }
+   if (totalRepairCost >= costlyRepairThreshold) {
+  lccRemarks.push('Costly Repair');
+  riskLevel = 'High';
+  recommendReplacement = true;
+}
 
     // Check for frequent repairs (more than 2 repairs per year)
-    if (repairFrequency > 2) {
-      lccRemarks.push('Frequent Repair');
-      riskLevel = riskLevel === 'High' ? 'High' : 'Medium';
-      if (repairFrequency > 3) recommendReplacement = true;
-    }
+    if (repairFrequency >= 3) {
+  lccRemarks.push('Frequent Repair');
+  riskLevel = 'High';
+  recommendReplacement = true;
+} else if (repairFrequency >= 2) {
+  lccRemarks.push('Frequent Repair');
+  riskLevel = riskLevel === 'High' ? 'High' : 'Medium';
+}
 
     // Check if beyond useful life
     if (ageInYears >= usefulLife) {
@@ -79,10 +82,10 @@ function EquipmentPage() {
     }
 
     // Check if approaching useful life (within 1 year)
-    if (ageInYears >= usefulLife - 1 && ageInYears < usefulLife) {
-      lccRemarks.push('Approaching End of Life');
-      riskLevel = riskLevel === 'High' ? 'High' : 'Medium';
-    }
+    if (ageInYears >= usefulLife - 0.5 && ageInYears < usefulLife) {
+  lccRemarks.push('Approaching End of Life');
+  riskLevel = riskLevel === 'High' ? 'High' : 'Medium';
+}
 
     // Check for multiple recent repairs (3+ repairs in last 6 months)
     const sixMonthsAgo = new Date();
