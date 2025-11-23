@@ -481,28 +481,39 @@ setEquipmentData(equipment || []);
     ].filter(item => item.value > 0);
   };
 
-  const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-    if (percent < 0.05) return null;
+  const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }, chartData) => {
+  if (percent < 0.05) return null;
 
-    const RADIAN = Math.PI / 180;
-    const radius = (innerRadius + outerRadius) / 2;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const RADIAN = Math.PI / 180;
+  const radius = (innerRadius + outerRadius) / 2;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-    return (
-      <text
-        x={x}
-        y={y}
-        fill="#ffffff"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize="12"
-        fontWeight="600"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
+  // Calculate adjusted percentage to match table
+  const total = chartData.reduce((sum, item) => sum + item.value, 0);
+  const percentages = chartData.map(item => Math.round((item.value / total) * 100));
+  const percentageSum = percentages.reduce((sum, p) => sum + p, 0);
+  
+  if (percentageSum !== 100 && percentages.length > 0) {
+    const diff = 100 - percentageSum;
+    const maxIndex = percentages.indexOf(Math.max(...percentages));
+    percentages[maxIndex] += diff;
+  }
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#ffffff"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize="12"
+      fontWeight="600"
+    >
+      {`${percentages[index]}%`}
+    </text>
+  );
+};
 
   const renderTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -705,18 +716,18 @@ setEquipmentData(equipment || []);
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={supplyChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderLabel}
-                      outerRadius={80}
-                      innerRadius={0}
-                      fill="#8884d8"
-                      dataKey="value"
-                      onMouseEnter={(data, index) => onPieEnter(data, index, setActiveSupplyIndex)}
-                      onMouseLeave={() => onPieLeave(setActiveSupplyIndex)}
-                    >
+  data={supplyChartData}
+  cx="50%"
+  cy="50%"
+  labelLine={false}
+  label={(props) => renderLabel(props, supplyChartData)}
+  outerRadius={80}
+  innerRadius={0}
+  fill="#8884d8"
+  dataKey="value"
+  onMouseEnter={(data, index) => onPieEnter(data, index, setActiveSupplyIndex)}
+  onMouseLeave={() => onPieLeave(setActiveSupplyIndex)}
+>
                       {supplyChartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
@@ -759,26 +770,38 @@ setEquipmentData(equipment || []);
                       <th>%</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {(() => {
-                      const data = getSupplyStatusData();
-                      const total = data.reduce((sum, item) => sum + item.value, 0);
-                      return data.map((item, index) => (
-                        <tr key={index}>
-                          <td style={{ color: item.color, fontWeight: 'bold' }}>
-                            {item.name}
-                          </td>
-                          <td>{item.value}</td>
-                          <td>{total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%</td>
-                        </tr>
-                      ));
-                    })()}
-                    <tr className="total-row">
-                      <td><strong>Total</strong></td>
-                      <td><strong>{getSupplyStatusData().reduce((sum, item) => sum + item.value, 0)}</strong></td>
-                      <td><strong>100%</strong></td>
-                    </tr>
-                  </tbody>
+<tbody>
+  {(() => {
+    const data = getSupplyStatusData();
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    
+    // Calculate rounded percentages
+    const percentages = data.map(item => Math.round((item.value / total) * 100));
+    const percentageSum = percentages.reduce((sum, p) => sum + p, 0);
+    
+    // Adjust the largest item to make total = 100%
+    if (percentageSum !== 100 && percentages.length > 0) {
+      const diff = 100 - percentageSum;
+      const maxIndex = percentages.indexOf(Math.max(...percentages));
+      percentages[maxIndex] += diff;
+    }
+    
+    return data.map((item, index) => (
+      <tr key={index}>
+        <td style={{ color: item.color, fontWeight: 'bold' }}>
+          {item.name}
+        </td>
+        <td>{item.value}</td>
+        <td>{percentages[index]}%</td>
+      </tr>
+    ));
+  })()}
+  <tr className="total-row">
+    <td><strong>Total</strong></td>
+    <td><strong>{getSupplyStatusData().reduce((sum, item) => sum + item.value, 0)}</strong></td>
+    <td><strong>100%</strong></td>
+  </tr>
+</tbody>
                 </table>
               </div>
             </div>
@@ -797,18 +820,18 @@ setEquipmentData(equipment || []);
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={equipmentChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderLabel}
-                      outerRadius={80}
-                      innerRadius={0}
-                      fill="#8884d8"
-                      dataKey="value"
-                      onMouseEnter={(data, index) => onPieEnter(data, index, setActiveEquipmentIndex)}
-                      onMouseLeave={() => onPieLeave(setActiveEquipmentIndex)}
-                    >
+  data={equipmentChartData}
+  cx="50%"
+  cy="50%"
+  labelLine={false}
+  label={(props) => renderLabel(props, equipmentChartData)}
+  outerRadius={80}
+  innerRadius={0}
+  fill="#8884d8"
+  dataKey="value"
+  onMouseEnter={(data, index) => onPieEnter(data, index, setActiveEquipmentIndex)}
+  onMouseLeave={() => onPieLeave(setActiveEquipmentIndex)}
+>
                       {equipmentChartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
@@ -852,25 +875,37 @@ setEquipmentData(equipment || []);
                     </tr>
                   </thead>
                   <tbody>
-                    {(() => {
-                      const data = getEquipmentStatusData();
-                      const total = data.reduce((sum, item) => sum + item.value, 0);
-                      return data.map((item, index) => (
-                        <tr key={index}>
-                          <td style={{ color: item.color, fontWeight: 'bold' }}>
-                            {item.name}
-                          </td>
-                          <td>{item.value}</td>
-                          <td>{total > 0 ? ((item.value / total) * 100).toFixed(1) : 0}%</td>
-                        </tr>
-                      ));
-                    })()}
-                    <tr className="total-row">
-                      <td><strong>Total</strong></td>
-                      <td><strong>{getEquipmentStatusData().reduce((sum, item) => sum + item.value, 0)}</strong></td>
-                      <td><strong>100%</strong></td>
-                    </tr>
-                  </tbody>
+  {(() => {
+    const data = getEquipmentStatusData();
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    
+    // Calculate rounded percentages
+    const percentages = data.map(item => Math.round((item.value / total) * 100));
+    const percentageSum = percentages.reduce((sum, p) => sum + p, 0);
+    
+    // Adjust the largest item to make total = 100%
+    if (percentageSum !== 100 && percentages.length > 0) {
+      const diff = 100 - percentageSum;
+      const maxIndex = percentages.indexOf(Math.max(...percentages));
+      percentages[maxIndex] += diff;
+    }
+    
+    return data.map((item, index) => (
+      <tr key={index}>
+        <td style={{ color: item.color, fontWeight: 'bold' }}>
+          {item.name}
+        </td>
+        <td>{item.value}</td>
+        <td>{percentages[index]}%</td>
+      </tr>
+    ));
+  })()}
+  <tr className="total-row">
+    <td><strong>Total</strong></td>
+    <td><strong>{getEquipmentStatusData().reduce((sum, item) => sum + item.value, 0)}</strong></td>
+    <td><strong>100%</strong></td>
+  </tr>
+</tbody>
                 </table>
               </div>
             </div>
@@ -880,7 +915,7 @@ setEquipmentData(equipment || []);
         {/* Bottom Row: Tables */}
         <div className="dashboard-tables-row">
           <div className="table-card understock-table">
-            <h3>Items Understock!</h3>
+            <h3>Understock Items!</h3>
             <table>
               <thead>
                 <tr>
