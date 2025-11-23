@@ -2596,7 +2596,7 @@ const handleRemoveImage = async (supplyId) => {
           <tbody>
   {selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0 ? (
     [...selectedItem.transactionHistory]
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map((transaction, index) => (
                 <tr key={index} className="stock-row">
                   <td className="date-cell">{transaction.date || ''}</td>
@@ -2687,7 +2687,7 @@ const handleRemoveImage = async (supplyId) => {
                     <tbody>
                       ${selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
   ? [...selectedItem.transactionHistory]
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map(transaction => `
                           <tr>
                             <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.date || ''}</td>
@@ -2878,7 +2878,7 @@ const handleRemoveImage = async (supplyId) => {
                       <tbody>
                         ${selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
   ? [...selectedItem.transactionHistory]
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map(transaction => `
                             <tr>
                               <td>${transaction.date || ''}</td>
