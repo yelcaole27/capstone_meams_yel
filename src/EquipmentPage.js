@@ -483,17 +483,24 @@ function EquipmentPage() {
   }
 };
 
-  const filteredEquipment = equipmentData.filter(item => {
-  const matchesSearch = searchTerm === '' || 
-    item.itemCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.itemName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category?.toLowerCase().includes(searchTerm.toLowerCase());
-  
-  const matchesCategory = selectedCategory === 'All Categories' || item.category === selectedCategory;
-  
-  return matchesSearch && matchesCategory;
-});
+ const filteredEquipment = equipmentData
+    .filter(item => {
+      const matchesSearch = searchTerm === '' || 
+        item.itemCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || // Note: Changed itemName to name for consistency
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.category?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategory === 'All Categories' || item.category === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+        if (a._id && b._id) {
+            return b._id.toString().localeCompare(a._id.toString());
+        }
+        return 0;
+    });
 
   const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -863,7 +870,7 @@ const getImageUrl = (equipment) => {
         unit_price: parseFloat(newEquipment.amount), 
         date: newEquipment.date
       };
-      setEquipmentData(prevData => [...prevData, newEquipmentItem]);
+      setEquipmentData(prevData => [newEquipmentItem, ...prevData]);
 
       alert(`Equipment "${newEquipment.name}" added successfully!\nDocuments uploaded: ${equipmentDocumentFiles.length}`);
       setEquipmentDocumentFiles([]);
@@ -2157,7 +2164,7 @@ const printQRCode = () => {
   {selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 ? (
     <>
       {[...selectedEquipment.repairHistory]
-        .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
+        .sort((a, b) => new Date(a.repairDate) - new Date(b.repairDate))
         .map((repair, index) => (
         <tr key={index}>
           <td className="date-repair-cell">{repair.repairDate}</td>
@@ -2246,7 +2253,7 @@ const printQRCode = () => {
               <tbody>
                 ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
                   ? [...selectedEquipment.repairHistory]
-                      .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
+                      .sort((a, b) => new Date(a.repairDate) - new Date(b.repairDate))
                       .map(repair => `
                         <tr>
                           <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${repair.repairDate}</td>
@@ -2440,7 +2447,7 @@ const printQRCode = () => {
                 <tbody>
                   ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
                     ? [...selectedEquipment.repairHistory]
-                        .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
+                        .sort((a, b) => new Date(a.repairDate) - new Date(b.repairDate))
                         .map(repair => `
                         <tr>
                           <td>${repair.repairDate}</td>
