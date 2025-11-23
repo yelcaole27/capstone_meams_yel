@@ -2067,9 +2067,7 @@ const handleRemoveImage = async (supplyId) => {
                   name="status"
                   value={editItemForm.status}
                   readOnly
-                  style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed', color: '#555' }}
-                />
-              </div>
+                  style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed', color: '#555' }}/>
               </div>
               <div className="form-group">
                 <label>DATE:</label>
