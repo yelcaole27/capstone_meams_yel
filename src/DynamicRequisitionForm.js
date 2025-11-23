@@ -5,7 +5,7 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
     if (initialData && initialData.length > 0) {
       return initialData;
     }
-    return Array(15).fill(null).map(() => ({
+    return Array(20).fill(null).map(() => ({
       qty: '',
       unit: '',
       description: '',
@@ -29,7 +29,7 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
     setRows(newRows);
   };
 
-  const ROWS_PER_PAGE = 15;
+  const ROWS_PER_PAGE = 20;
   const paginatedRows = [];
   for (let i = 0; i < rows.length; i += ROWS_PER_PAGE) {
     paginatedRows.push(rows.slice(i, i + ROWS_PER_PAGE));
@@ -623,7 +623,7 @@ function DynamicRequisitionForm({ initialData, formType, onClose }) {
               </tbody>
             </table>
 
-            {renderFooter()}
+            {pageIndex === paginatedRows.length - 1 && renderFooter()}
             
             <div className="print-only" style={{
               textAlign: 'right',
