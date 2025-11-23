@@ -1778,60 +1778,131 @@ const printQRCode = () => {
 
             
             <div className="item-overview-actions">
-  <button className="action-btn repair-btn" onClick={handleReportRepair}>
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-    Report Repair
-  </button>
+            <button 
+              className="action-btn repair-btn" 
+              onClick={handleReportRepair}
+              style={{ 
+                background: '#ef4444', // Red (Urgent Action/Problem)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                fontWeight: '600',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 12L11 15L16 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Report Repair
+            </button>
   
-  <button className="action-btn update-btn" onClick={handleUpdateEquipment}>
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M18.5 2.50023C18.8978 2.10243 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.10243 21.5 2.50023C21.8978 2.89804 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.10243 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-    Update Equipment
-  </button>
+            <button 
+              className="action-btn update-btn" 
+              onClick={handleUpdateEquipment}
+              style={{ 
+                background: '#3b82f6', // Bright Blue (Primary Transactional Action)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                fontWeight: '600',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18.5 2.50023C18.8978 2.10243 19.4374 1.87891 20 1.87891C20.5626 1.87891 21.1022 2.10243 21.5 2.50023C21.8978 2.89804 22.1213 3.43762 22.1213 4.00023C22.1213 4.56284 21.8978 5.10243 21.5 5.50023L12 15.0002L8 16.0002L9 12.0002L18.5 2.50023Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Update Equipment
+            </button>
 
-  <button className="action-btn view-stock-btn" onClick={handleViewMaintenanceLog}>
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-    View Maintenance Log ▪
-  </button>
+            <button 
+              className="action-btn view-stock-btn" 
+              onClick={handleViewMaintenanceLog}
+              style={{ 
+                background: '#10b981', // Teal/Green (View Logs)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 2V8H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 13H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 17H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 9H9H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              View Maintenance Log
+            </button>
   
-  <button 
-  className="action-btn view-docs-btn"
-  onClick={handleViewEquipmentDocuments}
->
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-    Documents ⌕
-  </button>
+            <button 
+              className="action-btn view-docs-btn"
+              onClick={handleViewEquipmentDocuments}
+              style={{ 
+                background: '#6b7280', // Gray (Documents)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 2V8H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 13H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 17H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Documents
+            </button>
   
-  <button 
-    className="action-btn qr-code-btn"
-    onClick={() => generateQRCode(selectedEquipment)}
-  >
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-      <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
-      <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
-      <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
-      <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
-      <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
-    </svg>
-    Generate QR-code ⚙
-  </button>
+            <button 
+              className="action-btn qr-code-btn"
+              onClick={() => generateQRCode(selectedEquipment)}
+              style={{ 
+                background: '#f97316', // Orange (Export/Generate)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="white" strokeWidth="2"/>
+                <rect x="7" y="7" width="3" height="3" fill="white"/>
+                <rect x="14" y="7" width="3" height="3" fill="white"/>
+                <rect x="7" y="14" width="3" height="3" fill="white"/>
+                <rect x="14" y="14" width="3" height="3" fill="white"/>
+                <rect x="11" y="11" width="2" height="2" fill="white"/>
+              </svg>
+              Generate QR-code
+            </button>
 </div>
             
             <button className="close-overview-btn" onClick={handleCloseEquipmentOverview}>
