@@ -1828,68 +1828,130 @@ const handleRemoveImage = async (supplyId) => {
             
             <div className="item-overview-actions">
               <button 
-                className="action-btn view-stock-btn"
-                onClick={() => handleViewStockCard(selectedItem)}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                View Stock Card ▦
-              </button>
+              className="action-btn view-stock-btn"
+              onClick={() => handleViewStockCard(selectedItem)}
+              style={{ 
+                background: '#10b981', // Teal/Green (View Information)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 2V8H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 13H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 17H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 9H9H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              View Stock Card
+            </button>
               
               <button 
-  className="action-btn view-docs-btn"
-  onClick={handleViewDocuments}
->
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-  Documents ⌕
-</button>
+              className="action-btn view-docs-btn"
+              onClick={handleViewDocuments}
+              style={{ 
+                background: '#6b7280', // Gray (Documents)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 2V8H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 13H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 17H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Documents
+            </button>
               
               <button 
-                className="action-btn qr-code-btn"
-                onClick={() => generateQRCode(selectedItem)}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-                  <rect x="7" y="7" width="3" height="3" fill="currentColor"/>
-                  <rect x="14" y="7" width="3" height="3" fill="currentColor"/>
-                  <rect x="7" y="14" width="3" height="3" fill="currentColor"/>
-                  <rect x="14" y="14" width="3" height="3" fill="currentColor"/>
-                  <rect x="11" y="11" width="2" height="2" fill="currentColor"/>
-                </svg>
-                Generate QR-code ⚏
-              </button>
+              className="action-btn qr-code-btn"
+              onClick={() => generateQRCode(selectedItem)}
+              style={{ 
+                background: '#f97316', // Orange (Export/Generate)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="white" strokeWidth="2"/>
+                <rect x="7" y="7" width="3" height="3" fill="white"/>
+                <rect x="14" y="7" width="3" height="3" fill="white"/>
+                <rect x="7" y="14" width="3" height="3" fill="white"/>
+                <rect x="14" y="14" width="3" height="3" fill="white"/>
+                <rect x="11" y="11" width="2" height="2" fill="white"/>
+              </svg>
+              Generate QR-code
+            </button>
 
               {/* Update Quantity Button */}
               <button 
-                className="action-btn update-quantity-btn"
-                onClick={handleOpenUpdateQuantity}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Update Quantity
-              </button>
+              className="action-btn update-quantity-btn"
+              onClick={handleOpenUpdateQuantity}
+              style={{ 
+                background: '#3b82f6', // Bright Blue (Primary Action)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                fontWeight: '600',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M12 5V19M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Update Quantity
+            </button>
 
               {/* Edit Item Button */}
               <button 
-                className="action-btn edit-item-btn"
-                onClick={handleOpenEditItem}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Edit Item
-              </button>
+              className="action-btn edit-item-btn"
+              onClick={handleOpenEditItem}
+              style={{ 
+                background: '#8b5cf6', // Purple (Edit/Settings)
+                color: 'white',
+                border: 'none',
+                padding: '10px 15px', 
+                fontSize: '14px',
+                fontWeight: '600',
+                borderRadius: '6px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white">
+                <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Edit Item
+            </button>
               
             </div>
             
