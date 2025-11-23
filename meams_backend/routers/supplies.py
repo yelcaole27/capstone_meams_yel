@@ -1,7 +1,7 @@
 """
 Supplies router - handles all supply-related endpoints including documents
 """
-from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Query
 from bson import ObjectId
 from fastapi.responses import HTMLResponse
 from datetime import datetime
@@ -308,7 +308,11 @@ async def remove_document(
 
 
 @router.get("/scan/{supply_id}", response_class=HTMLResponse)
-async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(None)):
+async def scan_supply_qr(
+    supply_id: str, 
+    authorization: Optional[str] = Header(None),
+    show_full: bool = Query(False)
+):
     """
     Handle QR code scan - fetches CURRENT data from database
     NOW REQUIRES AUTHENTICATION
@@ -371,33 +375,62 @@ async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(N
         # Build transaction history HTML
         transaction_html = ""
         if supply.get('transactionHistory'):
-            recent = sorted(supply['transactionHistory'], 
+            all_transactions = sorted(supply['transactionHistory'], 
                            key=lambda x: x.get('date', ''), 
-                           reverse=True)[:5]
+                           reverse=True)
+            
+            # Show only recent 5 or all based on show_full parameter
+            transactions_to_show = all_transactions if show_full else all_transactions[:5]
             
             rows = ""
-            for trans in recent:
+            for trans in transactions_to_show:
                 rows += f"""
                 <tr>
-                    <td>{trans.get('date', 'N/A')}</td>
-                    <td>{trans.get('receipt') or '-'}</td>
-                    <td>{trans.get('issue') or '-'}</td>
-                    <td style="font-weight: 600;">{trans.get('balance', 0)}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{trans.get('date', 'N/A')}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">{trans.get('receipt') or '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">{trans.get('issue') or '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 600;">{trans.get('balance', 0)}</td>
                 </tr>
                 """
             
+            # Show button only if there are more than 5 transactions and not showing full
+            view_full_button = ""
+            if len(all_transactions) > 5 and not show_full:
+                view_full_button = f"""
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.location.href='/api/supplies/scan/{supply_id}?show_full=true'" 
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                   color: white; 
+                                   padding: 12px 30px; 
+                                   border: none; 
+                                   border-radius: 8px; 
+                                   font-size: 16px; 
+                                   font-weight: 600; 
+                                   cursor: pointer;
+                                   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                                   transition: transform 0.2s;">
+                        📊 View Full Stock Card ({len(all_transactions)} transactions)
+                    </button>
+                </div>
+                """
+            
+            showing_text = f"Showing All {len(all_transactions)} Transactions" if show_full else f"Recent 5 of {len(all_transactions)} Transactions"
+            
             transaction_html = f"""
-            <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
-                <h3 style="margin: 0 0 10px 0;">Recent Transactions</h3>
+            <div style="margin-top: 20px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 15px 0; color: #1f2937; border-bottom: 3px solid #667eea; padding-bottom: 10px;">
+                    📊 Transaction History {f'<span style="font-size: 14px; color: #6b7280; font-weight: normal;">({showing_text})</span>' if len(all_transactions) > 5 else ''}
+                </h3>
                 <table style="width: 100%; border-collapse: collapse;">
-                    <tr style="background: #3d9130; color: white;">
-                        <th style="padding: 8px; text-align: left;">Date</th>
-                        <th style="padding: 8px;">Receipt</th>
-                        <th style="padding: 8px;">Issue</th>
-                        <th style="padding: 8px;">Balance</th>
+                    <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 10px; text-align: left; font-weight: 600; color: #4b5563;">Date</th>
+                        <th style="padding: 10px; text-align: center; font-weight: 600; color: #4b5563;">Receipt</th>
+                        <th style="padding: 10px; text-align: center; font-weight: 600; color: #4b5563;">Issue</th>
+                        <th style="padding: 10px; text-align: center; font-weight: 600; color: #4b5563;">Balance</th>
                     </tr>
                     {rows}
                 </table>
+                {view_full_button}
             </div>
             """
         
@@ -518,6 +551,9 @@ async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(N
                    color: #3d9130;
                    margin-top: 10px;
                 }}
+                button:hover {{
+                    transform: translateY(-2px) !important;
+                }}
             </style>
         </head>
         <body>
@@ -602,31 +638,38 @@ async def scan_supply_qr(supply_id: str, authorization: Optional[str] = Header(N
 async def verify_scan_access(credentials: dict):
     """
     Verify user credentials for QR code access
+    Accepts BOTH email OR username with password
     Returns a temporary access token if valid
     """
     from services.auth_service import authenticate_user, create_access_token
     from datetime import timedelta
     from database import get_accounts_collection
     
-    email = credentials.get('email')
+    identifier = credentials.get('identifier')  # Can be email OR username
     password = credentials.get('password')
     
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="Email and password required")
+    if not identifier or not password:
+        raise HTTPException(status_code=400, detail="Username/Email and password required")
     
-    # Find user by email
     accounts_collection = get_accounts_collection()
-    user_doc = accounts_collection.find_one({"email": email})
+    
+    # Try to find user by email OR username
+    user_doc = accounts_collection.find_one({
+        "$or": [
+            {"email": identifier},
+            {"username": identifier}
+        ]
+    })
     
     if not user_doc:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Get username and authenticate
     username = user_doc.get('username')
     user = authenticate_user(username, password)
     
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Check if account is active
     if user.get("status") == False:
@@ -768,14 +811,14 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
             
             <form id="authForm">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
+                    <label for="identifier">Username or Email</label>
                     <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="Enter your email"
+                        type="text" 
+                        id="identifier" 
+                        name="identifier" 
+                        placeholder="Enter username or email"
                         required
-                        autocomplete="email"
+                        autocomplete="username"
                     />
                 </div>
                 
@@ -809,7 +852,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                 
                 const submitBtn = document.getElementById('submitBtn');
                 const errorMsg = document.getElementById('errorMsg');
-                const email = document.getElementById('email').value;
+                const identifier = document.getElementById('identifier').value;
                 const password = document.getElementById('password').value;
                 
                 // Disable button and show loading
@@ -825,7 +868,7 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                             'Content-Type': 'application/json'
                         }},
                         body: JSON.stringify({{
-                            email: email,  // Send full email
+                            identifier: identifier,
                             password: password
                         }})
                     }});
@@ -837,44 +880,31 @@ def generate_auth_required_html(item_type: str, item_id: str) -> str:
                     
                     const authData = await authResponse.json();
                     
-                    // Store token temporarily
-                    sessionStorage.setItem('qr_access_token', authData.access_token);
+                    // Fetch supply page with token in header
+                    const supplyResponse = await fetch(`${{API_URL}}/api/supplies/scan/${{ITEM_ID}}`, {{
+                        headers: {{
+                            'Authorization': `Bearer ${{authData.access_token}}`
+                        }}
+                    }});
                     
-                    // Reload page with authorization header
-                    window.location.href = `${{API_URL}}/api/supplies/scan/${{ITEM_ID}}?token=${{authData.access_token}}`;
+                    if (!supplyResponse.ok) {{
+                        throw new Error('Failed to load supply details');
+                    }}
+                    
+                    // Replace current page with supply details
+                    const html = await supplyResponse.text();
+                    document.open();
+                    document.write(html);
+                    document.close();
                     
                 }} catch (error) {{
                     console.error('Authentication error:', error);
-                    errorMsg.textContent = error.message || 'Invalid email or password';
+                    errorMsg.textContent = error.message || 'Invalid credentials';
                     errorMsg.classList.add('show');
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Access Supply Information';
                 }}
             }});
-            
-            // Check if we have a token in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            
-            if (token) {{
-                // Redirect to authenticated endpoint
-                fetch(`${{API_URL}}/api/supplies/scan/${{ITEM_ID}}`, {{
-                    headers: {{
-                        'Authorization': `Bearer ${{token}}`
-                    }}
-                }})
-                .then(response => response.text())
-                .then(html => {{
-                    document.open();
-                    document.write(html);
-                    document.close();
-                }})
-                .catch(error => {{
-                    console.error('Error:', error);
-                    document.getElementById('errorMsg').textContent = 'Session expired. Please login again.';
-                    document.getElementById('errorMsg').classList.add('show');
-                }});
-            }}
         </script>
     </body>
     </html>
