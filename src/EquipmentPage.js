@@ -2238,7 +2238,7 @@ const printQRCode = () => {
   {selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 ? (
     <>
       {[...selectedEquipment.repairHistory]
-        .sort((a, b) => new Date(a.repairDate) - new Date(b.repairDate))
+        .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
         .map((repair, index) => (
         <tr key={index}>
           <td className="date-repair-cell">{repair.repairDate}</td>
@@ -2327,7 +2327,7 @@ const printQRCode = () => {
               <tbody>
                 ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
                   ? [...selectedEquipment.repairHistory]
-                      .sort((a, b) => new Date(a.repairDate) - new Date(b.repairDate))
+                      .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
                       .map(repair => `
                         <tr>
                           <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${repair.repairDate}</td>
@@ -2521,7 +2521,7 @@ const printQRCode = () => {
                 <tbody>
                   ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
                     ? [...selectedEquipment.repairHistory]
-                        .sort((a, b) => new Date(a.repairDate) - new Date(b.repairDate))
+                        .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
                         .map(repair => `
                         <tr>
                           <td>${repair.repairDate}</td>
