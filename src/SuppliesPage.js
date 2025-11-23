@@ -2062,17 +2062,14 @@ const handleRemoveImage = async (supplyId) => {
               </div>
               <div className="form-group">
                 <label>STATUS:</label>
-                <div className="category-dropdown">
-                  <select
-                    name="status"
-                    value={editItemForm.status}
-                    onChange={handleEditItemInputChange}
-                  >
-                    {statusOptions.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  type="text"
+                  name="status"
+                  value={editItemForm.status}
+                  readOnly
+                  style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed', color: '#555' }}
+                />
+              </div>
               </div>
               <div className="form-group">
                 <label>DATE:</label>
