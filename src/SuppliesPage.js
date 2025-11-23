@@ -2360,189 +2360,193 @@ const handleRemoveImage = async (supplyId) => {
 )}
 
 {/* Recommendations Modal */}
-{showRecommendations && (
-  <div className="overlay" onClick={handleCloseRecommendations}>
-    <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
-      <button className="close-overview-btn" onClick={handleCloseRecommendations}>×</button>
-      <h3>Stock Management Recommendations</h3>
-      
-      <div className="recommendations-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-        {recommendations.length > 0 ? (
-          recommendations.map((rec, index) => (
-            <div 
-              key={index} 
-              className="recommendation-item"
-              style={{
-                background: rec.priority === 'critical' ? '#fee2e2' : 
-                           rec.priority === 'high' ? '#fef3c7' : '#f3f4f6',
-                border: `1px solid ${rec.priority === 'critical' ? '#fca5a5' : 
-                                   rec.priority === 'high' ? '#fcd34d' : '#d1d5db'}`,
-                borderRadius: '8px',
-                padding: '15px',
-                marginBottom: '10px'
-              }}
-            >
-              <div className="rec-header" style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '8px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="rec-type" style={{
-                    background: rec.priority === 'critical' ? '#dc2626' : 
-                               rec.priority === 'high' ? '#d97706' : '#6b7280',
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase'
-                  }}>
-                    {rec.priority} - {rec.type}
-                  </span>
-                  {rec.action && (
-                    <span style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>
-                      {rec.action}
-                    </span>
-                  )}
-                </div>
-                <span className="rec-item" style={{ fontSize: '12px', color: '#666' }}>
-                  {rec.item.itemName}
-                </span>
-              </div>
-              
-              <p className="rec-message" style={{ 
-                margin: '0 0 10px 0', 
-                fontSize: '14px', 
-                color: '#333' 
-              }}>
-                {rec.message}
-              </p>
-              
-              {/* Enhanced recommendation details */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '11px', color: '#666' }}>
-                  <strong>Current:</strong> {rec.item.quantity} {rec.item.unit || 'units'}
-                </div>
-                {rec.suggestedQuantity && (
-                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold' }}>
-                    <strong>Suggested:</strong> {rec.suggestedQuantity} {rec.item.unit || 'units'}
-                  </div>
-                )}
-                {rec.excessQuantity && (
-                  <div style={{ fontSize: '11px', color: '#d97706', fontWeight: 'bold' }}>
-                    <strong>Excess:</strong> {rec.excessQuantity} {rec.item.unit || 'units'}
-                  </div>
-                )}
-              </div>
-              
-              {/* Action buttons for recommendations */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <button 
-                  style={{
-                    fontSize: '10px',
-                    padding: '4px 8px',
-                    background: '#6366f1',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    setSelectedItem(rec.item);
-                    setIsItemOverviewOpen(true);
-                    setShowRecommendations(false);
-                  }}
-                >
-                  View Item
-                </button>
-                
-                {rec.type === 'reorder' && (
-                  <button 
+      {showRecommendations && (
+        <div className="overlay" onClick={handleCloseRecommendations}>
+          <div className="overlay-content" onClick={(e) => e.stopPropagation()}>
+            <button className="close-overview-btn" onClick={handleCloseRecommendations}>×</button>
+            <h3>Stock Management Recommendations</h3>
+            
+            <div className="recommendations-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {recommendations.length > 0 ? (
+                recommendations.map((rec, index) => (
+                  <div 
+                    key={index} 
+                    className="recommendation-item"
                     style={{
-                      fontSize: '10px',
-                      padding: '4px 8px',
-                      background: '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => {
-                      setSelectedItem(rec.item);
-                      setShowRecommendations(false);
-                      handleOpenUpdateQuantity();
+                      background: rec.priority === 'critical' ? '#fee2e2' : 
+                                 rec.priority === 'high' ? '#fef3c7' : '#f3f4f6',
+                      border: `1px solid ${rec.priority === 'critical' ? '#fca5a5' : 
+                                         rec.priority === 'high' ? '#fcd34d' : '#d1d5db'}`,
+                      borderRadius: '8px',
+                      padding: '15px',
+                      marginBottom: '10px'
                     }}
                   >
-                    Update Stock
-                  </button>
-                )}
-                
-                <button 
-                  style={{
-                    fontSize: '10px',
-                    padding: '4px 8px',
-                    background: '#8b5cf6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    setSelectedItem(rec.item);
-                    setShowRecommendations(false);
-                    handleOpenThresholdModal();
-                  }}
-                >
-                  Set Thresholds
-                </button>
-              </div>
+                    <div className="rec-header" style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      marginBottom: '8px'
+                    }}>
+                      {/* 1. ITEM NAME (Moved to Left & Styled for distinction) */}
+                      <span className="rec-item" style={{ 
+                        fontSize: '18px', 
+                        fontWeight: 'bold', 
+                        color: '#1a1a1a' 
+                      }}>
+                        {rec.item.itemName}
+                      </span>
+
+                      {/* 2. STATUS BADGE (Moved to Right) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {rec.action && (
+                          <span style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>
+                            {rec.action}
+                          </span>
+                        )}
+                        <span className="rec-type" style={{
+                          background: rec.priority === 'critical' ? '#dc2626' : 
+                                     rec.priority === 'high' ? '#d97706' : '#6b7280',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase'
+                        }}>
+                          {rec.priority} - {rec.type}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className="rec-message" style={{ 
+                      margin: '0 0 10px 0', 
+                      fontSize: '14px', 
+                      color: '#333' 
+                    }}>
+                      {rec.message}
+                    </p>
+                    
+                    {/* Enhanced recommendation details */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '11px', color: '#666' }}>
+                        <strong>Current:</strong> {rec.item.quantity} {rec.item.unit || 'units'}
+                      </div>
+                      {rec.suggestedQuantity && (
+                        <div style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold' }}>
+                          <strong>Suggested:</strong> {rec.suggestedQuantity} {rec.item.unit || 'units'}
+                        </div>
+                      )}
+                      {rec.excessQuantity && (
+                        <div style={{ fontSize: '11px', color: '#d97706', fontWeight: 'bold' }}>
+                          <strong>Excess:</strong> {rec.excessQuantity} {rec.item.unit || 'units'}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Action buttons for recommendations */}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                      <button 
+                        style={{
+                          fontSize: '10px',
+                          padding: '4px 8px',
+                          background: '#6366f1',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          setSelectedItem(rec.item);
+                          setIsItemOverviewOpen(true);
+                          setShowRecommendations(false);
+                        }}
+                      >
+                        View Item
+                      </button>
+                      
+                      {rec.type === 'reorder' && (
+                        <button 
+                          style={{
+                            fontSize: '10px',
+                            padding: '4px 8px',
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            setSelectedItem(rec.item);
+                            setShowRecommendations(false);
+                            handleOpenUpdateQuantity();
+                          }}
+                        >
+                          Update Stock
+                        </button>
+                      )}
+                      
+                      <button 
+                        style={{
+                          fontSize: '10px',
+                          padding: '4px 8px',
+                          background: '#8b5cf6',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          setSelectedItem(rec.item);
+                          setShowRecommendations(false);
+                          handleOpenThresholdModal();
+                        }}
+                      >
+                        Set Thresholds
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px', 
+                  color: '#666' 
+                }}>
+                  <p>No recommendations at this time.</p>
+                  <p style={{ fontSize: '12px' }}>All items are within normal stock levels.</p>
+                </div>
+              )}
             </div>
-          ))
-        ) : (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#666' 
-          }}>
-            <p>No recommendations at this time.</p>
-            <p style={{ fontSize: '12px' }}>All items are within normal stock levels.</p>
-          </div>
-        )}
-      </div>
-      
-      {/* Summary section */}
-      {recommendations.length > 0 && (
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '15px', 
-          background: '#f8f9fa', 
-          borderRadius: '8px',
-          border: '1px solid #ddd'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>
-            Summary
-          </h4>
-          <div style={{ display: 'flex', gap: '15px', fontSize: '12px' }}>
-            <span>
-              <strong>Critical:</strong> {recommendations.filter(r => r.priority === 'critical').length}
-            </span>
-            <span>
-              <strong>High:</strong> {recommendations.filter(r => r.priority === 'high').length}
-            </span>
-            <span>
-              <strong>Medium:</strong> {recommendations.filter(r => r.priority === 'medium').length}
-            </span>
-            <span>
-              <strong>Low:</strong> {recommendations.filter(r => r.priority === 'low').length}
-            </span>
+            
+            {/* Summary section */}
+            {recommendations.length > 0 && (
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '15px', 
+                background: '#f8f9fa', 
+                borderRadius: '8px',
+                border: '1px solid #ddd'
+              }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#333' }}>
+                  Recommendation Summary:
+                </h4>
+                <div style={{ display: 'flex', gap: '15px', fontSize: '12px' }}>
+                  <span>
+                    <strong>Critical:</strong> {recommendations.filter(r => r.priority === 'critical').length}
+                  </span>
+                  <span>
+                    <strong>High:</strong> {recommendations.filter(r => r.priority === 'high').length}
+                  </span>
+                  <span>
+                    <strong>Medium:</strong> {recommendations.filter(r => r.priority === 'medium').length}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
-    </div>
-  </div>
-)}
 
 {isStockCardOpen && selectedItem && (
   <div className="modal-overlay" onClick={handleCloseStockCard}>
