@@ -56,37 +56,38 @@ function DashboardPage() {
 };
 
  const getUnderstockData = () => {
-  // ✅ FIXED: Apply threshold calculation to ensure accurate status
   const itemsWithCorrectStatus = suppliesData.map(supply => {
-    // Create a temporary item object for threshold calculation
     const tempItem = {
       itemName: supply.itemName || supply.name,
       category: supply.category,
       quantity: supply.quantity
     };
     
-    // Calculate the correct status using threshold manager
     const calculatedStatus = supplyThresholdManager.calculateStatus(tempItem);
     
     return {
       ...supply,
-      status: calculatedStatus // Use calculated status instead of raw status
+      status: calculatedStatus
     };
   });
   
-  // Filter items that are actually understock
   const understockItems = itemsWithCorrectStatus.filter(item => {
     const status = (item.status || '').toLowerCase().trim();
-    
-    console.log(`✅ Checking ${item.itemName || item.name}: status="${status}", quantity=${item.quantity}`);
-    
     return status === 'understock';
   });
   
-  console.log('📊 Understock items found:', understockItems.length);
-  console.log('📊 Total supplies:', suppliesData.length);
-  
-  return understockItems;
+  // ✅ NEW: Sort by date (newest first) or _id
+  return understockItems.sort((a, b) => {
+    // Try sorting by date first
+    if (a.date && b.date) {
+      return new Date(b.date) - new Date(a.date);
+    }
+    // Fall back to _id sorting (MongoDB IDs are chronological)
+    if (a._id && b._id) {
+      return b._id.toString().localeCompare(a._id.toString());
+    }
+    return 0;
+  });
 };
 
   const getEquipmentBeyondLifeData = () => {
@@ -120,7 +121,14 @@ function DashboardPage() {
 
       return recommendReplacement;
     });
-  };
+    // ✅ NEW: Sort by age (oldest equipment first = most critical)
+  return replacementEquipment.sort((a, b) => {
+    const dateA = a.date ? new Date(a.date) : new Date();
+    const dateB = b.date ? new Date(b.date) : new Date();
+    // Sort oldest first (most critical for replacement)
+    return dateA - dateB;
+  });
+};
 
   const getEquipmentMaintenanceData = () => {
     return equipmentData.filter(equipment => {
@@ -129,7 +137,14 @@ function DashboardPage() {
              equipment.status?.toLowerCase().includes('repair') ||
              equipment.status?.toLowerCase().includes('service');
     });
-  };
+  // ✅ NEW: Sort by report date (most recent first)
+  return maintenanceEquipment.sort((a, b) => {
+    const dateA = a.reportDate ? new Date(a.reportDate) : new Date(0);
+    const dateB = b.reportDate ? new Date(b.reportDate) : new Date(0);
+    // Sort newest report first
+    return dateB - dateA;
+  });
+};
 
   const getEquipmentPurchaseData = () => {
     return equipmentData.filter(equipment => {
