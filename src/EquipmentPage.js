@@ -2438,17 +2438,20 @@ const printQRCode = () => {
           ? [...selectedEquipment.repairHistory].sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
           : [];
 
-        // Fill remaining rows with empty data to reach minimum rows per page
+        // Don't fill with empty rows - use actual repairs only
         const filledRepairs = [...repairs];
-        while (filledRepairs.length < ROWS_PER_PAGE) {
-          filledRepairs.push({ repairDate: '', repairDetails: '', amountUsed: '' });
-        }
-
+      
         // Paginate repairs
         const paginatedRepairs = [];
         for (let i = 0; i < filledRepairs.length; i += ROWS_PER_PAGE) {
           paginatedRepairs.push(filledRepairs.slice(i, i + ROWS_PER_PAGE));
         }
+
+        // If no repairs exist, show a single page with a message
+if (paginatedRepairs.length === 0 || (paginatedRepairs.length === 1 && paginatedRepairs[0].length === 0)) {
+  paginatedRepairs[0] = [{ repairDate: '', repairDetails: 'No repair history available', amountUsed: '' }];
+}
+
 
         const renderHeader = () => (
           <div style={{ border: 'none', marginBottom: '15px' }}>
