@@ -2874,35 +2874,35 @@ const handleRemoveImage = async (supplyId) => {
         }
 
         const renderHeader = () => (
-          <div style={{ border: 'none', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '15px' }}>
-              <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
-              <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#000000' }}>Universidad De Manila</h3>
-                <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#000000' }}>Stock Card</p>
-              </div>
-            </div>
+  <div style={{ border: 'none', marginBottom: '20px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '15px' }}>
+      <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
+      <div style={{ textAlign: 'center' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#000000' }}>Universidad De Manila</h3>
+        <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#000000' }}>Stock Card</p>
+      </div>
+    </div>
 
-            <div style={{ borderTop: '1px solid #333', margin: '20px 0' }}></div>
+    <div style={{ borderTop: '1px solid #333', margin: '15px 0' }}></div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #333' }}>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedItem.itemName || 'N/A'}</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Stock No.:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedItem.stockNo || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Category:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedItem.category || 'N/A'}</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Description:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedItem.description || 'N/A'}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        );
+    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', border: '1px solid #333' }}>
+      <tbody>
+        <tr>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item:</td>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedItem.itemName || 'N/A'}</td>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Stock No.:</td>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedItem.stockNo || 'N/A'}</td>
+        </tr>
+        <tr>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Category:</td>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedItem.category || 'N/A'}</td>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Description:</td>
+          <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedItem.description || 'N/A'}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+);
 
         return (
           <>
