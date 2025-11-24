@@ -2893,7 +2893,7 @@ if (paginatedTransactions.length === 0 || (paginatedTransactions.length === 1 &&
 
     <div style={{ borderTop: '1px solid #333', margin: '10px 0' }}></div>
 
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', border: '1px solid #333' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px'}}>
       <tbody>
         <tr>
           <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item:</td>
