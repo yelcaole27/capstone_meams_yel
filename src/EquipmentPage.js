@@ -2445,7 +2445,7 @@ const printQRCode = () => {
 
         const renderHeader = () => (
           <div style={{ border: 'none', marginBottom: '15px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', gap: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', gap: '15px' }}>
               <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
               <div style={{ textAlign: 'center' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#000000' }}>Universidad De Manila</h3>
@@ -2453,24 +2453,18 @@ const printQRCode = () => {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid #333', margin: '10px 0' }}></div>
+            <div style={{ borderTop: '2px solid #333', marginBottom: '15px' }}></div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', border: '1px solid #333' }}>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Equipment Name:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedEquipment.name || 'N/A'}</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item Code:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedEquipment.itemCode || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Description:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedEquipment.description || 'N/A'}</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Price:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>₱{selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div style={{ marginBottom: '15px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <div><strong>Equipment Name:</strong> {selectedEquipment.name || 'N/A'}</div>
+                <div><strong>Item Code:</strong> {selectedEquipment.itemCode || 'N/A'}</div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div><strong>Description:</strong> {selectedEquipment.description || 'N/A'}</div>
+                <div><strong>Price:</strong> ₱{selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</div>
+              </div>
+            </div>
           </div>
         );
 
