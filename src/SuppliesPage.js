@@ -2916,14 +2916,14 @@ const handleRemoveImage = async (supplyId) => {
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  border: '2px solid #333',
+                  border: '1px solid #333',
                   marginBottom: '5px'
                 }}>
                   <thead>
                     <tr>
                       <th rowSpan="2" style={{
                         border: '1px solid #333',
-                        padding: '8px',
+                        padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2933,7 +2933,7 @@ const handleRemoveImage = async (supplyId) => {
                       }}>Date</th>
                       <th colSpan="3" style={{
                         border: '1px solid #333',
-                        padding: '8px',
+                        padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2944,7 +2944,7 @@ const handleRemoveImage = async (supplyId) => {
                     <tr>
                       <th style={{
                         border: '1px solid #333',
-                        padding: '8px',
+                        padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2954,7 +2954,7 @@ const handleRemoveImage = async (supplyId) => {
                       }}>Receipt</th>
                       <th style={{
                         border: '1px solid #333',
-                        padding: '8px',
+                        padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2964,7 +2964,7 @@ const handleRemoveImage = async (supplyId) => {
                       }}>Issue</th>
                       <th style={{
                         border: '1px solid #333',
-                        padding: '8px',
+                        padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2979,34 +2979,34 @@ const handleRemoveImage = async (supplyId) => {
                       <tr key={index}>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '8px',
+                          padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px',
+                          height: '26px',
                           color: '#000000'
                         }}>{transaction.date || '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '8px',
+                          padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px',
+                          height: '26px',
                           color: '#000000'
                         }}>{transaction.receipt !== null && transaction.receipt !== undefined && transaction.receipt !== '' ? transaction.receipt : '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '8px',
+                          padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px',
+                          height: '26px',
                           color: '#000000'
                         }}>{transaction.issue !== null && transaction.issue !== undefined && transaction.issue !== '' ? transaction.issue : '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '8px',
+                          padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px',
+                          height: '26px',
                           color: '#000000'
                         }}>{transaction.balance !== null && transaction.balance !== undefined && transaction.balance !== '' ? transaction.balance : '\u00A0'}</td>
                       </tr>
