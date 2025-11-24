@@ -2699,6 +2699,7 @@ const handleRemoveImage = async (supplyId) => {
       width: 100% !important;
       border: none !important;
       outline: none !important;
+      box-shadow: none !important;
     }
     
     .modal-content {
@@ -2724,6 +2725,9 @@ const handleRemoveImage = async (supplyId) => {
     .print-only {
       display: block !important;
       visibility: visible !important;
+      border: none !important;
+      box-shadow: none !important;
+      outline: none !important;
     }
     
     .print-page-wrapper {
@@ -2740,6 +2744,7 @@ const handleRemoveImage = async (supplyId) => {
       margin-bottom: 0 !important;
       padding-bottom: 0 !important;
       border-bottom: none !important;
+      box-shadow: none !important;
     }
     
     .print-page-wrapper:last-of-type {
@@ -2766,11 +2771,15 @@ const handleRemoveImage = async (supplyId) => {
       color: black !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      border: none !important;
+      box-shadow: none !important;
+      outline: none !important;
     }
     
     /* Force black text in print */
     * {
       color: black !important;
+      box-shadow: none !important;
     }
     
     /* Preserve gray backgrounds for headers */
