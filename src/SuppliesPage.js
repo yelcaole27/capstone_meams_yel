@@ -2877,8 +2877,8 @@ const handleRemoveImage = async (supplyId) => {
         }
 
         const renderHeader = () => (
-  <div style={{ border: 'none', marginBottom: '20px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '15px' }}>
+  <div style={{ border: 'none', marginBottom: '15px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', gap: '15px' }}>
       <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
       <div style={{ textAlign: 'center' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#000000' }}>Universidad De Manila</h3>
@@ -2886,9 +2886,9 @@ const handleRemoveImage = async (supplyId) => {
       </div>
     </div>
 
-    <div style={{ borderTop: '1px solid #333', margin: '15px 0' }}></div>
+    <div style={{ borderTop: '1px solid #333', margin: '10px 0' }}></div>
 
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', border: '1px solid #333' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', border: '1px solid #333' }}>
       <tbody>
         <tr>
           <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item:</td>
@@ -2917,7 +2917,7 @@ const handleRemoveImage = async (supplyId) => {
                   width: '100%',
                   borderCollapse: 'collapse',
                   border: '2px solid #333',
-                  marginBottom: '10px'
+                  marginBottom: '5px'
                 }}>
                   <thead>
                     <tr>
@@ -3017,12 +3017,12 @@ const handleRemoveImage = async (supplyId) => {
                 <div className="print-only" style={{
                   textAlign: 'right',
                   fontSize: '10px',
-                  marginTop: '15px',
+                  marginTop: '5px',
                   color: 'black'
                 }}>
                   <div>Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                  <div>Page {pageIndex + 1} of {paginatedTransactions.length}</div>
-                </div>
+  <div>Page {pageIndex + 1} of {paginatedTransactions.length}</div>
+</div>
               </div>
             ))}
 
