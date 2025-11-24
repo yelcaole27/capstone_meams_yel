@@ -2645,6 +2645,26 @@ const handleRemoveImage = async (supplyId) => {
         background-color: white !important;
       }
       
+      .modal-content * {
+        color: black !important;
+      }
+      
+      .modal-content th {
+        color: black !important;
+      }
+      
+      .modal-content td {
+        color: black !important;
+      }
+      
+      .modal-content h3 {
+        color: black !important;
+      }
+      
+      .modal-content p {
+        color: black !important;
+      }
+      
       @media print {
         @page {
           size: letter portrait;
@@ -2753,6 +2773,7 @@ const handleRemoveImage = async (supplyId) => {
         /* Preserve gray backgrounds for headers */
         th {
           background-color: #e9ecef !important;
+          color: black !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
