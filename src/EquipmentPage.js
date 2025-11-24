@@ -2490,7 +2490,7 @@ const printQRCode = () => {
                     <tr>
                       <th style={{
                         border: '1px solid #333',
-                        padding: '6px 4px',
+                        padding: '8px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2500,7 +2500,7 @@ const printQRCode = () => {
                       }}>Repair Date</th>
                       <th style={{
                         border: '1px solid #333',
-                        padding: '6px 4px',
+                        padding: '8px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2510,7 +2510,7 @@ const printQRCode = () => {
                       }}>Repair Details</th>
                       <th style={{
                         border: '1px solid #333',
-                        padding: '6px 4px',
+                        padding: '8px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
@@ -2525,26 +2525,23 @@ const printQRCode = () => {
                       <tr key={index}>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '6px 4px',
+                          padding: '10px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '26px',
                           color: '#000000'
                         }}>{repair.repairDate || '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '6px 4px',
+                          padding: '10px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '26px',
                           color: '#000000'
                         }}>{repair.repairDetails || '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
-                          padding: '6px 4px',
+                          padding: '10px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '26px',
                           color: '#000000'
                         }}>{repair.amountUsed !== null && repair.amountUsed !== undefined && repair.amountUsed !== '' ? `₱${parseFloat(repair.amountUsed).toFixed(2)}` : '\u00A0'}</td>
                       </tr>
