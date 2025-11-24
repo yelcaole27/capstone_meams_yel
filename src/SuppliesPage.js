@@ -2857,26 +2857,29 @@ const handleRemoveImage = async (supplyId) => {
         const ROWS_PER_PAGE = 20;
         
         // Prepare transaction data
-        const transactions = selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
-          ? [...selectedItem.transactionHistory].sort((a, b) => new Date(b.date) - new Date(a.date))
-          : [{
-              date: selectedItem.date,
-              receipt: selectedItem.quantity,
-              issue: null,
-              balance: selectedItem.quantity
-            }];
+let transactions = selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
+  ? [...selectedItem.transactionHistory].sort((a, b) => new Date(b.date) - new Date(a.date))
+  : [];
 
-        // Fill remaining rows with empty data to reach minimum rows per page
+        // Don't fill with empty rows - use actual transactions only
         const filledTransactions = [...transactions];
-        while (filledTransactions.length < ROWS_PER_PAGE) {
-          filledTransactions.push({ date: '', receipt: '', issue: '', balance: '' });
-        }
+        
 
         // Paginate transactions
         const paginatedTransactions = [];
         for (let i = 0; i < filledTransactions.length; i += ROWS_PER_PAGE) {
           paginatedTransactions.push(filledTransactions.slice(i, i + ROWS_PER_PAGE));
         }
+
+        // If no transactions exist, show initial stock as first transaction
+if (paginatedTransactions.length === 0 || (paginatedTransactions.length === 1 && paginatedTransactions[0].length === 0)) {
+  paginatedTransactions[0] = [{
+    date: selectedItem.date || new Date().toISOString().slice(0, 10),
+    receipt: selectedItem.quantity || 0,
+    issue: null,
+    balance: selectedItem.quantity || 0
+  }];
+}
 
         const renderHeader = () => (
   <div style={{ border: 'none', marginBottom: '15px' }}>
