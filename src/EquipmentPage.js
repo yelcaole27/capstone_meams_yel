@@ -2487,7 +2487,6 @@ if (paginatedRepairs.length === 0 || (paginatedRepairs.length === 1 && paginated
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  border: '1px solid #333',
                   marginBottom: '5px'
                 }}>
                   <thead>
