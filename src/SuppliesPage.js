@@ -2924,10 +2924,7 @@ const handleRemoveImage = async (supplyId) => {
                   <thead>
                     <tr>
                       <th rowSpan="2" style={{
-                        borderTop: '1px solid #333',
-                        borderLeft: '1px solid #333',
-                        borderBottom: '1px solid #333',
-                        borderRight: '1px solid #333',
+                        border: '1px solid #333',
                         padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
@@ -2937,9 +2934,7 @@ const handleRemoveImage = async (supplyId) => {
                         color: '#000000'
                       }}>Date</th>
                       <th colSpan="3" style={{
-                        borderTop: '1px solid #333',
-                        borderBottom: '1px solid #333',
-                        borderRight: '1px solid #333',
+                        border: '1px solid #333',
                         padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
@@ -2950,9 +2945,7 @@ const handleRemoveImage = async (supplyId) => {
                     </tr>
                     <tr>
                       <th style={{
-                        borderTop: '1px solid #333',
-                        borderBottom: '1px solid #333',
-                        borderRight: '1px solid #333',
+                        border: '1px solid #333',
                         padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
@@ -2962,9 +2955,7 @@ const handleRemoveImage = async (supplyId) => {
                         color: '#000000'
                       }}>Receipt</th>
                       <th style={{
-                        borderTop: '1px solid #333',
-                        borderBottom: '1px solid #333',
-                        borderRight: '1px solid #333',
+                        border: '1px solid #333',
                         padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
@@ -2974,9 +2965,7 @@ const handleRemoveImage = async (supplyId) => {
                         color: '#000000'
                       }}>Issue</th>
                       <th style={{
-                        borderTop: '1px solid #333',
-                        borderBottom: '1px solid #333',
-                        borderRight: '1px solid #333',
+                        border: '1px solid #333',
                         padding: '6px 4px',
                         textAlign: 'center',
                         fontSize: '11px',
@@ -2991,9 +2980,7 @@ const handleRemoveImage = async (supplyId) => {
                     {pageTransactions.map((transaction, index) => (
                       <tr key={index}>
                         <td style={{
-                          borderLeft: '1px solid #333',
-                          borderBottom: '1px solid #333',
-                          borderRight: '1px solid #333',
+                          border: '1px solid #333',
                           padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
@@ -3001,8 +2988,7 @@ const handleRemoveImage = async (supplyId) => {
                           color: '#000000'
                         }}>{transaction.date || '\u00A0'}</td>
                         <td style={{
-                          borderBottom: '1px solid #333',
-                          borderRight: '1px solid #333',
+                          border: '1px solid #333',
                           padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
@@ -3010,8 +2996,7 @@ const handleRemoveImage = async (supplyId) => {
                           color: '#000000'
                         }}>{transaction.receipt !== null && transaction.receipt !== undefined && transaction.receipt !== '' ? transaction.receipt : '\u00A0'}</td>
                         <td style={{
-                          borderBottom: '1px solid #333',
-                          borderRight: '1px solid #333',
+                          border: '1px solid #333',
                           padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
@@ -3019,8 +3004,7 @@ const handleRemoveImage = async (supplyId) => {
                           color: '#000000'
                         }}>{transaction.issue !== null && transaction.issue !== undefined && transaction.issue !== '' ? transaction.issue : '\u00A0'}</td>
                         <td style={{
-                          borderBottom: '1px solid #333',
-                          borderRight: '1px solid #333',
+                          border: '1px solid #333',
                           padding: '6px 4px',
                           textAlign: 'center',
                           fontSize: '11px',
