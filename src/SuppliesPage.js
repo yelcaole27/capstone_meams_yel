@@ -2921,7 +2921,6 @@ if (paginatedTransactions.length === 0 || (paginatedTransactions.length === 1 &&
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  border: '1px solid #333',
                   marginBottom: '5px'
                 }}>
                   <thead>
