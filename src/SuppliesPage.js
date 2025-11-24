@@ -2914,7 +2914,7 @@ const handleRemoveImage = async (supplyId) => {
                   width: '100%',
                   borderCollapse: 'collapse',
                   border: '2px solid #333',
-                  marginBottom: '20px'
+                  marginBottom: '10px'
                 }}>
                   <thead>
                     <tr>
