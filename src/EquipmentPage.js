@@ -2189,377 +2189,413 @@ const printQRCode = () => {
   </div>
 )}
 
-    {showRepairDocument && selectedEquipment && (
-  <div className="modal-overlay" onClick={closeRepairDocument}>
-    <div className="repair-card-modal" onClick={(e) => e.stopPropagation()}>
-      <button className="modal-close-btn" onClick={closeRepairDocument}>
+   {showRepairDocument && selectedEquipment && (
+  <div 
+    className="modal-overlay"
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      overflow: 'auto',
+      padding: '20px'
+    }}
+    onClick={closeRepairDocument}
+  >
+    <style>{`
+      * {
+        box-sizing: border-box;
+      }
+      
+      .modal-content {
+        background-color: white !important;
+      }
+      
+      .modal-content * {
+        color: black !important;
+      }
+      
+      .modal-content th {
+        color: black !important;
+      }
+      
+      .modal-content td {
+        color: black !important;
+      }
+      
+      .modal-content h3 {
+        color: black !important;
+      }
+      
+      .modal-content p {
+        color: black !important;
+      }
+      
+      @media print {
+        @page {
+          size: letter portrait;
+          margin: 0.5in;
+        }
+        
+        body * {
+          visibility: hidden !important;
+        }
+        
+        .modal-overlay,
+        .modal-overlay * {
+          visibility: visible !important;
+        }
+        
+        html, body {
+          height: auto !important;
+          overflow: visible !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        .modal-overlay {
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          display: block !important;
+          background: white !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          height: auto !important;
+          width: 100% !important;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        .modal-content {
+          position: static !important;
+          max-width: 100% !important;
+          max-height: none !important;
+          width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+          overflow: visible !important;
+          height: auto !important;
+          border: none !important;
+          outline: none !important;
+        }
+        
+        .print-hidden {
+          display: none !important;
+          visibility: hidden !important;
+        }
+        
+        .print-only {
+          display: block !important;
+          visibility: visible !important;
+        }
+        
+        .print-page-wrapper {
+          page-break-after: always !important;
+          break-after: page !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          display: block !important;
+          height: auto !important;
+          min-height: 0 !important;
+          visibility: visible !important;
+          border: none !important;
+          outline: none !important;
+          margin-bottom: 0 !important;
+          padding-bottom: 0 !important;
+          border-bottom: none !important;
+          box-shadow: none !important;
+        }
+        
+        .print-page-wrapper:last-of-type {
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          visibility: visible !important;
+          border: 1px solid black !important;
+        }
+        
+        td, th {
+          border: 1px solid black !important;
+          padding: 4px !important;
+          color: black !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        h3, p, span, div {
+          color: black !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        * {
+          color: black !important;
+        }
+        
+        th {
+          background-color: #e9ecef !important;
+          color: black !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        td[style*="background: #f8f9fa"] {
+          background-color: #f8f9fa !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+      
+      @media screen {
+        .print-page-wrapper {
+          margin-bottom: 40px;
+          padding-bottom: 40px;
+          border-bottom: 3px dashed #999;
+        }
+        
+        .print-only {
+          display: none !important;
+        }
+        
+        .print-page-wrapper:last-of-type {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
+        }
+      }
+    `}</style>
+
+    <div 
+      className="modal-content" 
+      style={{
+        backgroundColor: 'white',
+        padding: '40px',
+        borderRadius: '8px',
+        width: '90%',
+        maxWidth: '900px',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        fontFamily: 'Arial, sans-serif',
+        position: 'relative',
+        color: 'black'
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      
+      <button
+        onClick={closeRepairDocument}
+        className="print-hidden"
+        style={{
+          position: 'absolute',
+          top: '15px',
+          right: '15px',
+          background: 'none',
+          border: 'none',
+          fontSize: '28px',
+          cursor: 'pointer',
+          color: '#666',
+          width: '35px',
+          height: '35px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          fontWeight: 'bold',
+          zIndex: 10
+        }}
+      >
         ×
       </button>
-      
-      <div className="modal-header">
-        <img src="/UDMLOGO.png" alt="University Logo" className="modal-logo" />
-        <div className="modal-title-section">
-          <h3 className="modal-university-name">Universidad De Manila</h3>
-          <p className="modal-document-type">Repair History</p>
-        </div>
-      </div>
-      
-      <div className="modal-divider"></div>
-      
-      <div className="modal-info-table">
-        <table className="info-details-table">
-          <tbody>
-            <tr>
-              <td className="info-label-cell">Equipment Name:</td>
-              <td className="info-value-cell">{selectedEquipment.name || 'N/A'}</td>
-              <td className="info-label-cell">Item Code:</td>
-              <td className="info-value-cell">{selectedEquipment.itemCode || 'N/A'}</td>
-            </tr>
-            <tr>
-  <td className="info-label-cell">Description:</td>
-  <td className="info-value-cell">{selectedEquipment.description || 'N/A'}</td>
-  <td className="info-label-cell">Price:</td>
-  <td className="info-value-cell">₱{selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
-</tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="modal-table-container">
-  <table className="modal-repair-table">
-    <thead>
-      <tr>
-        <th className="date-repair-col">Repair Date</th>
-        <th className="details-col">Repair Details</th>
-        <th className="amount-col">Repair Cost</th>
-      </tr>
-    </thead>
-    <tbody>
-  {selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 ? (
-    <>
-      {[...selectedEquipment.repairHistory]
-        .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
-        .map((repair, index) => (
-        <tr key={index}>
-          <td className="date-repair-cell">{repair.repairDate}</td>
-          <td className="details-cell">{repair.repairDetails}</td>
-          <td className="amount-cell">₱{parseFloat(repair.amountUsed || 0).toFixed(2)}</td>
-        </tr>
-      ))}
-      {/* Fill remaining rows */}
-      {Array.from({ length: Math.max(0, 11 - selectedEquipment.repairHistory.length) }, (_, index) => (
-        <tr key={`empty-${index}`}>
-          <td className="date-repair-cell"></td>
-          <td className="details-cell"></td>
-          <td className="amount-cell"></td>
-        </tr>
-      ))}
-    </>
-  ) : (
-    /* Show empty rows if no repair history */
-    Array.from({ length: 11 }, (_, index) => (
-      <tr key={index}>
-        <td className="date-repair-cell"></td>
-        <td className="details-cell"></td>
-        <td className="amount-cell"></td>
-      </tr>
-    ))
-  )}
-    
 
-</tbody>
-  </table>
-</div>
-      
-      <div className="modal-print-section" style={{ 
-  display: 'flex', 
-  gap: '8px', 
-  justifyContent: 'flex-end',
-  marginTop: '20px',
-  padding: '0'
-}}>
-  <button
-    className="modal-print-btn"
-    style={{
-      padding: '8px 16px',
-      fontSize: '14px',
-      minWidth: 'auto',
-      position: 'static'
-    }}
-    onClick={() => {
-      const element = document.createElement('div');
-      element.innerHTML = `
-        <div style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white;">
-          <div style="max-width: 800px; margin: 0 auto; border: 2px solid #333; border-radius: 8px; padding: 30px;">
-            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; gap: 15px;">
-              <img src="/UDMLOGO.png" alt="University Logo" style="width: 50px; height: 50px;" />
-              <div style="text-align: center;">
-                <h3 style="font-size: 16px; font-weight: bold; margin: 0; color: #333;">Universidad De Manila</h3>
-                <p style="font-size: 12px; margin: 2px 0 0 0; color: #666;">Repair History</p>
+      {(() => {
+        // Configuration
+        const ROWS_PER_PAGE = 20;
+        
+        // Prepare repair data
+        const repairs = selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0
+          ? [...selectedEquipment.repairHistory].sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
+          : [];
+
+        // Fill remaining rows with empty data to reach minimum rows per page
+        const filledRepairs = [...repairs];
+        while (filledRepairs.length < ROWS_PER_PAGE) {
+          filledRepairs.push({ repairDate: '', repairDetails: '', amountUsed: '' });
+        }
+
+        // Paginate repairs
+        const paginatedRepairs = [];
+        for (let i = 0; i < filledRepairs.length; i += ROWS_PER_PAGE) {
+          paginatedRepairs.push(filledRepairs.slice(i, i + ROWS_PER_PAGE));
+        }
+
+        const renderHeader = () => (
+          <div style={{ border: 'none', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', gap: '15px' }}>
+              <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#000000' }}>Universidad De Manila</h3>
+                <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#000000' }}>Repair History</p>
               </div>
             </div>
 
-            <div style="border-top: 1px solid #333; margin: 20px 0;"></div>
+            <div style={{ borderTop: '1px solid #333', margin: '10px 0' }}></div>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #333;">
-              <tr>
-                <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; width: 15%; color: #333;">Equipment Name:</td>
-                <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedEquipment.name || 'N/A'}</td>
-                <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; width: 15%; color: #333;">Item Code:</td>
-                <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedEquipment.itemCode || 'N/A'}</td>
-              </tr>
-              <tr>
-  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Description:</td>
-  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedEquipment.description || 'N/A'}</td>
-  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Price Amount:</td>
-  <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">₱${selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
-</tr>
-            </table>
-
-            <table style="width: 100%; border-collapse: collapse; border: 2px solid #333; margin-top: 10px;">
-              <thead>
-                <tr>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 25%;">Repair Date</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 50%;">Repair Details</th>
-                  <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; background: #f8f9fa; font-weight: bold; width: 25%;">Repair Cost</th>
-                </tr>
-              </thead>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', border: '1px solid #333' }}>
               <tbody>
-                ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
-                  ? [...selectedEquipment.repairHistory]
-                      .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
-                      .map(repair => `
-                        <tr>
-                          <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${repair.repairDate}</td>
-                          <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${repair.repairDetails}</td>
-                          <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">₱${parseFloat(repair.amountUsed || 0).toFixed(2)}</td>
-                        </tr>
-                      `).join('')
-                  : ''
-                }
-                ${Array.from({ length: 20 }, () => `
-                  <tr>
-                    <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                    <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                    <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                  </tr>
-                `).join('')}
+                <tr>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Equipment Name:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedEquipment.name || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item Code:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedEquipment.itemCode || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Description:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedEquipment.description || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Price:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>₱{selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
+                </tr>
               </tbody>
             </table>
           </div>
-        </div>
-      `;
+        );
 
-      const opt = {
-        margin: 0.5,
-        filename: `Repair_History_${selectedEquipment.name || 'Equipment'}_${selectedEquipment.itemCode || ''}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
+        return (
+          <>
+            {paginatedRepairs.map((pageRepairs, pageIndex) => (
+              <div key={pageIndex} className="print-page-wrapper">
+                {renderHeader()}
 
-      html2pdf().set(opt).from(element).save();
-    }}
-  >
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-    Download PDF
-  </button>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  border: '1px solid #333',
+                  marginBottom: '5px'
+                }}>
+                  <thead>
+                    <tr>
+                      <th style={{
+                        border: '1px solid #333',
+                        padding: '6px 4px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '20%',
+                        color: '#000000'
+                      }}>Repair Date</th>
+                      <th style={{
+                        border: '1px solid #333',
+                        padding: '6px 4px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '55%',
+                        color: '#000000'
+                      }}>Repair Details</th>
+                      <th style={{
+                        border: '1px solid #333',
+                        padding: '6px 4px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '25%',
+                        color: '#000000'
+                      }}>Repair Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRepairs.map((repair, index) => (
+                      <tr key={index}>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '6px 4px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '26px',
+                          color: '#000000'
+                        }}>{repair.repairDate || '\u00A0'}</td>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '6px 4px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '26px',
+                          color: '#000000'
+                        }}>{repair.repairDetails || '\u00A0'}</td>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '6px 4px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '26px',
+                          color: '#000000'
+                        }}>{repair.amountUsed !== null && repair.amountUsed !== undefined && repair.amountUsed !== '' ? `₱${parseFloat(repair.amountUsed).toFixed(2)}` : '\u00A0'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-  <button
-    className="modal-print-btn"
-    style={{
-      padding: '8px 16px',
-      fontSize: '14px',
-      minWidth: 'auto',
-      position: 'static'
-    }}
-    onClick={() => {
-      const printWindow = window.open('', '_blank');
-      closeRepairDocument();
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Repair History - ${selectedEquipment.name || 'Equipment'}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 20px;
-                background: white;
-              }
-              .print-container {
-                max-width: 800px;
-                margin: 0 auto;
-                border: 2px solid #333;
-                border-radius: 8px;
-                padding: 30px;
-              }
-              .print-header {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-bottom: 20px;
-                gap: 15px;
-              }
-              .print-logo {
-                width: 50px;
-                height: 50px;
-              }
-              .print-title {
-                text-align: center;
-              }
-              .print-university {
-                font-size: 16px;
-                font-weight: bold;
-                margin: 0;
-                color: #333;
-              }
-              .print-document-type {
-                font-size: 12px;
-                margin: 2px 0 0 0;
-                color: #666;
-              }
-              .print-divider {
-                border-top: 1px solid #333;
-                margin: 20px 0;
-              }
-              .print-info-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-                border: 1px solid #333;
-              }
-              .print-info-table td {
-                padding: 8px 12px;
-                border: 1px solid #333;
-                font-size: 12px;
-              }
-              .print-info-label {
-                background: #f8f9fa;
-                font-weight: bold;
-                width: 15%;
-                color: #333;
-              }
-              .print-info-value {
-                width: 35%;
-                text-decoration: underline;
-              }
-              .print-table {
-                width: 100%;
-                border-collapse: collapse;
-                border: 2px solid #333;
-                margin-top: 10px;
-              }
-              .print-table th,
-              .print-table td {
-                border: 1px solid #333;
-                padding: 8px;
-                text-align: center;
-                font-size: 11px;
-              }
-              .print-table th {
-                background: #f8f9fa;
-                font-weight: bold;
-              }
-              .print-table .details-col {
-                width: 50%;
-                text-align: center;
-              }
-              .print-table .date-col { width: 25%; }
-              .print-table .amount-col { width: 25%; }
-
-              @media print {
-                body { padding: 0; }
-                .print-container { 
-                  border: 1px solid #333;
-                  box-shadow: none;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="print-container">
-              <div class="print-header">
-                <img src="/UDMLOGO.png" alt="University Logo" class="print-logo" />
-                <div class="print-title">
-                  <h3 class="print-university">Universidad De Manila</h3>
-                  <p class="print-document-type">Repair History</p>
+                <div className="print-only" style={{
+                  textAlign: 'right',
+                  fontSize: '10px',
+                  marginTop: '5px',
+                  color: 'black'
+                }}>
+                  <div>Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                  <div>Page {pageIndex + 1} of {paginatedRepairs.length}</div>
                 </div>
               </div>
-              
-              <div class="print-divider"></div>
-              
-              <table class="print-info-table">
-                <tr>
-                  <td class="print-info-label">Equipment Name:</td>
-                  <td class="print-info-value">${selectedEquipment.name || 'N/A'}</td>
-                  <td class="print-info-label">Item Code:</td>
-                  <td class="print-info-value">${selectedEquipment.itemCode || 'N/A'}</td>
-                </tr>
-                <tr>
-  <td class="print-info-label">Description:</td>
-  <td class="print-info-value">${selectedEquipment.description || 'N/A'}</td>
-  <td class="print-info-label">Price Amount:</td>
-  <td class="print-info-value">₱${selectedEquipment.amount ? parseFloat(selectedEquipment.amount).toFixed(2) : '0.00'}</td>
-</tr>
-              </table>
+            ))}
 
-              <table class="print-table">
-                <thead>
-                  <tr>
-                    <th class="date-col">Repair Date</th>
-                    <th class="details-col">Repair Details</th>
-                    <th class="amount-col">Repair Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${selectedEquipment.repairHistory && selectedEquipment.repairHistory.length > 0 
-                    ? [...selectedEquipment.repairHistory]
-                        .sort((a, b) => new Date(b.repairDate) - new Date(a.repairDate))
-                        .map(repair => `
-                        <tr>
-                          <td>${repair.repairDate}</td>
-                          <td>${repair.repairDetails}</td>
-                          <td>₱${parseFloat(repair.amountUsed || 0).toFixed(2)}</td>
-                        </tr>
-                      `).join('') 
-                      : ''}
-                  ${Array.from({ length: 20 }, () => `
-                    <tr>
-                      <td>&nbsp;</td>
-                      <td>&nbsp;</td>
-                      <td>&nbsp;</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+            <div className="print-hidden" style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '20px'
+            }}>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Total repairs: <strong>{repairs.length}</strong> | Pages: <strong>{paginatedRepairs.length}</strong>
+              </div>
+              <button
+                onClick={() => window.print()}
+                style={{
+                  backgroundColor: '#4CAF50',
+                  color: '#FFFFFF',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                🖨️ Print Repair History ({paginatedRepairs.length} page{paginatedRepairs.length > 1 ? 's' : ''})
+              </button>
             </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
-    }}
-  >
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <polyline points="6,9 6,2 18,2 18,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M6 18H4C3.46957 18 2.96086 17.7893 2.58579 17.4142C2.21071 17.0391 2 16.5304 2 16V11C2 10.4696 2.21071 9.96086 2.58579 9.58579C2.96086 9.21071 3.46957 9 4 9H20C20.5304 9 21.0391 9.21071 21.4142 9.58579C21.7893 9.96086 22 10.4696 22 11V16C22 16.5304 21.7893 17.0391 21.4142 17.4142C21.0391 17.7893 20.5304 18 20 18H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="6,14 18,14 18,22 6,22 6,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-    Print Repair History
-  </button>
-</div>
-  </div>
+          </>
+        );
+      })()}
+    </div>
   </div>
 )}
 
