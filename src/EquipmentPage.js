@@ -2320,6 +2320,12 @@ const printQRCode = () => {
           page-break-after: auto !important;
           break-after: auto !important;
         }
+
+        .print-page-wrapper {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
         
         table {
           width: 100% !important;
@@ -2358,6 +2364,7 @@ const printQRCode = () => {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
+        
       }
       
       @media screen {
@@ -2471,7 +2478,7 @@ const printQRCode = () => {
         return (
           <>
             {paginatedRepairs.map((pageRepairs, pageIndex) => (
-              <div key={pageIndex} className="print-page-wrapper">
+              <div key={pageIndex} className="print-page-wrapper" style={{ pageBreakAfter: pageIndex < paginatedRepairs.length - 1 ? 'always' : 'auto' }}>
                 {renderHeader()}
 
                 <table style={{
