@@ -2734,6 +2734,33 @@ const handleRemoveImage = async (supplyId) => {
         td, th {
           border: 1px solid black !important;
           padding: 4px !important;
+          color: black !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        h3, p, span, div {
+          color: black !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        /* Force black text in print */
+        * {
+          color: black !important;
+        }
+        
+        /* Preserve gray backgrounds for headers */
+        th {
+          background-color: #e9ecef !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        td[style*="background: #f8f9fa"] {
+          background-color: #f8f9fa !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
       }
       
@@ -2830,8 +2857,8 @@ const handleRemoveImage = async (supplyId) => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '15px' }}>
               <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#333' }}>Universidad De Manila</h3>
-                <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#666' }}>Stock Card</p>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#000000' }}>Universidad De Manila</h3>
+                <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#000000' }}>Stock Card</p>
               </div>
             </div>
 
@@ -2840,16 +2867,16 @@ const handleRemoveImage = async (supplyId) => {
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #333' }}>
               <tbody>
                 <tr>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#333' }}>Item:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%' }}>{selectedItem.itemName || 'N/A'}</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#333' }}>Stock No.:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%' }}>{selectedItem.stockNo || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Item:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedItem.itemName || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#000000' }}>Stock No.:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%', color: '#000000' }}>{selectedItem.stockNo || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#333' }}>Category:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px' }}>{selectedItem.category || 'N/A'}</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#333' }}>Description:</td>
-                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px' }}>{selectedItem.description || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Category:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedItem.category || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#000000' }}>Description:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', color: '#000000' }}>{selectedItem.description || 'N/A'}</td>
                 </tr>
               </tbody>
             </table>
@@ -2877,7 +2904,8 @@ const handleRemoveImage = async (supplyId) => {
                         fontSize: '11px',
                         fontWeight: 'bold',
                         background: '#e9ecef',
-                        width: '25%'
+                        width: '25%',
+                        color: '#000000'
                       }}>Date</th>
                       <th colSpan="3" style={{
                         border: '1px solid #333',
@@ -2885,7 +2913,8 @@ const handleRemoveImage = async (supplyId) => {
                         textAlign: 'center',
                         fontSize: '11px',
                         fontWeight: 'bold',
-                        background: '#e9ecef'
+                        background: '#e9ecef',
+                        color: '#000000'
                       }}>Quantity</th>
                     </tr>
                     <tr>
@@ -2896,7 +2925,8 @@ const handleRemoveImage = async (supplyId) => {
                         fontSize: '11px',
                         fontWeight: 'bold',
                         background: '#e9ecef',
-                        width: '25%'
+                        width: '25%',
+                        color: '#000000'
                       }}>Receipt</th>
                       <th style={{
                         border: '1px solid #333',
@@ -2905,7 +2935,8 @@ const handleRemoveImage = async (supplyId) => {
                         fontSize: '11px',
                         fontWeight: 'bold',
                         background: '#e9ecef',
-                        width: '25%'
+                        width: '25%',
+                        color: '#000000'
                       }}>Issue</th>
                       <th style={{
                         border: '1px solid #333',
@@ -2914,7 +2945,8 @@ const handleRemoveImage = async (supplyId) => {
                         fontSize: '11px',
                         fontWeight: 'bold',
                         background: '#e9ecef',
-                        width: '25%'
+                        width: '25%',
+                        color: '#000000'
                       }}>Balance</th>
                     </tr>
                   </thead>
@@ -2926,28 +2958,32 @@ const handleRemoveImage = async (supplyId) => {
                           padding: '8px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px'
+                          height: '28px',
+                          color: '#000000'
                         }}>{transaction.date || '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
                           padding: '8px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px'
+                          height: '28px',
+                          color: '#000000'
                         }}>{transaction.receipt !== null && transaction.receipt !== undefined && transaction.receipt !== '' ? transaction.receipt : '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
                           padding: '8px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px'
+                          height: '28px',
+                          color: '#000000'
                         }}>{transaction.issue !== null && transaction.issue !== undefined && transaction.issue !== '' ? transaction.issue : '\u00A0'}</td>
                         <td style={{
                           border: '1px solid #333',
                           padding: '8px',
                           textAlign: 'center',
                           fontSize: '11px',
-                          height: '28px'
+                          height: '28px',
+                          color: '#000000'
                         }}>{transaction.balance !== null && transaction.balance !== undefined && transaction.balance !== '' ? transaction.balance : '\u00A0'}</td>
                       </tr>
                     ))}
