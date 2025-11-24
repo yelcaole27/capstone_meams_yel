@@ -2617,392 +2617,386 @@ const handleRemoveImage = async (supplyId) => {
           </div>
         </div>
       )}
-
 {isStockCardOpen && selectedItem && (
-  <div className="modal-overlay" onClick={handleCloseStockCard}>
-    <div className="repair-card-modal" onClick={(e) => e.stopPropagation()}>
-      <button className="modal-close-btn" onClick={handleCloseStockCard}>
+  <div 
+    className="modal-overlay"
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      overflow: 'auto',
+      padding: '20px'
+    }}
+    onClick={handleCloseStockCard}
+  >
+    <style>{`
+      * {
+        box-sizing: border-box;
+      }
+      
+      .modal-content {
+        background-color: white !important;
+      }
+      
+      @media print {
+        @page {
+          size: letter portrait;
+          margin: 0.5in;
+        }
+        
+        body * {
+          visibility: hidden !important;
+        }
+        
+        .modal-overlay,
+        .modal-overlay * {
+          visibility: visible !important;
+        }
+        
+        html, body {
+          height: auto !important;
+          overflow: visible !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        .modal-overlay {
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          display: block !important;
+          background: white !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          height: auto !important;
+          width: 100% !important;
+          border: none !important;
+          outline: none !important;
+        }
+        
+        .modal-content {
+          position: static !important;
+          max-width: 100% !important;
+          max-height: none !important;
+          width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+          overflow: visible !important;
+          height: auto !important;
+          border: none !important;
+          outline: none !important;
+        }
+        
+        .print-hidden {
+          display: none !important;
+          visibility: hidden !important;
+        }
+        
+        .print-only {
+          display: block !important;
+          visibility: visible !important;
+        }
+        
+        .print-page-wrapper {
+          page-break-after: always !important;
+          break-after: page !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          display: block !important;
+          height: auto !important;
+          min-height: 0 !important;
+          visibility: visible !important;
+          border: none !important;
+          outline: none !important;
+        }
+        
+        .print-page-wrapper:last-of-type {
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          visibility: visible !important;
+          border: 1px solid black !important;
+        }
+        
+        td, th {
+          border: 1px solid black !important;
+          padding: 4px !important;
+        }
+      }
+      
+      @media screen {
+        .print-page-wrapper {
+          margin-bottom: 40px;
+          padding-bottom: 40px;
+          border-bottom: 3px dashed #999;
+        }
+        
+        .print-only {
+          display: none !important;
+        }
+        
+        .print-page-wrapper:last-of-type {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
+        }
+      }
+    `}</style>
+
+    <div 
+      className="modal-content" 
+      style={{
+        backgroundColor: 'white',
+        padding: '40px',
+        borderRadius: '8px',
+        width: '90%',
+        maxWidth: '900px',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        fontFamily: 'Arial, sans-serif',
+        position: 'relative',
+        color: 'black'
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      
+      <button
+        onClick={handleCloseStockCard}
+        className="print-hidden"
+        style={{
+          position: 'absolute',
+          top: '15px',
+          right: '15px',
+          background: 'none',
+          border: 'none',
+          fontSize: '28px',
+          cursor: 'pointer',
+          color: '#666',
+          width: '35px',
+          height: '35px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          fontWeight: 'bold',
+          zIndex: 10
+        }}
+      >
         ×
       </button>
 
-      <div className="modal-header">
-        <img src="/UDMLOGO.png" alt="University Logo" className="modal-logo" />
-        <div className="modal-title-section">
-          <h3 className="modal-university-name">Universidad De Manila</h3>
-          <p className="modal-document-type">Stock Card</p>
-        </div>
-      </div>
+      {(() => {
+        // Configuration
+        const ROWS_PER_PAGE = 20;
+        
+        // Prepare transaction data
+        const transactions = selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
+          ? [...selectedItem.transactionHistory].sort((a, b) => new Date(b.date) - new Date(a.date))
+          : [{
+              date: selectedItem.date,
+              receipt: selectedItem.quantity,
+              issue: null,
+              balance: selectedItem.quantity
+            }];
 
-      <div className="modal-divider"></div>
+        // Fill remaining rows with empty data to reach minimum rows per page
+        const filledTransactions = [...transactions];
+        while (filledTransactions.length < ROWS_PER_PAGE) {
+          filledTransactions.push({ date: '', receipt: '', issue: '', balance: '' });
+        }
 
-      <div className="modal-info-table">
-        <table className="info-details-table">
-          <tbody>
-            <tr>
-              <td className="info-label-cell">Item:</td>
-              <td className="info-value-cell">{selectedItem.itemName || 'N/A'}</td>
-              <td className="info-label-cell">Stock No.:</td>
-              <td className="info-value-cell">{selectedItem.stockNo || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td className="info-label-cell">Category:</td>
-              <td className="info-value-cell">{selectedItem.category || 'N/A'}</td>
-              <td className="info-label-cell">Description:</td>
-              <td className="info-value-cell">{selectedItem.description || 'N/A'}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        // Paginate transactions
+        const paginatedTransactions = [];
+        for (let i = 0; i < filledTransactions.length; i += ROWS_PER_PAGE) {
+          paginatedTransactions.push(filledTransactions.slice(i, i + ROWS_PER_PAGE));
+        }
 
-      <div className="modal-table-container">
-        <table className="modal-repair-table">
-          <thead>
-            <tr>
-              <th rowSpan="2" className="date-column">Date</th>
-              <th colSpan="3" className="quantity-header">Quantity</th>
-            </tr>
-            <tr>
-              <th className="receipt-column">Receipt</th>
-              <th className="quantity-issue-column">Issue</th>
-              <th className="balance-column">Balance</th>
-            </tr>
-          </thead>
-          <tbody>
-  {selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0 ? (
-    [...selectedItem.transactionHistory]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .map((transaction, index) => (
-                <tr key={index} className="stock-row">
-                  <td className="date-cell">{transaction.date || ''}</td>
-                  <td className="receipt-cell">{transaction.receipt !== null && transaction.receipt !== undefined ? transaction.receipt : ''}</td>
-                  <td className="quantity-issue-cell">{transaction.issue !== null && transaction.issue !== undefined ? transaction.issue : ''}</td>
-                  <td className="balance-cell">{transaction.balance !== null && transaction.balance !== undefined ? transaction.balance : ''}</td>
+        const renderHeader = () => (
+          <div style={{ border: 'none', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '15px' }}>
+              <img src="/UDMLOGO.png" alt="University Logo" style={{ width: '50px', height: '50px' }} />
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0', color: '#333' }}>Universidad De Manila</h3>
+                <p style={{ fontSize: '12px', margin: '2px 0 0 0', color: '#666' }}>Stock Card</p>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #333', margin: '20px 0' }}></div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #333' }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#333' }}>Item:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%' }}>{selectedItem.itemName || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', width: '15%', color: '#333' }}>Stock No.:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', width: '35%' }}>{selectedItem.stockNo || 'N/A'}</td>
                 </tr>
-              ))
-            ) : (
-              <>
-                <tr className="stock-row">
-                  <td className="date-cell">{selectedItem.date}</td>
-                  <td className="receipt-cell">{selectedItem.quantity}</td>
-                  <td className="quantity-issue-cell"></td>
-                  <td className="balance-cell">{selectedItem.quantity}</td>
+                <tr>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#333' }}>Category:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px' }}>{selectedItem.category || 'N/A'}</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px', background: '#f8f9fa', fontWeight: 'bold', color: '#333' }}>Description:</td>
+                  <td style={{ padding: '8px 12px', border: '1px solid #333', fontSize: '12px' }}>{selectedItem.description || 'N/A'}</td>
                 </tr>
-                {Array.from({ length: 9 }, (_, index) => (
-                  <tr key={index} className="stock-row">
-                    <td className="date-cell"></td>
-                    <td className="receipt-cell"></td>
-                    <td className="quantity-issue-cell"></td>
-                    <td className="balance-column"></td>
-                  </tr>
-                ))}
-              </>
-            )}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
+        );
 
-      <div className="modal-print-section" style={{ 
-  display: 'flex', 
-  gap: '8px', 
-  justifyContent: 'flex-end',
-  marginTop: '20px',
-  padding: '0'
-}}>
-  <button
-    className="modal-print-btn"
-    style={{
-      padding: '8px 16px',
-      fontSize: '14px',
-      minWidth: 'auto',
-      position: 'static'
-    }}
-    onClick={() => {
-            const element = document.createElement('div');
-            element.innerHTML = `
-              <div style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white;">
-                <div style="max-width: 800px; margin: 0 auto; border: 2px solid #333; border-radius: 8px; padding: 30px;">
-                  <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px; gap: 15px;">
-                    <img src="/UDMLOGO.png" alt="University Logo" style="width: 50px; height: 50px;" />
-                    <div style="text-align: center;">
-                      <h3 style="font-size: 16px; font-weight: bold; margin: 0; color: #333;">Universidad De Manila</h3>
-                      <p style="font-size: 12px; margin: 2px 0 0 0; color: #666;">Stock Card</p>
-                    </div>
-                  </div>
+        return (
+          <>
+            {paginatedTransactions.map((pageTransactions, pageIndex) => (
+              <div key={pageIndex} className="print-page-wrapper">
+                {renderHeader()}
 
-                  <div style="border-top: 1px solid #333; margin: 20px 0;"></div>
-
-                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #333;">
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  border: '2px solid #333',
+                  marginBottom: '20px'
+                }}>
+                  <thead>
                     <tr>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; width: 15%; color: #333;">Item:</td>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedItem.itemName || 'N/A'}</td>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; width: 15%; color: #333;">Stock No.:</td>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; width: 35%; text-decoration: underline;">${selectedItem.stockNo || 'N/A'}</td>
+                      <th rowSpan="2" style={{
+                        border: '1px solid #333',
+                        padding: '8px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '25%'
+                      }}>Date</th>
+                      <th colSpan="3" style={{
+                        border: '1px solid #333',
+                        padding: '8px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef'
+                      }}>Quantity</th>
                     </tr>
                     <tr>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Category:</td>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedItem.category || 'N/A'}</td>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; background: #f8f9fa; font-weight: bold; color: #333;">Description:</td>
-                      <td style="padding: 8px 12px; border: 1px solid #333; font-size: 12px; text-decoration: underline;">${selectedItem.description || 'N/A'}</td>
+                      <th style={{
+                        border: '1px solid #333',
+                        padding: '8px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '25%'
+                      }}>Receipt</th>
+                      <th style={{
+                        border: '1px solid #333',
+                        padding: '8px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '25%'
+                      }}>Issue</th>
+                      <th style={{
+                        border: '1px solid #333',
+                        padding: '8px',
+                        textAlign: 'center',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        background: '#e9ecef',
+                        width: '25%'
+                      }}>Balance</th>
                     </tr>
-                  </table>
+                  </thead>
+                  <tbody>
+                    {pageTransactions.map((transaction, index) => (
+                      <tr key={index}>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '8px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '28px'
+                        }}>{transaction.date || '\u00A0'}</td>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '8px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '28px'
+                        }}>{transaction.receipt !== null && transaction.receipt !== undefined && transaction.receipt !== '' ? transaction.receipt : '\u00A0'}</td>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '8px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '28px'
+                        }}>{transaction.issue !== null && transaction.issue !== undefined && transaction.issue !== '' ? transaction.issue : '\u00A0'}</td>
+                        <td style={{
+                          border: '1px solid #333',
+                          padding: '8px',
+                          textAlign: 'center',
+                          fontSize: '11px',
+                          height: '28px'
+                        }}>{transaction.balance !== null && transaction.balance !== undefined && transaction.balance !== '' ? transaction.balance : '\u00A0'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-                  <table style="width: 100%; border-collapse: collapse; border: 2px solid #333; margin-top: 10px;">
-                    <thead>
-                      <tr>
-                        <th rowspan="2" style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Date</th>
-                        <th colspan="3" style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef;">Quantity</th>
-                      </tr>
-                      <tr>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Receipt</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Issue</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; font-weight: bold; background: #e9ecef; width: 25%;">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
-  ? [...selectedItem.transactionHistory]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .map(transaction => `
-                          <tr>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.date || ''}</td>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.receipt !== null && transaction.receipt !== undefined ? transaction.receipt : ''}</td>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.issue !== null && transaction.issue !== undefined ? transaction.issue : ''}</td>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${transaction.balance !== null && transaction.balance !== undefined ? transaction.balance : ''}</td>
-                          </tr>
-                        `).join('')
-                        : `
-                          <tr>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${selectedItem.date}</td>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${selectedItem.quantity}</td>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;"></td>
-                            <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">${selectedItem.quantity}</td>
-                          </tr>
-                          ${Array.from({ length: 20 }, () => `
-                            <tr>
-                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                              <td style="border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px;">&nbsp;</td>
-                            </tr>
-                          `).join('')}
-                        `
-                      }
-                    </tbody>
-                  </table>
+                <div className="print-only" style={{
+                  textAlign: 'right',
+                  fontSize: '10px',
+                  marginTop: '15px',
+                  color: 'black'
+                }}>
+                  <div>Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                  <div>Page {pageIndex + 1} of {paginatedTransactions.length}</div>
                 </div>
               </div>
-            `;
+            ))}
 
-            const opt = {
-              margin: 0.5,
-              filename: `Stock_Card_${selectedItem.itemName || 'Item'}_${selectedItem.itemCode || ''}.pdf`,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true },
-              jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save();
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Download PDF
-        </button>
-
-         <button
-    className="modal-print-btn"
-    style={{
-      padding: '8px 16px',
-      fontSize: '14px',
-      minWidth: 'auto',
-      position: 'static'
-    }}
-    onClick={() => {
-            const printWindow = window.open('', '_blank');
-            const printContent = `
-              <html>
-                <head>
-                  <title>Stock Card - ${selectedItem.itemName || 'Item'}</title>
-                  <style>
-                    body {
-                      font-family: Arial, sans-serif;
-                      margin: 0;
-                      padding: 20px;
-                      background: white;
-                      color: #333;
-                    }
-                    .print-container {
-                      max-width: 800px;
-                      margin: 0 auto;
-                      border: 2px solid #333;
-                      border-radius: 8px;
-                      padding: 30px;
-                    }
-                    .header {
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      text-align: center;
-                      margin-bottom: 20px;
-                      gap: 15px;
-                    }
-                    .logo {
-                      width: 50px;
-                      height: 50px;
-                    }
-                    .title-section {
-                      text-align: center;
-                    }
-                    .university-name {
-                      font-size: 18px;
-                      font-weight: bold;
-                      color: #2c5530;
-                      margin: 0;
-                    }
-                    .document-type {
-                      font-size: 16px;
-                      font-weight: bold;
-                      color: #333;
-                      margin: 5px 0 0 0;
-                    }
-                    .divider {
-                      border-top: 2px solid #333;
-                      margin: 20px 0;
-                    }
-                    .info-table {
-                      width: 100%;
-                      margin-bottom: 20px;
-                      border: 1px solid #333;
-                      border-collapse: collapse;
-                    }
-                    .info-table td {
-                      padding: 8px 12px;
-                      border: 1px solid #333;
-                      font-size: 14px;
-                    }
-                    .label-cell {
-                      font-weight: bold;
-                      background-color: #f5f5f5;
-                      color: #333;
-                      text-align: right;
-                      width: 150px;
-                    }
-                    .value-cell {
-                      color: #333;
-                    }
-                    .transaction-table {
-                      width: 100%;
-                      border-collapse: collapse;
-                      border: 2px solid #333;
-                    }
-                    .transaction-table th,
-                    .transaction-table td {
-                      border: 1px solid #333;
-                      padding: 8px;
-                      text-align: center;
-                      font-size: 12px;
-                    }
-                    .transaction-table th {
-                      background-color: #f5f5f5;
-                      font-weight: bold;
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="print-container">
-                    <div class="header">
-                      <img src="/UDMLOGO.png" alt="University Logo" class="logo" />
-                      <div class="title-section">
-                        <h3 class="university-name">Universidad De Manila</h3>
-                        <p class="document-type">Stock Card</p>
-                      </div>
-                    </div>
-                    <div class="divider"></div>
-                    <table class="info-table">
-                      <tr>
-                        <td class="label-cell">Item:</td>
-                        <td class="value-cell">${selectedItem.itemName || 'N/A'}</td>
-                        <td class="label-cell">Stock No.:</td>
-                        <td class="value-cell">${selectedItem.stockNo || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td class="label-cell">Category:</td>
-                        <td class="value-cell">${selectedItem.category || 'N/A'}</td>
-                        <td class="label-cell">Description:</td>
-                        <td class="value-cell">${selectedItem.description || 'N/A'}</td>
-                      </tr>
-                    </table>
-                    <table class="transaction-table">
-                      <thead>
-                        <tr>
-                          <th rowspan="2">Date</th>
-                          <th colspan="3">Quantity</th>
-                        </tr>
-                        <tr>
-                          <th>Receipt</th>
-                          <th>Issue</th>
-                          <th>Balance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${selectedItem.transactionHistory && selectedItem.transactionHistory.length > 0
-  ? [...selectedItem.transactionHistory]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .map(transaction => `
-                            <tr>
-                              <td>${transaction.date || ''}</td>
-                              <td>${transaction.receipt !== null && transaction.receipt !== undefined ? transaction.receipt : ''}</td>
-                              <td>${transaction.issue !== null && transaction.issue !== undefined ? transaction.issue : ''}</td>
-                              <td>${transaction.balance !== null && transaction.balance !== undefined ? transaction.balance : ''}</td>
-                            </tr>
-                          `).join('')
-                          : `
-                            <tr>
-                              <td>${selectedItem.date}</td>
-                              <td>${selectedItem.quantity}</td>
-                              <td></td>
-                              <td>${selectedItem.quantity}</td>
-                            </tr>
-                            ${Array.from({ length: 20 }, () => `
-                              <tr>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                              </tr>
-                            `).join('')}
-                          `
-                        }
-                      </tbody>
-                    </table>
-                  </div>
-                </body>
-              </html>
-            `;
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            printWindow.focus();
-            setTimeout(() => {
-              printWindow.print();
-              printWindow.close();
-            }, 250);
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Print Stock Card
-        </button>
-      </div>
+            <div className="print-hidden" style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '20px'
+            }}>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Total transactions: <strong>{transactions.length}</strong> | Pages: <strong>{paginatedTransactions.length}</strong>
+              </div>
+              <button
+                onClick={() => window.print()}
+                style={{
+                  backgroundColor: '#4CAF50',
+                  color: '#FFFFFF',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                🖨️ Print Stock Card ({paginatedTransactions.length} page{paginatedTransactions.length > 1 ? 's' : ''})
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   </div>
 )}
