@@ -2665,14 +2665,10 @@ const handleRemoveImage = async (supplyId) => {
     color: black !important;
   }
       
-      @media print {
+     @media print {
     @page {
       size: letter portrait;
       margin: 0.5in;
-    }
-    
-    * {
-      box-sizing: border-box !important;
     }
     
     body * {
@@ -2689,28 +2685,18 @@ const handleRemoveImage = async (supplyId) => {
       overflow: visible !important;
       margin: 0 !important;
       padding: 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      background: white !important;
-      border: none !important;
-      box-shadow: none !important;
-      outline: none !important;
     }
     
     .modal-overlay {
-      position: static !important;
+      position: absolute !important;
       left: 0 !important;
       top: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
       display: block !important;
       background: white !important;
       padding: 0 !important;
-      margin: 0 !important;
       overflow: visible !important;
       height: auto !important;
       width: 100% !important;
-      max-width: 100% !important;
       border: none !important;
       outline: none !important;
       box-shadow: none !important;
@@ -2729,7 +2715,6 @@ const handleRemoveImage = async (supplyId) => {
       height: auto !important;
       border: none !important;
       outline: none !important;
-      background: white !important;
     }
     
     .print-hidden {
@@ -2740,11 +2725,6 @@ const handleRemoveImage = async (supplyId) => {
     .print-only {
       display: block !important;
       visibility: visible !important;
-      border: none !important;
-      box-shadow: none !important;
-      outline: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
     }
     
     .print-page-wrapper {
@@ -2758,12 +2738,10 @@ const handleRemoveImage = async (supplyId) => {
       visibility: visible !important;
       border: none !important;
       outline: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+      border-bottom: none !important;
       box-shadow: none !important;
-      background: white !important;
-      width: 100% !important;
-      max-width: 100% !important;
     }
     
     .print-page-wrapper:last-of-type {
@@ -2776,9 +2754,6 @@ const handleRemoveImage = async (supplyId) => {
       border-collapse: collapse !important;
       visibility: visible !important;
       border: 1px solid black !important;
-      box-shadow: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
     }
     
     td, th {
@@ -2787,30 +2762,17 @@ const handleRemoveImage = async (supplyId) => {
       color: black !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      box-shadow: none !important;
-      outline: none !important;
     }
     
     h3, p, span, div {
       color: black !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      border: none !important;
-      box-shadow: none !important;
-      outline: none !important;
     }
     
     /* Force black text in print */
     * {
       color: black !important;
-      box-shadow: none !important;
-      outline: none !important;
-      border-radius: 0 !important;
-    }
-    
-    /* Exception: Keep ONLY table borders */
-    *:not(table):not(td):not(th) {
-      border: none !important;
     }
     
     /* Preserve gray backgrounds for headers */
