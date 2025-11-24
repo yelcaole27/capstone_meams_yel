@@ -2636,173 +2636,176 @@ const handleRemoveImage = async (supplyId) => {
     }}
     onClick={handleCloseStockCard}
   >
-    <style>{`
-      * {
-        box-sizing: border-box;
-      }
-      
-      .modal-content {
-        background-color: white !important;
-      }
-      
-      .modal-content * {
-        color: black !important;
-      }
-      
-      .modal-content th {
-        color: black !important;
-      }
-      
-      .modal-content td {
-        color: black !important;
-      }
-      
-      .modal-content h3 {
-        color: black !important;
-      }
-      
-      .modal-content p {
-        color: black !important;
-      }
+   <style>{`
+  * {
+    box-sizing: border-box;
+  }
+  
+  .modal-content {
+    background-color: white !important;
+  }
+  
+  .modal-content * {
+    color: black !important;
+  }
+  
+  .modal-content th {
+    color: black !important;
+  }
+  
+  .modal-content td {
+    color: black !important;
+  }
+  
+  .modal-content h3 {
+    color: black !important;
+  }
+  
+  .modal-content p {
+    color: black !important;
+  }
       
       @media print {
-        @page {
-          size: letter portrait;
-          margin: 0.5in;
-        }
-        
-        body * {
-          visibility: hidden !important;
-        }
-        
-        .modal-overlay,
-        .modal-overlay * {
-          visibility: visible !important;
-        }
-        
-        html, body {
-          height: auto !important;
-          overflow: visible !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
-        
-        .modal-overlay {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          display: block !important;
-          background: white !important;
-          padding: 0 !important;
-          overflow: visible !important;
-          height: auto !important;
-          width: 100% !important;
-          border: none !important;
-          outline: none !important;
-        }
-        
-        .modal-content {
-          position: static !important;
-          max-width: 100% !important;
-          max-height: none !important;
-          width: 100% !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          box-shadow: none !important;
-          border-radius: 0 !important;
-          overflow: visible !important;
-          height: auto !important;
-          border: none !important;
-          outline: none !important;
-        }
-        
-        .print-hidden {
-          display: none !important;
-          visibility: hidden !important;
-        }
-        
-        .print-only {
-          display: block !important;
-          visibility: visible !important;
-        }
-        
-        .print-page-wrapper {
-          page-break-after: always !important;
-          break-after: page !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-          display: block !important;
-          height: auto !important;
-          min-height: 0 !important;
-          visibility: visible !important;
-          border: none !important;
-          outline: none !important;
-        }
-        
-        .print-page-wrapper:last-of-type {
-          page-break-after: auto !important;
-          break-after: auto !important;
-        }
-        
-        table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-          visibility: visible !important;
-          border: 1px solid black !important;
-        }
-        
-        td, th {
-          border: 1px solid black !important;
-          padding: 4px !important;
-          color: black !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        
-        h3, p, span, div {
-          color: black !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        
-        /* Force black text in print */
-        * {
-          color: black !important;
-        }
-        
-        /* Preserve gray backgrounds for headers */
-        th {
-          background-color: #e9ecef !important;
-          color: black !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        
-        td[style*="background: #f8f9fa"] {
-          background-color: #f8f9fa !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-      }
-      
-      @media screen {
-        .print-page-wrapper {
-          margin-bottom: 40px;
-          padding-bottom: 40px;
-          border-bottom: 3px dashed #999;
-        }
-        
-        .print-only {
-          display: none !important;
-        }
-        
-        .print-page-wrapper:last-of-type {
-          border-bottom: none;
-          margin-bottom: 0;
-          padding-bottom: 0;
-        }
-      }
-    `}</style>
+    @page {
+      size: letter portrait;
+      margin: 0.5in;
+    }
+    
+    body * {
+      visibility: hidden !important;
+    }
+    
+    .modal-overlay,
+    .modal-overlay * {
+      visibility: visible !important;
+    }
+    
+    html, body {
+      height: auto !important;
+      overflow: visible !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    .modal-overlay {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      display: block !important;
+      background: white !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      height: auto !important;
+      width: 100% !important;
+      border: none !important;
+      outline: none !important;
+    }
+    
+    .modal-content {
+      position: static !important;
+      max-width: 100% !important;
+      max-height: none !important;
+      width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      overflow: visible !important;
+      height: auto !important;
+      border: none !important;
+      outline: none !important;
+    }
+    
+    .print-hidden {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    .print-only {
+      display: block !important;
+      visibility: visible !important;
+    }
+    
+    .print-page-wrapper {
+      page-break-after: always !important;
+      break-after: page !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      display: block !important;
+      height: auto !important;
+      min-height: 0 !important;
+      visibility: visible !important;
+      border: none !important;
+      outline: none !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+      border-bottom: none !important;
+    }
+    
+    .print-page-wrapper:last-of-type {
+      page-break-after: auto !important;
+      break-after: auto !important;
+    }
+    
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      visibility: visible !important;
+      border: 1px solid black !important;
+    }
+    
+    td, th {
+      border: 1px solid black !important;
+      padding: 4px !important;
+      color: black !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    h3, p, span, div {
+      color: black !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Force black text in print */
+    * {
+      color: black !important;
+    }
+    
+    /* Preserve gray backgrounds for headers */
+    th {
+      background-color: #e9ecef !important;
+      color: black !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    td[style*="background: #f8f9fa"] {
+      background-color: #f8f9fa !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+  
+  @media screen {
+    .print-page-wrapper {
+      margin-bottom: 40px;
+      padding-bottom: 40px;
+      border-bottom: 3px dashed #999;
+    }
+    
+    .print-only {
+      display: none !important;
+    }
+    
+    .print-page-wrapper:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+  }
+`}</style>
 
     <div 
       className="modal-content" 
