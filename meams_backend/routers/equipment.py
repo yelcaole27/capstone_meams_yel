@@ -560,10 +560,20 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
                 </button>
             </div>
             <script>
-                function navigateToFullHistory() {
-    // Direct navigation with token as query param
-    window.location.href = `/api/equipment/repair-history/{equipment_id}?token={token}`;
-}
+                function navigateToFullHistory() {{
+                    // Pass token to next page via fetch with Authorization header
+                    fetch('/api/equipment/repair-history/{equipment_id}', {{
+                        headers: {{
+                            'Authorization': 'Bearer {token}'
+                        }}
+                    }})
+                    .then(response => response.text())
+                    .then(html => {{
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    }});
+                }}
             </script>
             """
         
@@ -805,19 +815,16 @@ async def view_equipment_qr(equipment_id: str, authorization: Optional[str] = He
 
 # NEW ENDPOINT: Full Repair History Page
 @router.get("/repair-history/{equipment_id}", response_class=HTMLResponse)
-async def view_full_repair_history(
-    equipment_id: str, 
-    authorization: Optional[str] = Header(None),
-    token: Optional[str] = None  # Add query param option
-):
-    # Try header first, then query param
-    auth_token = None
-    if authorization:
-        auth_token = authorization.replace("Bearer ", "")
-    elif token:
-        auth_token = token
+async def view_full_repair_history(equipment_id: str, authorization: Optional[str] = Header(None)):
+    """
+    Separate page showing FULL repair history (all repairs)
+    Requires authentication like the main QR view
+    """
+    from fastapi.responses import HTMLResponse
+    from datetime import datetime
     
-    if not auth_token:
+    # Check for authorization
+    if not authorization:
         return HTMLResponse(
             content=generate_auth_required_html("equipment", equipment_id),
             status_code=200
@@ -825,12 +832,14 @@ async def view_full_repair_history(
     
     # Verify token
     try:
-        verify_token(auth_token)
+        token = authorization.replace("Bearer ", "")
+        verify_token(token)
     except:
         return HTMLResponse(
             content=generate_auth_required_html("equipment", equipment_id),
             status_code=200
         )
+    
     # Validate ID
     if not ObjectId.is_valid(equipment_id):
         return HTMLResponse(
@@ -1009,7 +1018,7 @@ async def view_full_repair_history(
     </head>
     <body>
         <div class="container">
-            <a href="/api/equipment/view/{equipment_id}?token={auth_token}" class="back-button">← Back to Equipment</a>
+            <a href="javascript:history.back()" class="back-button">← Back to Equipment</a>
             
             <div class="header">
                 <h1>🔧 Complete Repair History</h1>
