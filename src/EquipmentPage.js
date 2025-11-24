@@ -287,7 +287,7 @@ function EquipmentPage() {
   setUpdateData({
     itemCode: selectedEquipment.itemCode || '',
     description: selectedEquipment.description || '',
-    repairDate: new Date().toISOString().split('T')[0], // Add default date (today)
+    repairDate: '',
     repairDetails: '',
     amountUsed: ''
   });
@@ -2104,6 +2104,7 @@ const printQRCode = () => {
 )}
 
 {/* Update Equipment Modal */}
+{/* Update Equipment Modal */}
 {showUpdateEquipmentModal && selectedEquipment && (
   <div className="overlay" onClick={() => setShowUpdateEquipmentModal(false)}>
     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -2111,26 +2112,22 @@ const printQRCode = () => {
       
       <div className="update-form">
         <div className="form-group">
-          <label>Item Code: *</label>
+          <label>Item Code:</label>
           <input 
             type="text" 
-            name="itemCode"
-            value={updateData.itemCode}
-            onChange={handleUpdateDataChange}
-            placeholder="Enter item code"
-            required
+            value={selectedEquipment.itemCode}
+            disabled
+            className="disabled-input"
           />
         </div>
 
         <div className="form-group">
-          <label>Description: *</label>
+          <label>Description:</label>
           <textarea 
-            name="description"
-            value={updateData.description}
-            onChange={handleUpdateDataChange}
-            placeholder="Enter equipment description"
+            value={selectedEquipment.description}
+            disabled
+            className="disabled-input"
             rows="2"
-            required
           />
         </div>
 
@@ -2192,6 +2189,7 @@ const printQRCode = () => {
     </div>
   </div>
 )}
+
    {showRepairDocument && selectedEquipment && (
   <div 
     className="modal-overlay"
