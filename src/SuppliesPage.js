@@ -1930,6 +1930,7 @@ const handleRemoveImage = async (supplyId) => {
             </button>
 
               {/* Edit Item Button */}
+              {currentUser?.role === 'admin' && (
               <button 
               className="action-btn edit-item-btn"
               onClick={handleOpenEditItem}
@@ -1952,7 +1953,7 @@ const handleRemoveImage = async (supplyId) => {
               </svg>
               Edit Item
             </button>
-              
+            )}
             </div>
             
             <button className="close-overview-btn" onClick={handleCloseItemOverview}>
