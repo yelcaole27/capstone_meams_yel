@@ -1852,7 +1852,7 @@ const printQRCode = () => {
                 <path d="M16 17H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M10 9H9H8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              View Maintenance Log
+              View Repair History
             </button>
   
             <button 
